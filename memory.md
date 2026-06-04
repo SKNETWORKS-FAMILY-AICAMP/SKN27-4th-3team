@@ -339,12 +339,13 @@ Updated: 2026-06-04
 - Retrieval Task 10은 `RetrievalDocument`, `RetrievalChunk`, `RetrievalQueryLog`, chunking 순수 함수, source allowlist, config 기반 search default/embedding model getter까지 구현했다.
 - Retrieval allowlist는 `docs/09_Approved_Contracts/*`, `docs/05_Story_Mode/02_거울_속의_손님.md`, approved/implementation-ready game rule docs only로 제한했다. `docs/02_Game_Rules/07_확률_판정.md`는 needs-decision 상태라 제외했다.
 - Task 11로 `accounts`, `profiles`, `matches`, `story`, `ai_profile`, `retrieval`의 initial migration을 생성했다.
+- Task 12로 official API endpoint 13개를 Django URL resolver에 연결했다. `story`, `matches`, `profiles` view/serializer/urls scaffold를 추가했으며, runtime service는 아직 `NotImplementedError` 상태다.
 - Retrieval provider 호출, vector search, query log write path, LLM generation log 연결은 아직 구현하지 않았다.
 - Auth 구현은 보안 요구가 높으므로 Django project scaffolding, dependency contract, token model, CSRF/cookie test가 선행되어야 한다.
 - RAG는 구현 범위에 포함되지만 검색 결과가 룰/승패/인증/단서를 바꾸면 안 된다.
 
 ## Recommended Next Actions
 
-1. 계획 문서 순서대로 Task 12 `Official API endpoint 연결` 계약 테스트를 먼저 작성하되, official API schema와 approved contract 22를 먼저 대조한다.
-2. Auth runtime 구현을 재개하기 전에 request-id envelope middleware, JWT 발급 service, SecurityEvent actor/metadata 정책을 문서 기준으로 확정한다.
+1. Task 13 `API response envelope runtime boundary`를 진행하기 전에 `meta.request_id` 생성 방식, 외부 request id header 수용 여부, middleware 위치를 문서 기준으로 확정한다.
+2. Auth runtime 구현을 재개하기 전에 JWT 발급 service, refresh rotation DB transaction, SecurityEvent actor/metadata 정책을 문서 기준으로 확정한다.
 3. DB runtime 검증을 수행하려면 로컬 PostgreSQL의 `pilot` 사용자 인증 또는 Docker 실행 구성을 먼저 맞춘 뒤 `backend/manage.py migrate`를 실행한다.
