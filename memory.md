@@ -1,4 +1,4 @@
-# Project Memory
+﻿# Project Memory
 
 Updated: 2026-06-04
 
@@ -15,6 +15,10 @@ Updated: 2026-06-04
 - Auth API endpoint/serializer/view/cookie helper 스캐폴딩은 official schema와 보안 금지선 기준으로 추가됐다.
 - Match/Story/Retrieval DB 모델 scaffold와 턴 resolve, RAG chunking/allowlist 구조가 추가됐다.
 - 실제 Auth token 발급/JWT/cookie runtime/rotation service, full official endpoint runtime 연결, 실제 PostgreSQL migration 적용 검증은 아직 남아 있다.
+- 로컬 실행용 `ops/docker/docker-compose.yml`, `ops/docker/backend.Dockerfile`, `ops/env/backend.env.example`가 추가되어 Django API + PostgreSQL + `pgvector` 구성까지 정적 검증됐다.
+- Dockerfile 기반 백엔드 이미지 빌드와 Django 배포 의도는 문서에 반영됐다. 현재 Dockerfile은 로컬/dev 이미지 빌드 시작점이며 production entrypoint나 운영 배포 자동화로 확정하지 않는다.
+- Dockerfile 이미지 빌드와 Django 배포 결정 타이밍은 `docs/09_Approved_Contracts/24_Dockerfile_이미지_빌드_배포_준비_계약.md`에 정리됐다.
+- PvP 모드는 없다. 기존 PvP-ready 구조 보존과 확정 후속 PvP 전제는 폐기됐고, 기준 문서는 `docs/09_Approved_Contracts/19_PvP_미사용_및_구조_정리_계약.md`의 PvP 미사용 계약이다.
 - README는 Obsidian 문서 기준으로 현재 사용 기술, 계약만 있는 기술, 후순위/미사용 기술을 분리한다.
 - ERD에 들어갈 RDB 테이블 구성은 문서와 Django model scaffold 수준에서 존재하지만, 별도 시각적 ERD 산출물은 아직 없다.
 
@@ -23,7 +27,9 @@ Updated: 2026-06-04
 - 승인된 목표 구조는 `backend/`, `frontend/`, `llm/`, `api-spec/`, `docs/`, `tools/`, `output/`, `ops/`를 포함하는 monorepo다.
 - 백엔드 목표 스택은 Django API, PostgreSQL, `pgvector`, HttpOnly JWT cookie, refresh token rotation, Django CSRF middleware다.
 - 1차 MVP 로컬 실행 구성은 Django API + PostgreSQL + PostgreSQL `pgvector`로 제한한다.
-- Redis, WebSocket worker, LLM provider emulator, KAG 전용 저장소, 프론트엔드 구현, LLM provider/prompt/generation 구현은 제외한다.
+- 현재 로컬 Docker 구성도 Django API + PostgreSQL `pgvector`만 포함한다.
+- Dockerfile 기반 image build 검증은 후속 작업에서 `docker build -f ops/docker/backend.Dockerfile -t skn27-backend:local .` 또는 `docker compose -f ops/docker/docker-compose.yml build api`로 수행할 후보 상태다.
+- Redis, WebSocket worker, PvP 모드, LLM provider emulator, KAG 전용 저장소, 프론트엔드 구현, LLM provider/prompt/generation 구현은 제외한다.
 - GraphDB는 사용하지 않는다. KAG도 1차 MVP 제외이며, 후속 후보는 RDB 기반 구조다.
 
 ## Source Documents
@@ -37,6 +43,8 @@ Updated: 2026-06-04
 - `docs/09_Approved_Contracts/21_AI_스토리_시간초과_판정_계약.md`: 서버 `deadline_at` 기준 시간초과.
 - `docs/09_Approved_Contracts/22_API_상세_Schema_계약.md`: official API schema 기준.
 - `docs/09_Approved_Contracts/23_프로젝트_폴더_구조_계약.md`: 팀별 폴더 경계.
+- `docs/09_Approved_Contracts/24_Dockerfile_이미지_빌드_배포_준비_계약.md`: Dockerfile 이미지 빌드와 Django 배포 준비의 결정 타이밍과 구현 게이트.
+- `docs/09_Approved_Contracts/19_PvP_미사용_및_구조_정리_계약.md`: PvP 미사용 결정, PvP-ready 전제 폐기, realtime/Redis/WebSocket 도입 금지 기준.
 
 ## Implemented Structure
 
@@ -81,6 +89,12 @@ Updated: 2026-06-04
   - email 정규화, password hashing, superuser 권한 플래그 검증을 담당하는 `UserManager`.
 - `backend/apps/profiles/models.py`
   - `profiles.Profile`은 `settings.AUTH_USER_MODEL`과 1:1 연결되며 nickname, AI story 전적 요약, style label/display text/update time을 담당한다. 승인 문서에 테이블명과 신규 전적 기본값이 없으므로 `db_table`과 `default=0`은 지정하지 않는다.
+- `ops/docker/docker-compose.yml`
+  - 로컬 MVP 실행 서비스를 Django API와 PostgreSQL `pgvector`로 제한한다. Redis, WebSocket/Channels, LLM provider emulator, KAG store, GraphDB/Neo4j는 포함하지 않는다.
+- `ops/docker/backend.Dockerfile`
+  - `python:3.14-slim` 기반으로 `requirements.txt`를 설치하고 `backend/manage.py runserver 0.0.0.0:8000`을 실행한다.
+- `ops/env/backend.env.example`
+  - 로컬 개발용 Django/PostgreSQL/RAG embedding 설정 예시다. 실제 secret은 포함하지 않고, 추천 embedding model id `text-embedding-3-small`은 코드가 아니라 env 값으로 주입한다.
 
 ## Verification
 
@@ -296,6 +310,21 @@ Updated: 2026-06-04
 - Django/jsonschema install check
   - `C:\Python314\python.exe -c "import importlib.util; print(importlib.util.find_spec('django')); print(importlib.util.find_spec('jsonschema'))"`
   - Result: `None`, `None`.
+- Local Docker/env Task 12B RED
+  - `.\.venv\Scripts\python.exe -m pytest backend\tests\ops\test_local_runtime_contract.py -v`
+  - Result before implementation: 3 failed. Missing `ops/docker/docker-compose.yml`, `ops/docker/backend.Dockerfile`, `ops/env/backend.env.example`.
+- Local Docker/env Task 12B GREEN
+  - `.\.venv\Scripts\python.exe -m pytest backend\tests\ops\test_local_runtime_contract.py -v`
+  - Result after implementation and test alignment: 3 passed.
+- 2026-06-04, `D:\dev\Project\SKN27-4th-3team`
+  - `.\.venv\Scripts\python.exe -m pytest backend\tests -v`
+  - Result: 95 passed.
+- Django runtime check
+  - `.\.venv\Scripts\python.exe backend\manage.py check`
+  - Result: `System check identified no issues (0 silenced).`
+- Migration dry-run check
+  - `.\.venv\Scripts\python.exe backend\manage.py makemigrations accounts profiles matches story ai_profile retrieval --dry-run --check`
+  - Result: no model changes detected; local `pilot` PostgreSQL authentication warning remains.
 
 ## Known Gaps And Risks
 
@@ -305,7 +334,10 @@ Updated: 2026-06-04
 - RAG/LLM must not change rule resolution, win/loss, auth/permission policy, true-name fragments, false clues, or apparition action selection.
 - Django dependency file은 생성됐지만, 현재 로컬 Python 환경에 설치 검증은 하지 않았다.
 - `.venv`에 backend requirements와 pytest를 설치했고, `manage.py check`, migration check, 전체 테스트를 통과했다. 실제 PostgreSQL 연결과 migration 적용 검증은 아직 남아 있다.
-- 추천 RAG embedding model id는 코드에서 제거했으므로, Task 12의 `ops/env/backend.env.example` 또는 배포 설정 문서에 명시해야 한다.
+- 추천 RAG embedding model id는 코드에서 제거했고, 로컬 env template `ops/env/backend.env.example`에 명시했다.
+- 로컬 Docker Compose 구성은 정적 계약 테스트로 검증했지만, `docker compose up`과 컨테이너 내부 DB migration apply는 아직 실행하지 않았다.
+- Docker image build와 Django production 배포는 아직 검증하지 않았다. production 배포 전 결정 타이밍과 구현 게이트는 승인 계약 24번을 따른다.
+- PvP 관련 기존 문서 표현은 핵심 source-of-truth에서 정리했지만, 발표용/generated 문서나 기존 placeholder 폴더에는 잔여 표현이 있을 수 있다. 구현 기준은 승인 계약 19번의 PvP 미사용 결정이다.
 - 실제 CORS 응답 처리는 아직 dependency/middleware가 없으므로, 프론트 origin 요구가 확정되는 API 연결 단계에서 다시 검증해야 한다.
 - API envelope helper는 아직 DRF `Response`, exception handler, middleware/request-id 생성 흐름에 연결되지 않았다.
 - Auth API view는 official schema와 보안 금지선을 고정하는 스캐폴딩이다. 실제 signup/login/logout/refresh/me service, JWT 발급, cookie response runtime은 아직 구현하지 않았다.
@@ -348,4 +380,6 @@ Updated: 2026-06-04
 
 1. Task 13 `API response envelope runtime boundary`를 진행하기 전에 `meta.request_id` 생성 방식, 외부 request id header 수용 여부, middleware 위치를 문서 기준으로 확정한다.
 2. Auth runtime 구현을 재개하기 전에 JWT 발급 service, refresh rotation DB transaction, SecurityEvent actor/metadata 정책을 문서 기준으로 확정한다.
-3. DB runtime 검증을 수행하려면 로컬 PostgreSQL의 `pilot` 사용자 인증 또는 Docker 실행 구성을 먼저 맞춘 뒤 `backend/manage.py migrate`를 실행한다.
+3. Dockerfile 배포 준비는 승인 계약 24번의 Gate A 문서 정렬 이후 Gate B 이미지 빌드 검증으로 진행한다.
+4. Dockerfile 이미지 빌드 검증을 수행하려면 승인 후 `docker build -f ops/docker/backend.Dockerfile -t skn27-backend:local .` 또는 `docker compose -f ops/docker/docker-compose.yml build api`를 실행한다.
+5. DB runtime 검증을 수행하려면 `ops/docker/docker-compose.yml` 기준으로 PostgreSQL `pgvector` 컨테이너를 기동한 뒤 `backend/manage.py migrate`를 실행한다.

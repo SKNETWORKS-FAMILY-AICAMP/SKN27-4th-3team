@@ -1,4 +1,4 @@
-# Backend Implementation Order Implementation Plan
+﻿# Backend Implementation Order Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -30,7 +30,8 @@
 - `frontend/` 구현
 - 최상위 `llm/` 구현
 - LLM provider, prompt, generation 구현
-- WebSocket/PvP/realtime 구현
+- WebSocket/realtime 구현
+- PvP 모드 구현
 - KAG 구현
 - 운영 배포 자동화
 
@@ -107,7 +108,8 @@ Expected: `29 passed`
 - `frontend/` 구현 금지
 - 최상위 `llm/` 구현 금지
 - LLM provider/prompt/generation 구현 금지
-- WebSocket/PvP/realtime 구현 금지
+- WebSocket/realtime 구현 금지
+- PvP 모드 구현 금지
 - KAG 구현 금지
 
 - [x] **Step 3: 중단 조건 확인**
@@ -415,7 +417,7 @@ Expected: PASS
 **Source of truth:**
 
 - `docs/09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약.md`
-- `docs/09_Approved_Contracts/19_PvP_확정_후속_및_구조_보존_계약.md`
+- `docs/09_Approved_Contracts/19_PvP_미사용_및_구조_정리_계약.md`
 - `docs/09_Approved_Contracts/21_AI_스토리_시간초과_판정_계약.md`
 
 - [x] **Step 1: 실패 테스트 작성**
@@ -446,7 +448,7 @@ Expected before implementation: FAIL
 구현 기준:
 
 - AI story 전용 구조로 좁히지 않는다.
-- future PvP를 막는 단일 `match.user_id` 소유권 필드를 만들지 않는다.
+- `match.user_id`처럼 단일 소유자만으로 접근 권한을 판단하지 않는다.
 - 결과 snapshot JSONField에는 `schema_version` 필수.
 
 - [ ] **Step 3: 검증**
@@ -712,6 +714,7 @@ Expected: PASS
 
 **Files:**
 - Create: `ops/docker/docker-compose.yml`
+- Create: `ops/docker/backend.Dockerfile`
 - Create: `ops/env/backend.env.example`
 - Test: `backend/tests/ops/test_local_runtime_contract.py`
 
@@ -741,12 +744,61 @@ Expected before implementation: FAIL
 - env template에는 secret 실제값을 넣지 않는다.
 - production secure cookie는 `Secure=true` 필수, local/dev는 `Secure=false` 허용.
 - CORS/CSRF origin은 명시 allowlist만 허용한다.
+- `ops/docker/backend.Dockerfile`은 백엔드 이미지 빌드 시작점으로 둔다.
+- 현재 Dockerfile entrypoint는 로컬/dev 기준이며 production 배포 entrypoint로 확정하지 않는다.
 
 - [ ] **Step 3: 검증**
 
 Run: `C:\Python314\python.exe -m pytest backend\tests\ops\test_local_runtime_contract.py -v`
 
 Expected: PASS
+
+---
+
+### Task 12C: Dockerfile 이미지 빌드와 Django 배포 준비 문서화
+
+**Files:**
+- Read: `docs/09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약.md`
+- Read: `docs/09_Approved_Contracts/23_프로젝트_폴더_구조_계약.md`
+- Modify if needed: `docs/03_Backend/99_Backend_구현_확정.md`
+- Modify if needed: `README.md`
+- Modify if needed: `memory.md`
+
+**Source of truth:**
+
+- 현재 승인 범위: 로컬 Docker Compose와 Dockerfile 기반 이미지 빌드 준비
+- 현재 제외 범위: 운영 배포 자동화와 production 배포 구현
+- 결정 게이트: `docs/09_Approved_Contracts/24_Dockerfile_이미지_빌드_배포_준비_계약.md`
+
+- [ ] **Step 1: 문서 확인**
+
+확인:
+
+- `ops/docker/`가 Dockerfile과 image build 후보를 담당하는지
+- 현재 Dockerfile이 production entrypoint로 확정되어 있지 않음을 문서화했는지
+- Django production 배포 전에 확정해야 하는 항목을 남겼는지
+
+- [ ] **Step 2: 후속 배포 계약 전제 기록**
+
+production 배포 전 확정 필요:
+
+- 배포 대상 환경
+- image registry와 tag 규칙
+- WSGI/ASGI server
+- static/media 처리
+- secret/env 주입 방식
+- migration 실행 전략
+- health check
+- reverse proxy, TLS, domain
+- CI/CD 또는 수동 배포 절차
+
+- [ ] **Step 3: 검증**
+
+Run: `git diff --check`
+
+Expected: PASS
+
+Docker image build는 네트워크/image pull이 필요할 수 있으므로 별도 실행 승인 후 검증한다.
 
 ---
 
@@ -771,7 +823,8 @@ Expected: all tests PASS
 - LLM/RAG/embedding이 rule outcome을 바꾸지 않는다.
 - 프론트 구현이 없다.
 - LLM generation 구현이 없다.
-- WebSocket/PvP/realtime 구현이 없다.
+- WebSocket/realtime 구현이 없다.
+- PvP 모드 구현이 없다.
 - KAG 구현이 없다.
 
 - [ ] **Step 3: 남은 리스크 기록**
@@ -826,7 +879,7 @@ Expected: all tests PASS
 
 이 순서가 안전한 이유:
 
-- Auth와 Match 권한 구조가 API와 PvP-ready 구조의 기반이다.
+- Auth와 Match 권한 구조가 AI 스토리 API 구조의 기반이다.
 - Story 공식 내용은 일부 문서가 `needs-decision`이므로 뒤로 미룬다.
 - RAG는 포함 범위지만 rule authority가 아니므로 core 저장/권한 이후에 붙인다.
 
@@ -850,7 +903,7 @@ Expected: all tests PASS
 
 확인한 내용:
 
-- `frontend/`, 최상위 `llm/`, LLM provider/prompt/generation, WebSocket/PvP/realtime, KAG 구현은 현재 범위에서 제외한다.
+- `frontend/`, 최상위 `llm/`, LLM provider/prompt/generation, WebSocket/realtime, PvP 모드, KAG 구현은 현재 범위에서 제외한다.
 - `backend/manage.py`, `backend/config/settings.py`, `pyproject.toml`, `requirements*.txt`는 아직 없다.
 - Task 1의 Django/DRF/JWT/jsonschema/pgvector 의존성 버전은 구현 전 오너 확인이 필요하다.
 
@@ -1431,7 +1484,7 @@ Expected: all tests PASS
 - `api-spec/pilot-mvp-api.official.jsonc`
 - `docs/03_Backend/03_매치와_턴_저장.md`
 - `docs/09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약.md`
-- `docs/09_Approved_Contracts/19_PvP_확정_후속_및_구조_보존_계약.md`
+- `docs/09_Approved_Contracts/19_PvP_미사용_및_구조_정리_계약.md`
 - `docs/09_Approved_Contracts/21_AI_스토리_시간초과_판정_계약.md`
 
 변경 내용:

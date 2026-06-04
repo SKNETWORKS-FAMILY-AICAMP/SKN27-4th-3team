@@ -1,21 +1,21 @@
----
+﻿---
 title: "Django Auth 보안 계약"
 status: "approved"
 type: "approved-django-auth-security-contract"
-source: "[[03_Backend/02_인증과_토큰]], [[09_Approved_Contracts/10_Auth_토큰_전달_기준]], [[09_Approved_Contracts/11_CSRF_정책_기준]], [[09_Approved_Contracts/19_PvP_확정_후속_및_구조_보존_계약]]"
+source: "[[03_Backend/02_인증과_토큰]], [[09_Approved_Contracts/10_Auth_토큰_전달_기준]], [[09_Approved_Contracts/11_CSRF_정책_기준]], [[09_Approved_Contracts/19_PvP_미사용_및_구조_정리_계약]]"
 created: "2026-06-02"
-updated: "2026-06-02"
+updated: "2026-06-04"
 ---
 
 # Django Auth 보안 계약
 
-이 문서는 1차 MVP와 future PvP를 위한 Django 인증/세션/CSRF 보안 기준이다.
+이 문서는 1차 MVP Django 인증/세션/CSRF 보안 기준이다.
 
 보안은 구현 편의보다 우선한다.
 
 ## 결정
 
-보수적 PvP-ready Auth 기준을 사용한다.
+일반 웹 서비스 기준의 보수적 Auth 정책을 사용한다.
 
 ## 적용 범위
 
@@ -25,7 +25,7 @@ updated: "2026-06-02"
 - session 확인
 - CSRF token 발급
 - 모든 state-changing endpoint
-- future PvP match 접근 권한과 제출 보안
+- AI 스토리 match 접근 권한과 제출 보안
 
 ## Token 전달
 
@@ -123,9 +123,9 @@ CORS origin도 명시 allowlist만 허용한다.
 - 권한 없는 match 접근 시도
 - participant가 아닌 사용자의 행동 제출 시도
 
-## PvP 보안 제약
+## Match 보안 제약
 
-PvP를 전제로 아래 기준을 1차 MVP부터 적용한다.
+AI 스토리 match에도 아래 기준을 적용한다.
 
 - match 접근 권한은 participant membership으로 검증한다.
 - 행동 제출은 participant 기준으로 저장한다.

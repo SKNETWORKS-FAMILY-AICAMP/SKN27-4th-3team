@@ -4,7 +4,7 @@ status: "needs-decision"
 type: "implementation-confirmation"
 source: "[[pilot]]"
 created: "2026-05-30"
-updated: "2026-06-02"
+updated: "2026-06-04"
 ---
 
 # MVP 구현 확정 문서
@@ -42,3 +42,4 @@ Django Auth 보안은 [[09_Approved_Contracts/20_Django_Auth_보안_계약]]을 
 ## 현재 남은 구현 전 결정
 
 - 프론트엔드 구현과 LLM generation 구현을 제외한 백엔드/API 구현 전 남은 오너 결정 없음
+- production 배포 구현 전 결정 게이트는 [[09_Approved_Contracts/24_Dockerfile_이미지_빌드_배포_준비_계약]]을 따른다. 이 항목은 백엔드/API MVP 구현 착수를 막지 않지만 production 배포 구현 전에는 반드시 확정한다.

@@ -8,9 +8,9 @@
 
 | 구분 | 항목 | 상태 |
 |---|---|---|
-| 현재 사용/구현 준비 | Django, Django REST Framework, PostgreSQL 기준 RDB 모델, `retrieval` 앱, PostgreSQL `pgvector` 준비, AI Profile 지표, 공식 API schema, pytest 계약 테스트 | 1차 MVP 백엔드/RAG/AI Profile 구현 준비 범위 |
+| 현재 사용/구현 준비 | Django, Django REST Framework, PostgreSQL 기준 RDB 모델, `retrieval` 앱, PostgreSQL `pgvector` 준비, AI Profile 지표, 공식 API schema, pytest 계약 테스트, 로컬 Docker Compose, 백엔드 Dockerfile | 1차 MVP 백엔드/RAG/AI Profile 구현 준비 범위 |
 | 계약은 있으나 현재 저장소 구현 없음 | React/TypeScript/Vite 프론트엔드, 프론트 route/API 연결 기준 | 승인 계약은 있으나 실제 프론트 구현은 현재 저장소에 없음 |
-| 후순위/미사용 | 실제 LLM provider/prompt/generation, KAG 구현, GraphDB, Redis/Channels/WebSocket/PvP realtime, 운영 배포 자동화 | 1차 MVP 제외 |
+| 후순위/미사용 | 실제 LLM provider/prompt/generation, KAG 구현, GraphDB, Redis/Channels/WebSocket, PvP 모드, 운영 배포 자동화 | 1차 MVP 제외 또는 도입 대상 아님 |
 
 GraphDB는 사용하지 않습니다. KAG도 1차 MVP 구현 범위가 아니며, 후속 도입 시에도 현재 문서 기준은 별도 GraphDB가 아니라 RDB 기반 후보 구조입니다.
 
@@ -47,6 +47,7 @@ GraphDB는 사용하지 않습니다. KAG도 1차 MVP 구현 범위가 아니며
 | JSON 검증 | `jsonschema` | JSONField payload 검증 경계 |
 | API 계약 | official JSONC/JSON schema | 프론트와 백엔드가 공유할 endpoint/response shape |
 | 테스트 | pytest | 승인 계약 기반 백엔드 테스트 |
+| Docker 실행 준비 | Docker Compose, backend Dockerfile | 로컬/dev 실행과 이미지 빌드 준비. production 배포는 후속 계약 필요 |
 
 ## 현재 사용하지 않는 기술
 
@@ -56,8 +57,23 @@ GraphDB는 사용하지 않습니다. KAG도 1차 MVP 구현 범위가 아니며
 | LLM generation | `docs/07_Deferred/04_LLM_후순위_설계.md` 기준 후순위 | provider, prompt, generation 구현 없음 |
 | KAG | 1차 MVP 제외 | 구현하지 않음 |
 | GraphDB | 사용하지 않음 | 도입 대상 아님 |
-| Redis/Channels/WebSocket | realtime/PvP 후순위 | 1차 MVP 로컬 실행 구성에서 제외 |
+| Redis/Channels/WebSocket | PvP 모드 없음, realtime 구현 없음 | 1차 MVP 로컬 실행 구성에서 제외 |
 | 운영 배포 자동화 | 1차 MVP 제외 | 현재 범위 아님 |
+
+## Docker와 배포 상태
+
+현재 `ops/docker/backend.Dockerfile`은 백엔드 이미지 빌드의 시작점입니다.
+
+다만 현재 entrypoint는 로컬/dev 기준 Django `runserver`이며 production 배포 entrypoint로 확정하지 않습니다.
+
+후속 작업에서 먼저 검증할 명령 후보는 아래와 같습니다.
+
+```powershell
+docker build -f ops/docker/backend.Dockerfile -t skn27-backend:local .
+docker compose -f ops/docker/docker-compose.yml build api
+```
+
+실제 Django production 배포를 진행하려면 배포 대상, WSGI/ASGI server, static/media 처리, secret/env 주입, migration 실행, health check, reverse proxy/TLS, image registry/tag, CI/CD 또는 수동 배포 절차를 별도 계약으로 확정해야 합니다.
 
 ## MVP 범위
 
@@ -72,13 +88,13 @@ GraphDB는 사용하지 않습니다. KAG도 1차 MVP 구현 범위가 아니며
 - RAG 검색용 `retrieval` 앱 구조
 - RAG 문서 chunk 저장, query log 저장
 - PostgreSQL `pgvector` 기반 검색 준비
-- PvP-ready Auth/Match/Participant/Turn 구조 보존
+- AI 스토리 기준 Auth/Match/Participant/Turn 구조
 
 ### 제외
 
 - `우물 밑의 목소리`, `문밖의 어머니` 구현
 - 프론트엔드 실제 구현
-- 실시간 PvP, 매칭 대기열, WebSocket 대전
+- PvP 모드, 매칭 대기열, WebSocket 대전
 - KAG 구현
 - GraphDB 도입
 - 실제 LLM provider/prompt/generation 구현
@@ -253,7 +269,7 @@ ERD는 두 단계로 구분해서 봐야 합니다.
 
 | 테이블 | 주요 필드 | 목적 |
 |---|---|---|
-| `matches` | mode, status, winner_participant_id, started_at, ended_at | AI/PvP 공통 매치 |
+| `matches` | mode, status, winner_participant_id, started_at, ended_at | AI 스토리 매치 |
 | `match_participants` | match_id, participant_type, user_id, apparition_id, side, 자원 수치 | human/apparition 참가자 |
 | `turns` | match_id, turn_number, status, deadline_at, resolved_at | 턴 상태 |
 | `action_submissions` | turn_id, participant_id, action_code, info_target_key, submitted_at, client_nonce | 행동 제출과 중복 방지 |
@@ -380,7 +396,7 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 | 의식 결투 | 턴 상태 조회와 행동 제출 | API 계약 존재, 프론트 구현 없음 |
 | 결과 | 승패, 로그, 스타일 요약 조회 | API 계약 존재, 프론트 구현 없음 |
 | 프로필 | 내 프로필과 전적 요약 조회 | API 계약 존재, 프론트 구현 없음 |
-| PvP 매칭 | 실시간 상대 찾기 | 1차 MVP 제외 |
+| PvP 매칭 | 실시간 상대 찾기 | 도입 대상 아님 |
 
 ## 테스트 시나리오와 결과
 
@@ -423,7 +439,7 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 3. 시스템 워크프레임
    - Django API, PostgreSQL, pgvector
    - 서버 권위 룰 엔진
-   - PvP-ready Match 구조
+   - AI 스토리 Match 구조
    - 프론트와 LLM은 별도 계약/후순위 경계로 분리
 4. RDB/ERD 구성
    - Auth/Profile
@@ -470,7 +486,7 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 - 실제 DB migration과 PostgreSQL 연결 검증은 별도 필요합니다.
 - `story/cases`, `matches`, `profile` 등 전체 official endpoint runtime 연결은 계속 구현 대상입니다.
 - 프론트엔드 실제 구현은 현재 저장소에 아직 없습니다.
-- LLM generation, KAG, WebSocket/PvP는 1차 MVP 제외입니다.
+- LLM generation, KAG, WebSocket, PvP 모드는 1차 MVP 제외 또는 도입 대상이 아닙니다.
 - 사용자 화면에서 RAG 출처를 어떻게 표시할지는 프론트 구현 단계에서 확정이 필요합니다.
 - 발표용 시각적 ERD 산출물은 아직 없습니다.
 

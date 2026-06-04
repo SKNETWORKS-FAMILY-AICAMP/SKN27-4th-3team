@@ -4,7 +4,7 @@ status: "implementation-ready"
 type: "implementation-confirmation"
 source: "[[pilot]]"
 created: "2026-05-30"
-updated: "2026-06-02"
+updated: "2026-06-04"
 ---
 
 # Backend 구현 확정
@@ -13,7 +13,8 @@ updated: "2026-06-02"
 
 ## 확정 전 조건
 
-- 현재 남은 백엔드 구현 전 결정 없음
+- 현재 남은 백엔드/RAG/AI Profile 구현 전 결정 없음
+- Dockerfile 기반 이미지 빌드와 Django 배포는 후속 배포 작업 전 별도 계약 확정 필요
 
 ## 확정된 API/Auth 조건
 
@@ -56,6 +57,8 @@ updated: "2026-06-02"
 | JSONField 검증 | `schema_version` 필수, Python `jsonschema` |
 | 로컬 Docker Compose | Django API + PostgreSQL + `pgvector` |
 | 로컬 Docker Compose 제외 | Redis, WebSocket worker, LLM provider emulator, KAG 전용 저장소 |
+| Dockerfile 이미지 빌드 | 후속 배포 준비 후보. 로컬/dev 이미지 빌드 검증부터 진행 |
+| Django production 배포 | 배포 대상, WSGI/ASGI server, static/media, secret, migration, health check 확정 전 구현 보류 |
 | local/dev Secure cookie | `Secure=false` 허용 |
 | production Secure cookie | `Secure=true` 필수 |
 | SameSite | `Lax` |
@@ -84,3 +87,28 @@ Auth 보안 상세 기준은 [[09_Approved_Contracts/20_Django_Auth_보안_계�
 API 상세 schema 기준은 [[09_Approved_Contracts/22_API_상세_Schema_계약]]을 따른다.
 
 프로젝트 폴더 구조 기준은 [[09_Approved_Contracts/23_프로젝트_폴더_구조_계약]]을 따른다.
+
+## Dockerfile 기반 배포 준비 메모
+
+`ops/docker/backend.Dockerfile`은 백엔드 이미지 빌드 시작점으로 둔다.
+
+현재 로컬/dev entrypoint는 Django `runserver`이며 production entrypoint로 확정하지 않는다.
+
+Dockerfile 이미지 빌드와 Django 배포 결정 타이밍은 [[09_Approved_Contracts/24_Dockerfile_이미지_빌드_배포_준비_계약]]을 따른다.
+
+후속 배포 작업에서 먼저 검증할 명령 후보는 아래와 같다.
+
+- `docker build -f ops/docker/backend.Dockerfile -t skn27-backend:local .`
+- `docker compose -f ops/docker/docker-compose.yml build api`
+
+운영 배포를 실제 구현하려면 아래 항목을 먼저 확정한다.
+
+- 배포 대상 환경
+- image registry와 tag 규칙
+- WSGI/ASGI server
+- static/media 처리
+- secret/env 주입 방식
+- migration 실행 전략
+- health check
+- reverse proxy, TLS, domain
+- CI/CD 또는 수동 배포 절차

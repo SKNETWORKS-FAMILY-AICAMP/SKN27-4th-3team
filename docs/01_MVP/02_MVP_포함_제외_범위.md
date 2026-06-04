@@ -1,10 +1,10 @@
----
+﻿---
 title: "MVP 포함 제외 범위"
 status: "draft"
 type: "mvp-boundary"
 source: "[[pilot]]"
 created: "2026-05-30"
-updated: "2026-06-02"
+updated: "2026-06-04"
 ---
 
 # MVP 포함 제외 범위
@@ -30,13 +30,13 @@ updated: "2026-06-02"
 - RAG 문서 chunk 저장
 - RAG query log 저장
 - PostgreSQL `pgvector` 기반 검색 준비
-- PvP-ready Auth/Match/Participant/Turn 구조 보존
+- AI 스토리 기준 Auth/Match/Participant/Turn 구조
 
 ## 제외 범위
 
 - `우물 밑의 목소리` 구현
 - `문밖의 어머니` 구현
-- 실시간 PvP
+- PvP 모드
 - 매칭 대기열
 - WebSocket 실시간 대전
 - KAG
@@ -51,6 +51,6 @@ updated: "2026-06-02"
 
 RAG는 검색 구조와 로그를 준비하지만, 룰 판정과 승패에는 관여하지 않는다.
 
-PvP는 1차 MVP 구현 범위에서 제외하지만 선택적 후순위가 아니다.
+PvP는 후속 확장 후보가 아니다.
 
-PvP는 확정 후속 핵심 기능이므로 Auth/Match/Participant/Turn 구조는 [[09_Approved_Contracts/19_PvP_확정_후속_및_구조_보존_계약]]을 따른다.
+Auth/Match/Participant/Turn 구조는 [[09_Approved_Contracts/19_PvP_미사용_및_구조_정리_계약]]의 PvP 미사용 결정을 따른다.

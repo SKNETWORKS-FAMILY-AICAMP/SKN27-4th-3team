@@ -1,10 +1,10 @@
----
+﻿---
 title: "백엔드 RAG AI Profile 구현 계약"
 status: "approved"
 type: "approved-backend-rag-ai-profile-implementation-contract"
 source: "[[01_MVP/04_MVP_확정_필요_항목]], [[03_Backend/99_Backend_구현_확정]], [[06_AI_Profile/99_AI_Profile_구현_확정]], [[09_Approved_Contracts/09_RAG_도입_기준]]"
 created: "2026-06-02"
-updated: "2026-06-02"
+updated: "2026-06-04"
 ---
 
 # 백엔드 RAG AI Profile 구현 계약
@@ -36,9 +36,28 @@ updated: "2026-06-02"
 - WebSocket/PvP/realtime 구현
 - 운영 배포 자동화
 
-PvP는 1차 MVP 구현 범위에서는 제외하지만 확정 후속 핵심 기능이다.
+단, Dockerfile을 이용한 백엔드 이미지 빌드와 Django 배포 준비는 후속 작업 후보로 둔다.
 
-Auth/Match/Participant/Turn 구조는 [[09_Approved_Contracts/19_PvP_확정_후속_및_구조_보존_계약]]에 따라 PvP-ready로 보존한다.
+이 문서에서 현재 확정된 범위는 로컬 실행 구성과 배포 준비 경계까지다.
+
+Dockerfile 이미지 빌드와 배포 결정 타이밍은 [[09_Approved_Contracts/24_Dockerfile_이미지_빌드_배포_준비_계약]]을 따른다.
+
+production 배포 구현은 아래 항목이 별도 계약으로 확정되기 전까지 진행하지 않는다.
+
+- 배포 대상 환경
+- image registry와 image tag 규칙
+- Django production entrypoint
+- WSGI/ASGI server 선택
+- static/media 처리 방식
+- secret/env 주입 방식
+- migration 실행 전략
+- health check 기준
+- reverse proxy, TLS, domain 구성
+- CI/CD 또는 운영 배포 자동화 방식
+
+PvP 모드는 없다.
+
+Auth/Match/Participant/Turn 구조는 [[09_Approved_Contracts/19_PvP_미사용_및_구조_정리_계약]]에 따라 AI 스토리 매치 기준으로 정리한다.
 
 ## 사용자 모델
 
@@ -65,9 +84,7 @@ Auth/Match/Participant/Turn 구조는 [[09_Approved_Contracts/19_PvP_확정_후�
 | `user_id` | human 참가자에서만 사용한다. apparition 참가자에서는 nullable이다. |
 | `apparition_id` | apparition 참가자에서 사용한다. human 참가자에서는 nullable이다. |
 
-PvP에서는 두 참가자가 모두 `human`일 수 있다.
-
-따라서 매치 권한과 행동 제출은 user 단독 기준이 아니라 participant 기준으로 처리한다.
+매치 권한과 행동 제출은 human player participant와 apparition participant 기준으로 처리한다.
 
 ## 핵심 저장 구조
 
@@ -142,6 +159,19 @@ official 명세는 [[09_Approved_Contracts/05_API_명세_관리_기준]], [[09_A
 - WebSocket/Channels 전용 worker
 - LLM provider emulator
 - KAG 전용 저장소
+
+`ops/docker/backend.Dockerfile`은 백엔드 이미지 빌드의 시작점으로 둘 수 있다.
+
+다만 현재 로컬/dev 기준 entrypoint는 Django `runserver`이며, production 배포 entrypoint로 확정하지 않는다.
+
+production 배포용 이미지는 별도 배포 계약에서 WSGI/ASGI server, process model, static 처리, health check, migration 전략을 확정한 뒤 조정한다.
+
+이미지 빌드 검증은 후속 작업에서 아래 중 하나로 수행한다.
+
+- `docker build -f ops/docker/backend.Dockerfile -t skn27-backend:local .`
+- `docker compose -f ops/docker/docker-compose.yml build api`
+
+상세 결정 게이트는 [[09_Approved_Contracts/24_Dockerfile_이미지_빌드_배포_준비_계약]]을 따른다.
 
 ## Cookie와 CSRF
 
