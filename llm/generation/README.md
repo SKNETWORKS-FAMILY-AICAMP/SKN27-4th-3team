@@ -6,6 +6,8 @@
 
 백엔드 연결용 adapter 함수는 `adapter.py`에 둔다.
 
+실제 실행 프롬프트 템플릿은 `../prompts/prompt_templates.py`에서 관리한다.
+
 Groq adapter 입출력과 실패 처리 기준은 `adapter_contract.md`를 따른다.
 
 Groq 실제 연결 전 준비 절차는 `groq_setup_checklist.md`를 따른다.

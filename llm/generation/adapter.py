@@ -15,6 +15,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from llm.prompts.prompt_templates import SUPPORTED_PURPOSES, build_generation_input
+
 try:
     from groq import APIConnectionError, APIStatusError, APITimeoutError, Groq
 except ImportError:  # pragma: no cover - 로컬 실험 환경별 선택 의존성
@@ -24,7 +26,6 @@ except ImportError:  # pragma: no cover - 로컬 실험 환경별 선택 의존�
     Groq = None
 
 
-SUPPORTED_PURPOSES = {"result_summary", "turn_flavor_text", "style_summary", "match_log_summary"}
 RESULT_REASONS = {"seal_success", "sanity_zero", "curse_marks_loss", "turn_limit", "unresolved"}
 DEMO_REFERENCE_NAMES = {"이안", "피티", "피치", "엘리자베스", "무명(無名)의 저주", "무명의 저주"}
 
@@ -119,183 +120,6 @@ def generate_llm_ui_text(
     llm_options = options or read_options(repo_root())
     generation_result = generate(generation_input, llm_options, dry_run)
     return frontend_payload(generation_input, generation_result)
-
-
-def join_story_result_text(value: Any) -> str:
-    if isinstance(value, list):
-        return "\n".join(str(item) for item in value)
-    return str(value or "")
-
-
-def build_generation_input(payload: dict[str, Any]) -> dict[str, Any]:
-    purpose = payload["purpose"]
-    if purpose == "result_summary":
-        return build_result_summary_input(payload)
-    if purpose == "turn_flavor_text":
-        return build_turn_flavor_text_input(payload)
-    if purpose == "style_summary":
-        return build_style_summary_input(payload)
-    if purpose == "match_log_summary":
-        return build_match_log_summary_input(payload)
-    raise ValueError(f"지원하지 않는 purpose입니다: {purpose}")
-
-
-def base_system_prompt(extra: str) -> str:
-    return "\n".join(
-        [
-            "너는 게임 판정자가 아니라 서버 판정 이후의 보조 기록자다.",
-            "서버가 확정한 결과만 사용해 한국어로 작성한다.",
-            "승패, 수치 변화, 진명 조각 획득, 거짓 단서 판정은 새로 판단하지 않는다.",
-            "공식 설정이나 룰을 추가하지 않고, 입력에 없는 사실을 만들지 않는다.",
-            "데모 스토리 참고 문서는 분위기 참고용이며 입력에 없는 인물명, 사건명, 과거사를 생성하지 않는다.",
-            extra,
-        ]
-    )
-
-
-def build_result_summary_input(payload: dict[str, Any]) -> dict[str, Any]:
-    match_result = payload["match_result"]
-    resources = match_result["final_resources"]
-    story_result_text = join_story_result_text(match_result.get("story_result_text"))
-    user_prompt = f"""아래 서버 결과를 바탕으로 결과 화면용 서사 요약을 작성해줘.
-
-[사건]
-{match_result["case"]["title"]}
-
-[서버 판정]
-- 결과: {match_result["result"]}
-- 종료 사유: {match_result["result_reason"]}
-- 최종 이성: {resources["sanity"]}
-- 최종 의식력: {resources["ritual_power"]}
-- 최종 저주 흔적: {resources["curse_marks"]}
-- 획득한 진명 조각 수: {resources["true_name_fragments"]}
-- 턴 수: {len(match_result.get("turn_logs", []))}
-
-[정적 fallback 문장]
-{story_result_text}
-
-[금지]
-- 승패를 바꾸지 않는다.
-- 수치와 단서 상태를 새로 판단하지 않는다.
-- 공식 설정을 추가하지 않는다.
-
-출력은 2~4문장으로 작성한다."""
-    return {
-        "purpose": "result_summary",
-        "system_prompt": base_system_prompt("세계관 톤은 어둡고 절제된 미스터리 분위기를 유지한다."),
-        "user_prompt": user_prompt,
-        "context_refs": [],
-        "payload": payload,
-    }
-
-
-def build_style_summary_input(payload: dict[str, Any]) -> dict[str, Any]:
-    metrics = payload["style_summary"]["metrics"]
-    user_prompt = f"""아래 스타일 지표를 바탕으로 플레이 스타일 요약을 작성해줘.
-
-[스타일 지표]
-- 공격성: {metrics["aggression"]}
-- 방어성: {metrics["defense"]}
-- 정보 집중: {metrics["insight_focus"]}
-- 기만성: {metrics["deception"]}
-- 위험 선호: {metrics["risk_preference"]}
-- 침묵 의존: {metrics["silence_reliance"]}
-- 위기 방어율: {metrics["crisis_guard_rate"]}
-- 위기 계약율: {metrics["crisis_contract_rate"]}
-- 늦은 선택률: {metrics["late_choice_rate"]}
-
-[금지]
-- 지표를 새로 계산하지 않는다.
-- 플레이어의 실제 성격을 단정하지 않는다.
-- 승패 원인을 LLM이 판정하지 않는다.
-
-출력은 1~3문장으로 작성한다."""
-    return {
-        "purpose": "style_summary",
-        "system_prompt": base_system_prompt("플레이어를 비난하지 않고, 관찰 가능한 경향만 차분하게 표현한다."),
-        "user_prompt": user_prompt,
-        "context_refs": [],
-        "payload": payload,
-    }
-
-
-def build_turn_flavor_text_input(payload: dict[str, Any]) -> dict[str, Any]:
-    turn_result = payload["turn_result"]
-    player_action = turn_result["player_action"]
-    public_log = turn_result["public_log"]
-    user_prompt = f"""아래 서버 턴 결과를 바탕으로 화면에 표시할 짧은 연출 문구를 작성해줘.
-
-[턴 정보]
-- turn_number: {turn_result["turn_number"]}
-- apparition_alias: {payload.get("apparition_alias")}
-- action_code: {player_action["code"]}
-- info_target_key: {player_action.get("info_target_key")}
-- effect_code: {turn_result.get("effect_code")}
-- match_outcome: {turn_result["match_outcome"]}
-- timeout_applied: {player_action.get("timeout_applied")}
-
-[서버 공개 로그]
-{public_log["text"]}
-
-[표시 위치]
-{payload.get("display_slot")}
-
-[금지]
-- 서버 공개 로그의 의미를 바꾸지 않는다.
-- 행동 성공/실패를 새로 판단하지 않는다.
-- 단서 획득 여부나 진위를 새로 말하지 않는다.
-- 다음 괴이 행동을 예고하지 않는다.
-- 안내문처럼 설명하지 않는다.
-- 질문형이나 추측형으로 쓰지 않는다.
-- 공개 로그에 없는 비밀, 단서, 진실을 덧붙이지 않는다.
-- 공개 로그에 없는 파괴, 소유, 원인 관계를 덧붙이지 않는다.
-
-출력은 1~2줄로 작성한다.
-따옴표, 번호, markdown 없이 문구만 출력한다.
-전체 20~90자로 작성한다.
-각 줄은 45자 이하로 작성한다."""
-    return {
-        "purpose": "turn_flavor_text",
-        "system_prompt": base_system_prompt("문장은 짧고 어둡게, 게임 UI 위에 얹히는 속삭임처럼 작성한다."),
-        "user_prompt": user_prompt,
-        "context_refs": [],
-        "payload": payload,
-    }
-
-
-def build_match_log_summary_input(payload: dict[str, Any]) -> dict[str, Any]:
-    log_lines = []
-    for item in payload.get("turn_logs", []):
-        log_lines.append(
-            "- {turn}턴: player_action={player_action}, info_target_key={info_target_key}, "
-            "match_outcome={match_outcome}, public_log={public_log}".format(**item)
-        )
-    user_prompt = f"""아래 매치 로그를 운영자 확인용으로 요약해줘.
-
-[매치 정보]
-- match_id: {payload["match_id"]}
-- case_id: {payload["case_id"]}
-- 결과: {payload["result"]}
-- 종료 사유: {payload["result_reason"]}
-- 턴 수: {payload["turn_count"]}
-- 시간초과 횟수: {payload["timeout_count"]}
-
-[주요 로그]
-{chr(10).join(log_lines)}
-
-[금지]
-- 서버 판정을 바꾸지 않는다.
-- 로그에 없는 행동이나 원인을 만들지 않는다.
-- 보상, 랭킹, 매칭 판단을 하지 않는다.
-
-출력은 핵심 흐름 3~5줄로 작성한다."""
-    return {
-        "purpose": "match_log_summary",
-        "system_prompt": base_system_prompt("문장은 간결하고 운영자가 검토하기 쉽게 작성한다."),
-        "user_prompt": user_prompt,
-        "context_refs": [],
-        "payload": payload,
-    }
 
 
 def result_payload(
@@ -617,4 +441,3 @@ def classify_groq_sdk_error(error: Exception) -> dict[str, Any] | None:
 
 def default_fixture_path(root: Path, purpose: str) -> Path:
     return root / "llm" / "fixtures" / f"{purpose}.sample.json"
-

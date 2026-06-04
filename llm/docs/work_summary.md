@@ -87,6 +87,7 @@ PDF `game_scenario_the_nameless_curse.pdf`를 바탕으로 `무명(無名)의 �
 | `llm/docs/llm_plan.md` | LLM purpose, 출력 계약, fallback, provider 기준 |
 | `llm/docs/demo_story_reference.md` | `무명(無名)의 저주` 본 스토리 후보 참고 |
 | `llm/docs/frontend_handoff.md` | React 프론트 팀원 전달용 LLM 응답 계약과 확인 사항 |
+| `llm/prompts/prompt_templates.py` | 실제 Groq 호출에 사용하는 프롬프트 조립 코드 |
 | `llm/prompts/prompt_assembly.md` | fixture를 prompt로 조립하는 규칙 |
 | `llm/generation/adapter_contract.md` | Groq adapter 입출력과 실패 처리 계약 |
 | `llm/generation/config_contract.md` | LLM 환경 변수와 key 처리 계약 |

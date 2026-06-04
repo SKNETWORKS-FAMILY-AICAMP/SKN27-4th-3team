@@ -4,6 +4,8 @@
 
 백엔드에서 import 가능한 adapter 코드는 `adapter.py`에 둔다.
 
+실제 실행 프롬프트 템플릿은 `../prompts/prompt_templates.py`에 둔다.
+
 로컬 실험용 CLI 코드는 `scripts/test_groq_generation.py`에 둔다.
 
 ## 기본 원칙
