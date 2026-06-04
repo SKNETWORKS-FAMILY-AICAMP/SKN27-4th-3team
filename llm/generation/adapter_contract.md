@@ -2,7 +2,9 @@
 
 이 문서는 Groq 기반 LLM adapter의 입출력과 실패 처리 기준을 정리한다.
 
-로컬 실험용 API 호출 코드는 `scripts/test_groq_generation.py`에 둔다.
+백엔드에서 import 가능한 adapter 코드는 `adapter.py`에 둔다.
+
+로컬 실험용 CLI 코드는 `scripts/test_groq_generation.py`에 둔다.
 
 ## 기본 원칙
 
@@ -17,6 +19,18 @@
 ```text
 generate(purpose, input, options) -> LlmGenerationResult
 ```
+
+백엔드 연결용 공개 함수:
+
+```python
+from llm.generation.adapter import generate_llm_ui_text
+
+llm = generate_llm_ui_text("turn_flavor_text", turn_payload)
+```
+
+`generate_llm_ui_text()`는 프론트 전달용 래핑 결과를 반환한다.
+
+내부 generation result가 필요하면 `generate_llm_result()`를 사용한다.
 
 ## purpose
 

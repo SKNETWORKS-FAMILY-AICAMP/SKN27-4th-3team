@@ -90,6 +90,7 @@ PDF `game_scenario_the_nameless_curse.pdf`를 바탕으로 `무명(無名)의 �
 | `llm/prompts/prompt_assembly.md` | fixture를 prompt로 조립하는 규칙 |
 | `llm/generation/adapter_contract.md` | Groq adapter 입출력과 실패 처리 계약 |
 | `llm/generation/config_contract.md` | LLM 환경 변수와 key 처리 계약 |
+| `llm/generation/adapter.py` | 백엔드 import용 LLM adapter 함수 |
 | `llm/generation/scripts/test_groq_generation.py` | fixture 기반 prompt 조립과 Groq 호출 실험 CLI |
 | `llm/generation/groq_setup_checklist.md` | Groq 실제 연결 전 체크리스트 |
 | `llm/evaluation/guardrail_checklist.md` | LLM 금지선 검사 기준 |
@@ -130,6 +131,7 @@ llm/fixtures/match_log_summary.sample.json
 - placeholder API key는 `status=skipped`, `reason=invalid_api_key_format`으로 처리됨
 - `--frontend-output` 옵션으로 프론트 전달용 `enabled`, `text`, `display_slot`, `fallback_used`, `metadata` 구조 출력 가능
 - `turn_flavor_text`는 행동별 fixture를 추가했고, 실제 Groq 호출 기준 프론트용 출력 스키마 검증을 완료함
+- `generate_llm_ui_text(purpose, payload)` 함수로 백엔드에서 adapter를 직접 호출할 수 있음
 
 스토리 official 계약이 확정되면 fixture의 `case_id`, `info_target_key`, 공식 문장과 expected output을 다시 맞춰야 한다.
 

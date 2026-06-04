@@ -4,6 +4,8 @@
 
 상세 출력 계약과 provider env preset은 `../docs/llm_plan.md`에서 통합 관리한다.
 
+백엔드 연결용 adapter 함수는 `adapter.py`에 둔다.
+
 Groq adapter 입출력과 실패 처리 기준은 `adapter_contract.md`를 따른다.
 
 Groq 실제 연결 전 준비 절차는 `groq_setup_checklist.md`를 따른다.
@@ -35,6 +37,18 @@ generate(purpose, input, options) -> generation_result
 ```
 
 상세 input, options, result 구조는 `adapter_contract.md`를 참고한다.
+
+## 백엔드 호출 예시
+
+```python
+from llm.generation.adapter import generate_llm_ui_text
+
+llm = generate_llm_ui_text("turn_flavor_text", turn_payload)
+```
+
+`generate_llm_ui_text()`는 프론트 전달용 응답 구조를 반환한다.
+
+실험 CLI는 같은 adapter를 호출한다.
 
 ## generation_result 초안
 

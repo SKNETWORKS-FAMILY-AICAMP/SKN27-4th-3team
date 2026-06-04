@@ -265,6 +265,14 @@ Groq adapter는 내부적으로 OpenAI-compatible chat completion 요청 형태�
 
 React 프론트 팀원과 공유할 응답 타입과 확인 사항은 `frontend_handoff.md`를 따른다.
 
+백엔드에서 프론트 전달용 LLM 응답이 필요하면 아래 함수를 사용한다.
+
+```python
+from llm.generation.adapter import generate_llm_ui_text
+
+llm = generate_llm_ui_text("turn_flavor_text", turn_payload)
+```
+
 ### Hugging Face 후보
 
 ```env
