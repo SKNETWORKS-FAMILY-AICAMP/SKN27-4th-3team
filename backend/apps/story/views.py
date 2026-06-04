@@ -1,6 +1,10 @@
+from django.conf import settings
+from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
 from backend.apps.common.exceptions import ServiceNotImplementedError
+from backend.apps.common.runtime import api_success_response
+from backend.apps.story import services as story_services
 from backend.apps.story.serializers import (
     StoryCaseBriefingResponseSerializer,
     StoryCaseListResponseSerializer,
@@ -14,10 +18,14 @@ class StoryAPIServiceNotImplemented(ServiceNotImplementedError):
 
 
 class StoryCaseListView(APIView):
+    permission_classes = [AllowAny]
     response_serializer_class = StoryCaseListResponseSerializer
 
     def get(self, request):
-        raise StoryAPIServiceNotImplemented("story.cases.list")
+        case_list = story_services.list_story_cases(
+            raw_access_token=request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME),
+        )
+        return api_success_response(request, {"cases": case_list.cases})
 
 
 class StoryCaseBriefingView(APIView):
