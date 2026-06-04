@@ -29,11 +29,13 @@
 ## 현재 검증 상태
 
 - 최종 확인 일시: 2026-06-04
-- 실행 위치: `D:\dev\Project\pilot`
-- 전체 테스트 명령: `C:\Python314\python.exe -m pytest backend\tests -v`
+- 실행 위치: `D:\dev\Project\SKN27-4th-3team`
+- 전체 테스트 명령: `.\.venv\Scripts\python.exe -m pytest backend\tests -v`
 - 전체 테스트 결과: `88 passed`
 - Django check 명령: `.\.venv\Scripts\python.exe backend\manage.py check`
 - Django check 결과: `System check identified no issues (0 silenced).`
+- migration check 명령: `.\.venv\Scripts\python.exe backend\manage.py makemigrations accounts profiles matches story ai_profile retrieval --dry-run --check`
+- migration check 결과: `No changes detected in apps 'accounts', 'matches', 'profiles', 'story', 'ai_profile', 'retrieval'`
 - dependency 확인 명령: `.\.venv\Scripts\python.exe -c "import django, jsonschema, rest_framework; print(django.get_version()); print(jsonschema.__version__); print(rest_framework.VERSION)"`
 - dependency 확인 결과: `5.2.14`, `4.26.0`, `3.17.1`
 - 상태: PARTIALLY VERIFIED
@@ -52,6 +54,7 @@
 | Task 8 | Game rules resolve service 연결 | 완료, 순수 테스트 검증 | `backend/apps/matches/resolution.py`, `backend/apps/matches/services.py` |
 | Task 9 | AI Profile persistence 연결 | 완료, 정적/순수 테스트 검증 | `backend/apps/ai_profile/models.py`, `backend/apps/ai_profile/services.py` |
 | Task 10 | Retrieval 구조 | 완료, Django check/정적/순수 테스트 검증 | `backend/apps/retrieval/models.py`, `backend/apps/retrieval/chunking.py`, `backend/apps/retrieval/services.py` |
+| Task 11 | Django initial migrations | 완료, migration check/Django check/전체 테스트 검증 | `backend/apps/*/migrations/0001_initial.py` |
 
 ## Task 8 상세 기록
 
@@ -250,7 +253,7 @@
 
 #### 남은 리스크
 
-- migrations는 아직 생성하지 않았다. 실제 DB schema 검증은 migration 생성과 PostgreSQL 연결 후 별도로 수행해야 한다.
+- Task 11에서 initial migration을 생성했다. 실제 DB schema 적용 검증은 PostgreSQL 연결 후 별도로 수행해야 한다.
 - `VectorField` dimension은 문서에 확정값이 없어 지정하지 않았다. embedding provider와 모델 차원이 확정되면 migration 영향이 있으므로 문서 확정 후 결정해야 한다.
 - `docs/02_Game_Rules/07_확률_판정.md`는 `99_Game_Rules_구현_확정.md`가 일부 규칙을 참조하지만 파일 status가 `needs-decision`이라 retrieval allowlist에서는 제외했다. 포함하려면 승인 문서에서 범위를 명확히 해야 한다.
 - query log 보존 기간과 LLM generation log 연결 방식은 승인 문서의 후속 설계 대상으로 남아 있어 구현하지 않았다.
@@ -258,7 +261,69 @@
 
 ## 다음 구현 후보
 
-### Task 11: Official API endpoint 연결
+### Task 11: Django initial migrations
+
+상태: 완료, migration check/Django check/전체 테스트 검증
+
+#### 참조한 승인 문서/공식 schema
+
+- `docs/09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약.md`
+- `docs/09_Approved_Contracts/23_프로젝트_폴더_구조_계약.md`
+- 기존 Task 3-10에서 검증된 Django model scaffold
+
+#### 구현/수정한 파일
+
+- 생성: `backend/apps/accounts/migrations/__init__.py`
+- 생성: `backend/apps/accounts/migrations/0001_initial.py`
+- 생성: `backend/apps/profiles/migrations/__init__.py`
+- 생성: `backend/apps/profiles/migrations/0001_initial.py`
+- 생성: `backend/apps/matches/migrations/__init__.py`
+- 생성: `backend/apps/matches/migrations/0001_initial.py`
+- 생성: `backend/apps/story/migrations/__init__.py`
+- 생성: `backend/apps/story/migrations/0001_initial.py`
+- 생성: `backend/apps/ai_profile/migrations/__init__.py`
+- 생성: `backend/apps/ai_profile/migrations/0001_initial.py`
+- 생성: `backend/apps/retrieval/migrations/__init__.py`
+- 생성: `backend/apps/retrieval/migrations/0001_initial.py`
+- 수정: `.gitignore`
+
+#### 구현 내용
+
+- 승인 계약 테스트를 통과한 현재 Django model scaffold 기준으로 initial migration을 생성했다.
+- 앱별 migrations package를 생성했다.
+- workspace 내부 `.venv/`가 git에 포함되지 않도록 `.gitignore`에 추가했다.
+
+#### 의도적으로 구현하지 않은 범위
+
+- 실제 PostgreSQL DB에 migration 적용
+- seed 데이터 생성
+- migration에 없는 신규 필드/기본값/FK 정책 추가
+- GraphDB, KAG, LLM, realtime app migration 생성
+
+#### 검증
+
+- RED 실행 위치: `D:\dev\Project\SKN27-4th-3team`
+- RED 명령: `.\.venv\Scripts\python.exe backend\manage.py makemigrations accounts profiles matches story ai_profile retrieval --dry-run --check -v 2`
+- RED 결과: exit code `1`; 6개 app의 `0001_initial.py` 생성 필요 확인.
+- GREEN 실행 위치: `D:\dev\Project\SKN27-4th-3team`
+- GREEN 명령: `.\.venv\Scripts\python.exe backend\manage.py makemigrations accounts profiles matches story ai_profile retrieval`
+- GREEN 결과: 6개 app initial migration 생성.
+- migration check 명령: `.\.venv\Scripts\python.exe backend\manage.py makemigrations accounts profiles matches story ai_profile retrieval --dry-run --check`
+- migration check 결과: `No changes detected in apps 'accounts', 'matches', 'profiles', 'story', 'ai_profile', 'retrieval'`
+- Django check 명령: `.\.venv\Scripts\python.exe backend\manage.py check`
+- Django check 결과: `System check identified no issues (0 silenced).`
+- 전체 테스트 명령: `.\.venv\Scripts\python.exe -m pytest backend\tests -v`
+- 전체 테스트 결과: `88 passed`
+
+#### 남은 리스크
+
+- `makemigrations`는 로컬 PostgreSQL 연결을 시도하며 `pilot` 사용자 인증 실패 warning을 냈다. migration 생성과 check는 통과했지만 실제 DB apply는 검증하지 못했다.
+- PostgreSQL `pgvector` extension 생성과 migration 적용은 DB 실행 구성이 확정된 뒤 별도 검증해야 한다.
+- `VectorField` dimension은 문서에 확정값이 없어 migration에도 지정하지 않았다.
+
+## 다음 구현 후보
+
+### Task 12: Official API endpoint 연결
 
 예정 source of truth:
 

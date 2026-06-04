@@ -14,7 +14,7 @@ Updated: 2026-06-04
 - Auth user/profile/refresh token/security event 저장 구조 일부는 구현됐다.
 - Auth API endpoint/serializer/view/cookie helper 스캐폴딩은 official schema와 보안 금지선 기준으로 추가됐다.
 - Match/Story/Retrieval DB 모델 scaffold와 턴 resolve, RAG chunking/allowlist 구조가 추가됐다.
-- 실제 Auth token 발급/JWT/cookie runtime/rotation service, full official endpoint runtime 연결, migration/실제 PostgreSQL 연결 검증은 아직 남아 있다.
+- 실제 Auth token 발급/JWT/cookie runtime/rotation service, full official endpoint runtime 연결, 실제 PostgreSQL migration 적용 검증은 아직 남아 있다.
 - README는 Obsidian 문서 기준으로 현재 사용 기술, 계약만 있는 기술, 후순위/미사용 기술을 분리한다.
 - ERD에 들어갈 RDB 테이블 구성은 문서와 Django model scaffold 수준에서 존재하지만, 별도 시각적 ERD 산출물은 아직 없다.
 
@@ -304,18 +304,18 @@ Updated: 2026-06-04
 - API implementation authority is `api-spec/pilot-mvp-api.official.jsonc` and `api-spec/pilot-mvp-api.official.json`; draft API paths must not be implemented.
 - RAG/LLM must not change rule resolution, win/loss, auth/permission policy, true-name fragments, false clues, or apparition action selection.
 - Django dependency file은 생성됐지만, 현재 로컬 Python 환경에 설치 검증은 하지 않았다.
-- `manage.py check`, DB 연결, migration 검증은 dependency 설치와 모델 구현 이후 수행해야 한다.
+- `.venv`에 backend requirements와 pytest를 설치했고, `manage.py check`, migration check, 전체 테스트를 통과했다. 실제 PostgreSQL 연결과 migration 적용 검증은 아직 남아 있다.
 - 추천 RAG embedding model id는 코드에서 제거했으므로, Task 12의 `ops/env/backend.env.example` 또는 배포 설정 문서에 명시해야 한다.
 - 실제 CORS 응답 처리는 아직 dependency/middleware가 없으므로, 프론트 origin 요구가 확정되는 API 연결 단계에서 다시 검증해야 한다.
 - API envelope helper는 아직 DRF `Response`, exception handler, middleware/request-id 생성 흐름에 연결되지 않았다.
 - Auth API view는 official schema와 보안 금지선을 고정하는 스캐폴딩이다. 실제 signup/login/logout/refresh/me service, JWT 발급, cookie response runtime은 아직 구현하지 않았다.
 - official API schema가 변경되면 `backend/apps/common/errors.py`의 error code catalog도 함께 갱신해야 한다.
 - `API_ERROR_MESSAGES`는 official schema와 테스트로 동기화하지만, schema에서 자동 생성하는 파이프라인은 아직 없다.
-- Accounts/Profile 모델 검증은 Django 미설치 상태의 정적 소스 계약 테스트다. dependency 설치 후 `manage.py check`, migration, DB runtime 검증이 필요하다.
+- Accounts/Profile 모델 검증은 정적 소스 계약 테스트와 Django migration check를 통과했다. DB runtime 검증은 아직 필요하다.
 - nickname 길이 제한, nickname 고유성, profile 생성 서비스 호출 시점은 승인 문서에 구체 값이 없어 구현하지 않았다.
 - Accounts/Profile 테이블명을 명시해야 한다면 먼저 Obsidian 승인 문서에 확정값을 추가해야 한다.
 - 신규 profile 전적 기본값을 `0`으로 고정해야 한다면 먼저 Obsidian 승인 문서에 확정값을 추가해야 한다.
-- Refresh token 저장 구조와 Security Event 모델은 현재 정적 소스 계약과 순수 helper 테스트로만 검증됐다. Django dependency 설치 후 `manage.py check`, migration, DB runtime 검증이 필요하다.
+- Refresh token 저장 구조와 Security Event 모델은 정적 소스 계약, 순수 helper 테스트, Django migration check를 통과했다. DB runtime 검증은 아직 필요하다.
 - `RefreshToken`은 문서에 명시된 token 소유자 `user_id` 저장 필드를 가진다. 실제 FK, `CASCADE`/`PROTECT`/`SET_NULL` 정책이 필요하면 먼저 Obsidian 승인 문서에 확정해야 한다.
 - 실제 refresh API service, JWT 발급, family revoke, DB transaction + row lock은 아직 구현하지 않았다.
 - security event의 비인증 상황(CSRF 실패, 로그인 실패 반복)에서 actor/user_id를 어떻게 처리할지, metadata schema를 둘지 여부는 승인 문서에 구체화되어 있지 않다. 확정 전에는 해당 필드를 구현하지 않는다.
@@ -338,12 +338,13 @@ Updated: 2026-06-04
 - AI Profile 실제 DB save/delete, transaction 연결, `profiles.Profile` style summary 표시 필드 업데이트는 Django/DRF service 단계에서 별도 구현해야 한다.
 - Retrieval Task 10은 `RetrievalDocument`, `RetrievalChunk`, `RetrievalQueryLog`, chunking 순수 함수, source allowlist, config 기반 search default/embedding model getter까지 구현했다.
 - Retrieval allowlist는 `docs/09_Approved_Contracts/*`, `docs/05_Story_Mode/02_거울_속의_손님.md`, approved/implementation-ready game rule docs only로 제한했다. `docs/02_Game_Rules/07_확률_판정.md`는 needs-decision 상태라 제외했다.
-- Retrieval provider 호출, vector search, migration, query log write path, LLM generation log 연결은 아직 구현하지 않았다.
+- Task 11로 `accounts`, `profiles`, `matches`, `story`, `ai_profile`, `retrieval`의 initial migration을 생성했다.
+- Retrieval provider 호출, vector search, query log write path, LLM generation log 연결은 아직 구현하지 않았다.
 - Auth 구현은 보안 요구가 높으므로 Django project scaffolding, dependency contract, token model, CSRF/cookie test가 선행되어야 한다.
 - RAG는 구현 범위에 포함되지만 검색 결과가 룰/승패/인증/단서를 바꾸면 안 된다.
 
 ## Recommended Next Actions
 
-1. 계획 문서 순서대로 Task 11 `Official API endpoint 연결` 계약 테스트를 먼저 작성하되, official API schema와 approved contract 22를 먼저 대조한다.
+1. 계획 문서 순서대로 Task 12 `Official API endpoint 연결` 계약 테스트를 먼저 작성하되, official API schema와 approved contract 22를 먼저 대조한다.
 2. Auth runtime 구현을 재개하기 전에 request-id envelope middleware, JWT 발급 service, SecurityEvent actor/metadata 정책을 문서 기준으로 확정한다.
-3. dependency 설치를 수행하는 시점에는 `pip install -r requirements.txt` 이후 `backend/manage.py check`와 migration 검증을 별도 수행한다.
+3. DB runtime 검증을 수행하려면 로컬 PostgreSQL의 `pilot` 사용자 인증 또는 Docker 실행 구성을 먼저 맞춘 뒤 `backend/manage.py migrate`를 실행한다.
