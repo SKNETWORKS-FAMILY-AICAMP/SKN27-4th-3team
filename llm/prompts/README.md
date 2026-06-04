@@ -13,3 +13,4 @@ fixture 또는 서버 결과를 prompt로 조립하는 규칙은 `prompt_assembl
 | `result_summary` | 결과 화면용 서사 요약 | `result_summary.md` |
 | `style_summary` | 플레이 스타일 요약 문장 | `style_summary.md` |
 | `match_log_summary` | 운영자용 매치 로그 요약 | `match_log_summary.md` |
+| `turn_flavor_text` | 단일 턴 화면 연출 문구 | `turn_flavor_text.md` |

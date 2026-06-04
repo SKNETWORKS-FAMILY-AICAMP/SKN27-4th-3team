@@ -2,7 +2,7 @@
 
 이 문서는 Groq 기반 LLM adapter의 입출력과 실패 처리 기준을 정리한다.
 
-실제 API 호출 코드는 아직 구현하지 않는다.
+로컬 실험용 API 호출 코드는 `scripts/test_groq_generation.py`에 둔다.
 
 ## 기본 원칙
 
@@ -23,6 +23,7 @@ generate(purpose, input, options) -> LlmGenerationResult
 | purpose | 입력 | 출력 |
 |---|---|---|
 | `result_summary` | `MatchResult` | 결과 화면 보조 서사 요약 |
+| `turn_flavor_text` | `TurnResult` | 단일 턴 화면 연출 문구 |
 | `style_summary` | `StyleSummary.metrics` | 스타일 라벨과 표시 문장 후보 |
 | `match_log_summary` | 공개 턴 로그와 결과 enum | 운영자용 로그 요약 |
 
@@ -187,6 +188,18 @@ adapter 또는 후처리 단계에서는 아래 항목을 점검한다.
 - 데모 스토리 참고 문서의 인물명이나 사건명을 입력 없이 끌어오지 않는다.
 - 공식 설정이나 룰을 추가하지 않는다.
 - 플레이어의 실제 성격을 단정하지 않는다.
+- purpose별 출력 길이와 문장/줄 수 제한을 지킨다.
+
+## 출력 길이 제한
+
+| purpose | 길이 제한 | 구조 제한 |
+|---|---|---|
+| `result_summary` | 80-240자 | 2-4문장 |
+| `turn_flavor_text` | 20-90자 | 1-2줄, 줄당 45자 이하 |
+| `style_summary` | 40-120자 | 1-2문장 |
+| `match_log_summary` | 3-5줄 | 줄당 100자 이하 |
+
+길이 제한을 벗어나면 `status=failed`, `fallback_used=true`, `error_reason=guardrail_violation`로 처리한다.
 
 상세 검사 기준과 violation code 초안은 `../evaluation/guardrail_checklist.md`를 따른다.
 

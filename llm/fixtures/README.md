@@ -15,3 +15,4 @@ Fixture는 서버가 이미 확정한 결과를 흉내 내는 샘플이며, 공�
 | `result_summary.sample.json` | 결과 요약 테스트 입력 |
 | `style_summary.sample.json` | 스타일 요약 테스트 입력 |
 | `match_log_summary.sample.json` | 운영자 로그 요약 테스트 입력 |
+| `turn_flavor_text.sample.json` | 단일 턴 화면 연출 문구 테스트 입력 |

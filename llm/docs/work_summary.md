@@ -99,6 +99,7 @@ PDF `game_scenario_the_nameless_curse.pdf`를 바탕으로 `무명(無名)의 �
 | purpose | 역할 |
 |---|---|
 | `result_summary` | 결과 화면 보조 서사 요약 |
+| `turn_flavor_text` | 단일 턴 화면 연출 문구 |
 | `style_summary` | 플레이 스타일 요약 문장 |
 | `match_log_summary` | 운영자용 매치 로그 요약 |
 
@@ -116,14 +117,15 @@ PDF `game_scenario_the_nameless_curse.pdf`를 바탕으로 `무명(無名)의 �
 
 ```text
 llm/fixtures/result_summary.sample.json
+llm/fixtures/turn_flavor_text.sample.json
 llm/fixtures/style_summary.sample.json
 llm/fixtures/match_log_summary.sample.json
 ```
 
 검증 결과:
 
-- JSON 3개 모두 파싱 정상
-- `result_summary`, `style_summary`, `match_log_summary` dry-run prompt 조립 정상
+- JSON 4개 모두 파싱 정상
+- `result_summary`, `turn_flavor_text`, `style_summary`, `match_log_summary` dry-run prompt 조립 정상
 - placeholder API key는 `status=skipped`, `reason=invalid_api_key_format`으로 처리됨
 
 스토리 official 계약이 확정되면 fixture의 `case_id`, `info_target_key`, 공식 문장과 expected output을 다시 맞춰야 한다.

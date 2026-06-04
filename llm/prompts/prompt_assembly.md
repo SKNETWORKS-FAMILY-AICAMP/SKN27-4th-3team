@@ -120,6 +120,38 @@ adapter에는 아래 구조를 넘긴다.
 - 플레이어의 실제 성격을 단정하지 않는다.
 - 데모 스토리 인물과 플레이어를 동일시하지 않는다.
 
+## turn_flavor_text 필드 매핑
+
+입력 fixture:
+
+`llm/fixtures/turn_flavor_text.sample.json`
+
+| prompt 변수 | fixture 경로 | 비고 |
+|---|---|---|
+| `turn_number` | `turn_result.turn_number` | 턴 번호 |
+| `apparition_alias` | `apparition_alias` | 괴이 표시명 |
+| `player_action.code` | `turn_result.player_action.code` | 플레이어 행동 |
+| `player_action.info_target_key` | `turn_result.player_action.info_target_key` | 정보 대상 |
+| `effect_code` | `turn_result.effect_code` | 서버 확정 효과 코드 |
+| `match_outcome` | `turn_result.match_outcome` | 서버 확정 매치 결과 |
+| `player_action.timeout_applied` | `turn_result.player_action.timeout_applied` | 시간초과 적용 여부 |
+| `public_log.text` | `turn_result.public_log.text` | 서버 공개 로그 |
+| `display_slot` | `display_slot` | 프론트 표시 위치 힌트 |
+
+금지:
+
+- 서버 공개 로그의 의미를 바꾸지 않는다.
+- 행동 성공/실패를 새로 판단하지 않는다.
+- 단서 획득 여부나 진위를 새로 말하지 않는다.
+- 다음 괴이 행동을 예고하지 않는다.
+- 입력에 없는 인물명, 사건명, 과거사를 만들지 않는다.
+
+출력 기준:
+
+- 20-90자
+- 1-2줄
+- 줄당 45자 이하
+
 ## match_log_summary 필드 매핑
 
 입력 fixture:

@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
@@ -17,16 +18,31 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+try:
+    from groq import APIConnectionError, APIStatusError, APITimeoutError, Groq
+except ImportError:  # pragma: no cover - 로컬 실험 환경별 선택 의존성
+    APIConnectionError = None
+    APIStatusError = None
+    APITimeoutError = None
+    Groq = None
 
-SUPPORTED_PURPOSES = {"result_summary", "style_summary", "match_log_summary"}
+
+SUPPORTED_PURPOSES = {"result_summary", "turn_flavor_text", "style_summary", "match_log_summary"}
 RESULT_REASONS = {"seal_success", "sanity_zero", "curse_marks_loss", "turn_limit", "unresolved"}
 DEMO_REFERENCE_NAMES = {"이안", "피티", "피치", "엘리자베스", "무명(無名)의 저주", "무명의 저주"}
 
-NEGATIVE_RESULT_WORDS = {"패배", "실패", "실종", "무너", "빼앗"}
-POSITIVE_RESULT_WORDS = {"승리", "성공", "해방", "봉인했다", "완성"}
+NEGATIVE_RESULT_WORDS = {"패배", "패배했다", "실패했다", "실패로 끝", "실종", "무너졌다", "빼앗겼"}
+POSITIVE_RESULT_WORDS = {"승리", "승리했다", "성공했다", "해방되었다", "봉인했다", "완성되었다"}
 OPS_FORBIDDEN_WORDS = {"보상", "랭킹", "제재", "매칭", "룰 변경", "운영 조치"}
 PERSONALITY_JUDGMENT_WORDS = {"비겁", "잔혹", "악하다", "나약", "정신병", "미친"}
 NEXT_ACTION_WORDS = {"다음 행동", "다음 턴 괴이", "괴이는 다음"}
+
+TEXT_LIMITS = {
+    "result_summary": {"min_chars": 80, "max_chars": 240, "min_sentences": 2, "max_sentences": 4},
+    "turn_flavor_text": {"min_chars": 20, "max_chars": 90, "min_lines": 1, "max_lines": 2, "max_line_chars": 45},
+    "style_summary": {"min_chars": 40, "max_chars": 120, "min_sentences": 1, "max_sentences": 2},
+    "match_log_summary": {"min_lines": 3, "max_lines": 5, "max_line_chars": 100},
+}
 
 
 @dataclass(frozen=True)
@@ -93,6 +109,8 @@ def build_generation_input(payload: dict[str, Any]) -> dict[str, Any]:
     purpose = payload["purpose"]
     if purpose == "result_summary":
         return build_result_summary_input(payload)
+    if purpose == "turn_flavor_text":
+        return build_turn_flavor_text_input(payload)
     if purpose == "style_summary":
         return build_style_summary_input(payload)
     if purpose == "match_log_summary":
@@ -173,6 +191,46 @@ def build_style_summary_input(payload: dict[str, Any]) -> dict[str, Any]:
     return {
         "purpose": "style_summary",
         "system_prompt": base_system_prompt("플레이어를 비난하지 않고, 관찰 가능한 경향만 차분하게 표현한다."),
+        "user_prompt": user_prompt,
+        "context_refs": [],
+        "payload": payload,
+    }
+
+
+def build_turn_flavor_text_input(payload: dict[str, Any]) -> dict[str, Any]:
+    turn_result = payload["turn_result"]
+    player_action = turn_result["player_action"]
+    public_log = turn_result["public_log"]
+    user_prompt = f"""아래 서버 턴 결과를 바탕으로 화면에 표시할 짧은 연출 문구를 작성해줘.
+
+[턴 정보]
+- turn_number: {turn_result["turn_number"]}
+- apparition_alias: {payload.get("apparition_alias")}
+- action_code: {player_action["code"]}
+- info_target_key: {player_action.get("info_target_key")}
+- effect_code: {turn_result.get("effect_code")}
+- match_outcome: {turn_result["match_outcome"]}
+- timeout_applied: {player_action.get("timeout_applied")}
+
+[서버 공개 로그]
+{public_log["text"]}
+
+[표시 위치]
+{payload.get("display_slot")}
+
+[금지]
+- 서버 공개 로그의 의미를 바꾸지 않는다.
+- 행동 성공/실패를 새로 판단하지 않는다.
+- 단서 획득 여부나 진위를 새로 말하지 않는다.
+- 다음 괴이 행동을 예고하지 않는다.
+- 안내문처럼 설명하지 않는다.
+
+출력은 1~2줄로 작성한다.
+전체 20~90자로 작성한다.
+각 줄은 45자 이하로 작성한다."""
+    return {
+        "purpose": "turn_flavor_text",
+        "system_prompt": base_system_prompt("문장은 짧고 어둡게, 게임 UI 위에 얹히는 속삭임처럼 작성한다."),
         "user_prompt": user_prompt,
         "context_refs": [],
         "payload": payload,
@@ -263,6 +321,38 @@ def failed(
 
 
 def call_groq(generation_input: dict[str, Any], options: LlmOptions) -> tuple[str, int]:
+    if Groq is not None:
+        return call_groq_sdk(generation_input, options)
+    return call_groq_urllib(generation_input, options)
+
+
+def call_groq_sdk(generation_input: dict[str, Any], options: LlmOptions) -> tuple[str, int]:
+    client = Groq(api_key=options.api_key, base_url=sdk_base_url(options.base_url), timeout=options.timeout_seconds)
+    started_at = time.perf_counter()
+    response = client.chat.completions.create(
+        model=options.model_id,
+        messages=[
+            {"role": "system", "content": generation_input["system_prompt"]},
+            {"role": "user", "content": generation_input["user_prompt"]},
+        ],
+        temperature=options.temperature,
+        max_tokens=options.max_output_tokens,
+    )
+    latency_ms = int((time.perf_counter() - started_at) * 1000)
+    text = response.choices[0].message.content
+    if text is None or not text.strip():
+        raise ValueError("empty response text")
+    return text.strip(), latency_ms
+
+
+def sdk_base_url(base_url: str) -> str:
+    openai_suffix = "/openai/v1"
+    if base_url.endswith(openai_suffix):
+        return base_url[: -len(openai_suffix)]
+    return base_url
+
+
+def call_groq_urllib(generation_input: dict[str, Any], options: LlmOptions) -> tuple[str, int]:
     body = {
         "model": options.model_id,
         "messages": [
@@ -296,6 +386,7 @@ def validate_output(generation_input: dict[str, Any], text: str) -> list[str]:
     purpose = generation_input["purpose"]
     payload = generation_input["payload"]
     violations: list[str] = []
+    violations.extend(validate_text_shape(purpose, text))
 
     for name in DEMO_REFERENCE_NAMES:
         if name in text and name not in json.dumps(payload, ensure_ascii=False):
@@ -326,11 +417,54 @@ def validate_output(generation_input: dict[str, Any], text: str) -> list[str]:
         if any(char.isdigit() for char in text):
             violations.append("resource_conflict")
 
+    if purpose == "turn_flavor_text":
+        if any(word in text for word in {"획득했다", "진짜 단서", "거짓 단서", "성공했다", "실패했다"}):
+            violations.append("unsupported_story_fact")
+        public_log_text = payload["turn_result"]["public_log"]["text"]
+        if "단서" in text and "단서" not in public_log_text:
+            violations.append("unsupported_story_fact")
+
     if purpose == "match_log_summary":
         if any(word in text for word in {"추정", "아마", "원인으로 보인다"}):
             violations.append("unsupported_story_fact")
 
     return sorted(set(violations))
+
+
+def count_sentences(text: str) -> int:
+    sentences = [part for part in re.split(r"[.!?。！？]+|\n+", text) if part.strip()]
+    return len(sentences)
+
+
+def visible_lines(text: str) -> list[str]:
+    return [line.strip() for line in text.splitlines() if line.strip()]
+
+
+def validate_text_shape(purpose: str, text: str) -> list[str]:
+    limits = TEXT_LIMITS[purpose]
+    violations: list[str] = []
+    normalized = text.strip()
+
+    if purpose in {"result_summary", "style_summary"}:
+        text_length = len(normalized)
+        if text_length < limits["min_chars"] or text_length > limits["max_chars"]:
+            violations.append("length_violation")
+
+        sentence_count = count_sentences(normalized)
+        if sentence_count < limits["min_sentences"] or sentence_count > limits["max_sentences"]:
+            violations.append("sentence_count_violation")
+        return violations
+
+    lines = visible_lines(normalized)
+    if "min_chars" in limits or "max_chars" in limits:
+        text_length = len(normalized)
+        if text_length < limits["min_chars"] or text_length > limits["max_chars"]:
+            violations.append("length_violation")
+    if len(lines) < limits["min_lines"] or len(lines) > limits["max_lines"]:
+        violations.append("line_count_violation")
+    if any(len(line) > limits["max_line_chars"] for line in lines):
+        violations.append("line_length_violation")
+    return violations
 
 
 def generate(generation_input: dict[str, Any], options: LlmOptions, dry_run: bool) -> dict[str, Any]:
@@ -360,19 +494,43 @@ def generate(generation_input: dict[str, Any], options: LlmOptions, dry_run: boo
 
     try:
         text, latency_ms = call_groq(generation_input, options)
-    except TimeoutError:
-        return failed(generation_input, options, "timeout")
-    except urllib.error.HTTPError as error:
-        return failed(generation_input, options, "provider_error", {"status_code": error.code})
-    except urllib.error.URLError:
-        return failed(generation_input, options, "provider_error")
-    except (KeyError, IndexError, json.JSONDecodeError, ValueError):
-        return failed(generation_input, options, "response_parse_error")
+    except Exception as error:
+        sdk_failure = classify_groq_sdk_error(error)
+        if sdk_failure is not None:
+            return failed(generation_input, options, sdk_failure["error_reason"], sdk_failure.get("extra"))
+        if isinstance(error, TimeoutError):
+            return failed(generation_input, options, "timeout")
+        if isinstance(error, urllib.error.HTTPError):
+            return failed(generation_input, options, "provider_error", {"status_code": error.code})
+        if isinstance(error, urllib.error.URLError):
+            return failed(generation_input, options, "provider_error")
+        if isinstance(error, (KeyError, IndexError, json.JSONDecodeError, ValueError)):
+            return failed(generation_input, options, "response_parse_error")
+        return failed(generation_input, options, "provider_error", {"error_type": type(error).__name__})
 
     violations = validate_output(generation_input, text)
     if violations:
         return failed(generation_input, options, "guardrail_violation", {"violations": violations})
     return result_payload(generation_input, "succeeded", text, False, options, {"latency_ms": latency_ms})
+
+
+def classify_groq_sdk_error(error: Exception) -> dict[str, Any] | None:
+    if APITimeoutError is not None and isinstance(error, APITimeoutError):
+        return {"error_reason": "timeout"}
+    if APIConnectionError is not None and isinstance(error, APIConnectionError):
+        return {
+            "error_reason": "provider_error",
+            "extra": {"error_type": type(error).__name__},
+        }
+    if APIStatusError is not None and isinstance(error, APIStatusError):
+        extra: dict[str, Any] = {"status_code": error.status_code}
+        response_text = getattr(error.response, "text", "")
+        if response_text:
+            extra["response_preview"] = response_text[:200]
+            if "1010" in response_text:
+                extra["gateway_error_code"] = "1010"
+        return {"error_reason": "provider_error", "extra": extra}
+    return None
 
 
 def default_fixture_path(root: Path, purpose: str) -> Path:

@@ -7,6 +7,7 @@ LLM은 게임 판정자가 아니라 서버가 확정한 사건 기록을 세계
 ## 담당 범위
 
 - 결과 화면 보조 서사 요약
+- 단일 턴 화면 연출 문구
 - 플레이 스타일 요약 문장
 - 운영자용 매치 로그 요약
 - 승인된 기준 문장의 짧은 변형 후보
@@ -26,6 +27,7 @@ LLM은 게임 판정자가 아니라 서버가 확정한 사건 기록을 세계
 | purpose | 목적 | 입력 | 출력 |
 |---|---|---|---|
 | `result_summary` | 결과 화면 보조 서사 요약 | `MatchResult` | `llm_summary.text` 후보 |
+| `turn_flavor_text` | 단일 턴 화면 연출 문구 | `TurnResult` | UI 시스템/반응 문구 후보 |
 | `style_summary` | 플레이 스타일 요약 문장 | `StyleSummary.metrics` | `label`, `display_text` 후보 |
 | `match_log_summary` | 운영자용 매치 로그 요약 | 공개 턴 로그, 결과 enum | 운영자 확인용 요약 |
 
@@ -140,6 +142,13 @@ LLM이 실패하거나 비활성화된 경우:
 - LLM 생성 결과는 `MatchResult.llm_summary.text`에만 표시한다.
 - LLM 실패 시 `llm_summary.enabled=false`, `text=null`, `generation_id=null`로 둔다.
 - 프론트는 `LLM_SUMMARY_UNAVAILABLE` 상황에서 정적 결과 문장을 표시한다.
+
+### 단일 턴 연출 문구
+
+- 기본 표시 문장은 서버가 확정한 `TurnResult.public_log.text`를 사용한다.
+- LLM 생성 결과는 화면 연출 후보로만 사용하고 공식 턴 로그를 대체하지 않는다.
+- LLM 실패 시 `public_log.text`만으로 턴 화면이 완성되어야 한다.
+- LLM은 행동 성공/실패, 단서 획득, 승패, 다음 괴이 행동을 새로 판단하지 않는다.
 
 ### 스타일 요약
 
