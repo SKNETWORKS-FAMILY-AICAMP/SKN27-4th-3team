@@ -1,0 +1,28 @@
+{
+  "purpose": "match_log_summary",
+  "match_id": "sample-match-001",
+  "case_id": "mirror_guest",
+  "outcome": "victory",
+  "turn_count": 9,
+  "timeout_count": 1,
+  "turn_logs": [
+    {
+      "turn": 1,
+      "player_action": "insight",
+      "info_target_key": "mirror_back",
+      "server_result": "true_name_fragment_progress"
+    },
+    {
+      "turn": 5,
+      "player_action": "contract",
+      "info_target_key": "missing_child_voice",
+      "server_result": "true_name_fragment_acquired"
+    },
+    {
+      "turn": 9,
+      "player_action": "seal",
+      "info_target_key": "forgotten_room",
+      "server_result": "seal_succeeded"
+    }
+  ]
+}
