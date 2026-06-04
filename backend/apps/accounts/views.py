@@ -16,9 +16,11 @@ from backend.apps.accounts.serializers import (
     SignupRequestSerializer,
     SignupResponseSerializer,
 )
+from backend.apps.common.exceptions import ServiceNotImplementedError
+from backend.apps.common.runtime import api_success_response
 
 
-class AuthServiceNotImplemented(NotImplementedError):
+class AuthServiceNotImplemented(ServiceNotImplementedError):
     pass
 
 
@@ -64,8 +66,7 @@ class CsrfTokenView(APIView):
     response_serializer_class = CsrfResponseSerializer
 
     def get(self, request):
-        get_token(request)
-        raise AuthServiceNotImplemented("request-id envelope integration is not implemented")
+        return api_success_response(request, {"csrf_token": get_token(request)})
 
 
 class SignupView(APIView):
@@ -74,7 +75,7 @@ class SignupView(APIView):
     response_serializer_class = SignupResponseSerializer
 
     def post(self, request):
-        raise AuthServiceNotImplemented("signup service is not implemented")
+        raise AuthServiceNotImplemented("auth.signup")
 
 
 class LoginView(AuthCookieMixin, APIView):
@@ -84,7 +85,7 @@ class LoginView(AuthCookieMixin, APIView):
 
     def post(self, request):
         rotate_token(request)
-        raise AuthServiceNotImplemented("login service is not implemented")
+        raise AuthServiceNotImplemented("auth.login")
 
 
 class LogoutView(AuthCookieMixin, APIView):
@@ -92,7 +93,7 @@ class LogoutView(AuthCookieMixin, APIView):
     response_serializer_class = LogoutResponseSerializer
 
     def post(self, request):
-        raise AuthServiceNotImplemented("logout service is not implemented")
+        raise AuthServiceNotImplemented("auth.logout")
 
 
 class RefreshView(AuthCookieMixin, APIView):
@@ -100,11 +101,11 @@ class RefreshView(AuthCookieMixin, APIView):
     response_serializer_class = RefreshResponseSerializer
 
     def post(self, request):
-        raise AuthServiceNotImplemented("refresh service is not implemented")
+        raise AuthServiceNotImplemented("auth.refresh")
 
 
 class MeView(APIView):
     response_serializer_class = MeResponseSerializer
 
     def get(self, request):
-        raise AuthServiceNotImplemented("session lookup service is not implemented")
+        raise AuthServiceNotImplemented("auth.me")

@@ -63,3 +63,32 @@ updated: "2026-06-02"
 - middleware 밖에서 생성된 예외 상황만 fallback으로 새 `request_id`를 만든다.
 - HTTP 응답 header에는 `X-Request-ID`를 포함한다.
 - `request_id`는 `client_request_id`, `client_nonce`와 혼용하지 않는다.
+
+## 미구현 service 응답 정책
+
+공식 endpoint는 라우팅 상태를 유지한다.
+
+실제 service가 아직 구현되지 않은 endpoint는 HTTP `501`과 실패 envelope를 반환한다.
+
+```json
+{
+  "error": {
+    "code": "SERVICE_NOT_IMPLEMENTED",
+    "message": "Service is not implemented yet.",
+    "details": {
+      "service": "auth.login"
+    }
+  },
+  "meta": {
+    "request_id": "req_...",
+    "server_time": "2026-06-04T00:00:00Z"
+  }
+}
+```
+
+- `SERVICE_NOT_IMPLEMENTED`는 단계적 구현 중인 runtime scaffold 상태를 나타낸다.
+- `details.service`에는 view class명이 아니라 안정적인 service key를 넣는다.
+- 예시 service key는 `auth.login`, `story.cases.list`, `matches.detail`, `profile.me` 형식이다.
+- mock 성공 응답을 만들지 않는다.
+- 실제 service가 구현된 endpoint는 정상 success envelope를 반환한다.
+- `GET /api/v1/auth/csrf`처럼 DB/JWT service가 필요 없는 endpoint는 실제 success envelope로 구현할 수 있다.

@@ -35,6 +35,7 @@ OpenAPI급 전체 세부 타입 생성까지 확장하지 않고, 프론트와 �
 - Auth/CSRF/cookie/refresh token 보안 기준
 - AI 스토리 시간초과와 `TURN_DEADLINE_EXPIRED`
 - `meta.request_id`는 서버 생성 전용 추적 ID로 사용한다.
+- 미구현 service는 HTTP 501과 `SERVICE_NOT_IMPLEMENTED` 실패 envelope를 사용한다.
 
 ## 구현 금지선
 
@@ -44,6 +45,7 @@ OpenAPI급 전체 세부 타입 생성까지 확장하지 않고, 프론트와 �
 - 프론트가 Authorization Bearer token을 직접 구성하도록 schema를 바꾸지 않는다.
 - endpoint별 envelope를 임의로 바꾸지 않는다.
 - `client_request_id` 또는 `client_nonce`를 `meta.request_id`로 재사용하지 않는다.
+- 미구현 service를 mock success data로 응답하지 않는다.
 
 ## 남은 오너 결정
 

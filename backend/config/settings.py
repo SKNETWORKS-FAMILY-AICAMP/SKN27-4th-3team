@@ -105,6 +105,7 @@ TEMPLATES = [
 ]
 
 REST_FRAMEWORK = {
+    "EXCEPTION_HANDLER": "backend.apps.common.runtime.api_exception_handler",
     "DEFAULT_AUTHENTICATION_CLASSES": [],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",

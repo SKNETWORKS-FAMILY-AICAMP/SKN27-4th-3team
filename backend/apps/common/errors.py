@@ -27,6 +27,7 @@ API_ERROR_MESSAGES = MappingProxyType(
         "IDEMPOTENCY_CONFLICT": "동일 idempotency key가 다른 요청 내용으로 재사용되었다.",
         "RATE_LIMITED": "요청 제한에 걸렸다.",
         "LLM_SUMMARY_UNAVAILABLE": "LLM 요약을 사용할 수 없어 정적 문장을 표시해야 한다.",
+        "SERVICE_NOT_IMPLEMENTED": "Service is not implemented yet.",
     }
 )
 
