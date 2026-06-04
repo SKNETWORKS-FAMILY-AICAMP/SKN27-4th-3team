@@ -101,7 +101,7 @@ def test_story_case_list_service_returns_only_approved_static_mvp_case(monkeypat
     ]
 
 
-def test_story_case_list_view_no_longer_returns_501_but_other_story_views_do():
+def test_story_case_list_view_no_longer_returns_501_and_match_start_stays_stub():
     from pathlib import Path
 
     root_dir = Path(__file__).resolve().parents[3]
@@ -119,5 +119,4 @@ def test_story_case_list_view_no_longer_returns_501_but_other_story_views_do():
     assert "StoryAPIServiceNotImplemented" not in list_view_source
     assert "story.cases.list" not in list_view_source
 
-    assert 'StoryAPIServiceNotImplemented("story.cases.briefing")' in views_source
     assert 'StoryAPIServiceNotImplemented("story.cases.matches.start")' in views_source

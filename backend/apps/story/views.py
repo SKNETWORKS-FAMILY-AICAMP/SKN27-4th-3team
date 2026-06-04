@@ -29,10 +29,15 @@ class StoryCaseListView(APIView):
 
 
 class StoryCaseBriefingView(APIView):
+    permission_classes = [AllowAny]
     response_serializer_class = StoryCaseBriefingResponseSerializer
 
     def get(self, request, case_id: str):
-        raise StoryAPIServiceNotImplemented("story.cases.briefing")
+        briefing = story_services.get_story_case_briefing(
+            raw_access_token=request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME),
+            case_id=case_id,
+        )
+        return api_success_response(request, {"case": briefing.case})
 
 
 class StoryCaseMatchStartView(APIView):
