@@ -41,3 +41,7 @@
 | `examples/style_summary.expected.md` | 스타일 요약 기대 출력 |
 | `examples/match_log_summary.expected.md` | 운영자용 로그 요약 기대 출력 |
 | `examples/forbidden_outputs.md` | 수정 또는 거부해야 하는 출력 예시 |
+
+## 금지선 검사 문서
+
+adapter 후처리 단계에서 사용할 금지선 검사 기준은 `guardrail_checklist.md`를 따른다.

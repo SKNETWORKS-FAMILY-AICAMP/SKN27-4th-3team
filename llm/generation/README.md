@@ -4,38 +4,42 @@
 
 상세 출력 계약과 provider env preset은 `../docs/llm_plan.md`에서 통합 관리한다.
 
+Groq adapter 입출력과 실패 처리 기준은 `adapter_contract.md`를 따른다.
+
 ## Provider 방향
 
 OpenAI 유료 API를 기본값으로 두지 않는다.
 
-우선 검토 대상:
+1차 provider는 Groq로 둔다.
 
-- Hugging Face Inference API
-- Groq API
-- 기타 무료 또는 저비용 LLM provider
+Groq는 OpenAI-compatible API 형태로 연결하는 것을 기본 방향으로 한다.
+
+Hugging Face, Gemini, OpenRouter, Ollama local은 대체 또는 실험 후보로 남긴다.
 
 ## 환경 변수
 
 ```env
-LLM_PROVIDER=
+LLM_PROVIDER=groq
 LLM_API_KEY=
 LLM_MODEL_ID=
-LLM_BASE_URL=
+LLM_BASE_URL=https://api.groq.com/openai/v1
 LLM_TIMEOUT_SECONDS=30
 ```
 
 ## 공통 호출 형태 초안
 
 ```text
-generate(purpose, system_prompt, user_prompt, context_refs) -> generation_result
+generate(purpose, input, options) -> generation_result
 ```
+
+상세 input, options, result 구조는 `adapter_contract.md`를 참고한다.
 
 ## generation_result 초안
 
 ```json
 {
   "purpose": "result_summary",
-  "provider": "huggingface",
+  "provider": "groq",
   "model_id": "model-id",
   "generation_id": "string-or-null",
   "text": "생성된 보조 문장",

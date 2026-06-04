@@ -148,18 +148,20 @@ LLM이 실패하거나 비활성화된 경우:
 - LLM 실패 시 원본 턴 로그를 그대로 조회할 수 있어야 한다.
 - LLM 요약 실패를 매치 실패나 판정 실패로 취급하지 않는다.
 
-## Provider 후보
+## Provider 기준
 
 OpenAI 유료 API를 기본 전제로 두지 않는다.
+
+1차 LLM provider는 Groq로 정리한다.
 
 무료 tier, 모델 목록, rate limit은 자주 바뀌므로 실제 연결 직전에는 공식 문서를 다시 확인한다.
 
 | provider | 사용 방향 | 장점 | 확인 필요 |
 |---|---|---|---|
-| Groq | 1순위 후보 | OpenAI-compatible 형태로 붙이기 쉽고 응답 속도가 빠르다. | free plan rate limit, 사용 가능 model id, 한국어 품질 |
-| Hugging Face Inference Providers | 2순위 후보 | 모델 선택지가 넓고 provider routing 실험이 쉽다. | 월별 무료 credits, provider별 과금 전환 조건, 응답 속도 |
-| Google AI Studio / Gemini API | 보조 후보 | 무료 tier가 있고 한국어 품질을 기대할 수 있다. | 무료 tier rate limit, billing 연결 여부, API 응답 형식 |
-| OpenRouter | 보조 후보 | 여러 모델을 한 API 형태로 비교하기 쉽다. | free 모델 availability, 모델별 가격 0 여부, rate limit |
+| Groq | 1차 선택 provider | OpenAI-compatible 형태로 붙이기 쉽고 응답 속도가 빠르다. | free plan rate limit, 사용 가능 model id, 한국어 품질 |
+| Hugging Face Inference Providers | 대체 후보 | 모델 선택지가 넓고 provider routing 실험이 쉽다. | 월별 무료 credits, provider별 과금 전환 조건, 응답 속도 |
+| Google AI Studio / Gemini API | 대체 후보 | 무료 tier가 있고 한국어 품질을 기대할 수 있다. | 무료 tier rate limit, billing 연결 여부, API 응답 형식 |
+| OpenRouter | 대체 후보 | 여러 모델을 한 API 형태로 비교하기 쉽다. | free 모델 availability, 모델별 가격 0 여부, rate limit |
 | Ollama local | 로컬 실험 후보 | API 비용이 없고 key가 필요 없다. | 팀원 PC 성능, 모델 다운로드 용량, 한국어 품질 |
 
 ### 선택 기준
@@ -173,15 +175,13 @@ OpenAI 유료 API를 기본 전제로 두지 않는다.
 - 장애 시 fallback 문장으로 자연스럽게 대체할 수 있다.
 - 게임 판정 로직과 분리해서 사용할 수 있다.
 
-### 우선 검토안
+### Provider 결정
 
-1. Groq
-2. Hugging Face Inference Providers
-3. Google AI Studio / Gemini API
-4. OpenRouter
-5. Ollama local
+1차 provider는 Groq로 둔다.
 
-Groq 또는 Hugging Face 중 하나를 1차 provider로 정하고, 나머지는 adapter 후보로 남긴다.
+Groq는 OpenAI-compatible API 형태로 연결하는 것을 기본 방향으로 한다.
+
+Hugging Face, Gemini, OpenRouter는 Groq 사용이 어렵거나 quota 문제가 생길 때 대체 후보로 남긴다.
 
 Ollama는 배포용이 아니라 prompt와 금지선 테스트를 로컬에서 반복하는 용도로 검토한다.
 
@@ -189,19 +189,7 @@ Ollama는 배포용이 아니라 prompt와 금지선 테스트를 로컬에서 �
 
 실제 API key는 `.env`에만 넣고 저장소에 커밋하지 않는다.
 
-### 공통 변수
-
-```env
-LLM_PROVIDER=
-LLM_API_KEY=
-LLM_MODEL_ID=
-LLM_BASE_URL=
-LLM_TIMEOUT_SECONDS=30
-LLM_MAX_OUTPUT_TOKENS=400
-LLM_TEMPERATURE=0.4
-```
-
-### Groq 후보
+### Groq 기본 변수
 
 ```env
 LLM_PROVIDER=groq
@@ -212,6 +200,30 @@ LLM_TIMEOUT_SECONDS=30
 LLM_MAX_OUTPUT_TOKENS=400
 LLM_TEMPERATURE=0.4
 ```
+
+`LLM_MODEL_ID`는 실제 연결 직전에 Groq 공식 콘솔 또는 문서에서 사용 가능한 모델을 확인한 뒤 채운다.
+
+### Groq preset
+
+```env
+LLM_PROVIDER=groq
+LLM_API_KEY=
+LLM_MODEL_ID=
+LLM_BASE_URL=https://api.groq.com/openai/v1
+LLM_TIMEOUT_SECONDS=30
+LLM_MAX_OUTPUT_TOKENS=400
+LLM_TEMPERATURE=0.4
+```
+
+### Adapter 호출 형태
+
+```text
+generate(purpose, input, options) -> LlmGenerationResult
+```
+
+Groq adapter는 내부적으로 OpenAI-compatible chat completion 요청 형태를 사용한다.
+
+상세 input, options, result, 실패 처리 기준은 `../generation/adapter_contract.md`를 따른다.
 
 ### Hugging Face 후보
 
