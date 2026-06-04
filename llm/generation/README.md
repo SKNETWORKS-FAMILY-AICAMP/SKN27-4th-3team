@@ -6,6 +6,8 @@
 
 Groq adapter 입출력과 실패 처리 기준은 `adapter_contract.md`를 따른다.
 
+Groq 실제 연결 전 준비 절차는 `groq_setup_checklist.md`를 따른다.
+
 ## Provider 방향
 
 OpenAI 유료 API를 기본값으로 두지 않는다.

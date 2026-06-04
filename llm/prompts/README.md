@@ -4,6 +4,8 @@
 
 프롬프트는 서버 판정 결과를 바꾸지 않고, 이미 확정된 결과를 읽기 쉬운 문장으로 정리하는 데만 사용한다.
 
+fixture 또는 서버 결과를 prompt로 조립하는 규칙은 `prompt_assembly.md`를 따른다.
+
 ## purpose 초안
 
 | purpose | 설명 | 파일 |
