@@ -1,9 +1,52 @@
 {
   "purpose": "result_summary",
-  "case_title": "거울 속의 손님",
-  "outcome": "victory",
-  "end_reason": "seal_succeeded",
-  "true_name_fragment_count": 3,
-  "turn_count": 9,
-  "fallback_summary": "진명은 완성되었고, 거울 속의 손님은 봉인의 문장 안에 갇혔다."
+  "match_result": {
+    "match_id": "sample-match-001",
+    "result": "player_win",
+    "result_reason": "seal_success",
+    "case": {
+      "case_id": "mirror_guest",
+      "title": "거울 속의 손님"
+    },
+    "final_resources": {
+      "sanity": 6,
+      "ritual_power": 1,
+      "curse_marks": 1,
+      "true_name_fragments": 3
+    },
+    "turn_logs": [
+      {
+        "turn": 1,
+        "message": "깨진 거울의 뒷면에서 지워지지 않은 획이 드러났다."
+      },
+      {
+        "turn": 9,
+        "message": "봉인의 문장이 닫히자 방 안의 모든 반사가 멈췄다."
+      }
+    ],
+    "story_result_text": [
+      "진명은 완성되었고, 거울 속의 손님은 봉인의 문장 안에 갇혔다."
+    ],
+    "style_summary": {
+      "label": "신중한 추적자",
+      "display_text": "정보 확인을 우선하면서도 위험한 계약을 제한적으로 사용했다.",
+      "metrics": {
+        "aggression": 0.11,
+        "defense": 0.22,
+        "insight_focus": 0.33,
+        "deception": 0.0,
+        "risk_preference": 0.22,
+        "silence_reliance": 0.11,
+        "crisis_guard_rate": 0.5,
+        "crisis_contract_rate": 0.0,
+        "late_choice_rate": 0.44
+      },
+      "updated_at": "2026-06-04T10:00:00Z"
+    },
+    "llm_summary": {
+      "enabled": false,
+      "text": null,
+      "generation_id": null
+    }
+  }
 }

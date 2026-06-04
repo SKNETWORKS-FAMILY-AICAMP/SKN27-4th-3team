@@ -2,7 +2,8 @@
   "purpose": "match_log_summary",
   "match_id": "sample-match-001",
   "case_id": "mirror_guest",
-  "outcome": "victory",
+  "result": "player_win",
+  "result_reason": "seal_success",
   "turn_count": 9,
   "timeout_count": 1,
   "turn_logs": [
@@ -10,19 +11,22 @@
       "turn": 1,
       "player_action": "insight",
       "info_target_key": "mirror_back",
-      "server_result": "true_name_fragment_progress"
+      "public_log": "깨진 거울의 뒷면에서 지워지지 않은 획이 드러났다.",
+      "match_outcome": "unresolved"
     },
     {
       "turn": 5,
       "player_action": "contract",
       "info_target_key": "missing_child_voice",
-      "server_result": "true_name_fragment_acquired"
+      "public_log": "끊어진 목소리가 거울 안쪽에서 되돌아왔다.",
+      "match_outcome": "unresolved"
     },
     {
       "turn": 9,
       "player_action": "seal",
       "info_target_key": "forgotten_room",
-      "server_result": "seal_succeeded"
+      "public_log": "봉인의 문장이 닫히자 방 안의 모든 반사가 멈췄다.",
+      "match_outcome": "player_win"
     }
   ]
 }

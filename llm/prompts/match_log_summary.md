@@ -21,7 +21,8 @@
 [매치 정보]
 - match_id: {{match_id}}
 - case_id: {{case_id}}
-- 결과: {{outcome}}
+- 결과: {{result}}
+- 종료 사유: {{result_reason}}
 - 턴 수: {{turn_count}}
 - 시간초과 횟수: {{timeout_count}}
 

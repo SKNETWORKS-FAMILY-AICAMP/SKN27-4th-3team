@@ -20,8 +20,8 @@
 
 [스타일 지표]
 - 공격성: {{aggression}}
-- 방어성: {{defensiveness}}
-- 정보 집착: {{information_focus}}
+- 방어성: {{defense}}
+- 정보 집중: {{insight_focus}}
 - 기만성: {{deception}}
 - 위험 선호: {{risk_preference}}
 - 침묵 의존: {{silence_reliance}}
@@ -36,3 +36,8 @@
 
 출력은 1~3문장으로 작성한다.
 ```
+
+## 입력 기준
+
+- metric 이름은 official API의 `StyleSummary.metrics`를 따른다.
+- LLM은 `label`과 `display_text` 후보를 만들 수 있지만, 지표 값은 수정하지 않는다.

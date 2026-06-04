@@ -1,14 +1,23 @@
 {
   "purpose": "style_summary",
-  "style_metrics": {
-    "aggression": 0.11,
-    "defensiveness": 0.22,
-    "information_focus": 0.33,
-    "deception": 0.0,
-    "risk_preference": 0.22,
-    "silence_reliance": 0.11,
-    "crisis_guard_rate": 0.5,
-    "crisis_contract_rate": 0.0,
-    "late_choice_rate": 0.44
+  "style_summary": {
+    "label": null,
+    "display_text": null,
+    "metrics": {
+      "aggression": 0.11,
+      "defense": 0.22,
+      "insight_focus": 0.33,
+      "deception": 0.0,
+      "risk_preference": 0.22,
+      "silence_reliance": 0.11,
+      "crisis_guard_rate": 0.5,
+      "crisis_contract_rate": 0.0,
+      "late_choice_rate": 0.44
+    },
+    "updated_at": "2026-06-04T10:00:00Z"
+  },
+  "metrics_source": {
+    "calculated_by": "server",
+    "editable_by_llm": false
   }
 }

@@ -40,6 +40,10 @@ llm/
 | `fixtures/` | 테스트용 서버 결과, 스타일 지표, 로그 샘플 |
 | `docs/` | LLM 팀 내부 설계 메모와 전달 문서 |
 
+## 계획 문서
+
+LLM purpose, 출력 계약, fallback, provider 후보는 `docs/llm_plan.md`에서 통합 관리한다.
+
 ## 환경 변수 초안
 
 ```env

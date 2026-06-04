@@ -5,6 +5,7 @@
 ## 기본 체크리스트
 
 - 서버 판정 결과와 충돌하지 않는다.
+- official API enum 값과 다른 결과명을 새로 만들지 않는다.
 - 승패, 수치, 진명 조각, 거짓 단서 상태를 새로 판단하지 않는다.
 - 공식 설정이나 룰을 추가하지 않는다.
 - 입력에 없는 사건을 만들어내지 않는다.
@@ -19,3 +20,11 @@
 - 거짓 단서의 진위를 새로 밝히는 표현
 - 괴이 행동의 다음 선택을 단정하는 표현
 - 플레이어의 실제 성격이나 심리를 단정하는 표현
+
+## API 기준 체크리스트
+
+- `result`는 `player_win`, `player_loss`, `unresolved` 중 입력값만 따른다.
+- `result_reason`은 `seal_success`, `sanity_zero`, `curse_marks_loss`, `turn_limit`, `unresolved` 중 입력값만 따른다.
+- `StyleSummary.metrics` 값은 수정하거나 재계산하지 않는다.
+- `llm_summary.text`가 없어도 `story_result_text`만으로 결과 화면이 완성된다.
+- `generation_id`는 실제 generation log가 있을 때만 채운다.

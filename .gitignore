@@ -14,9 +14,9 @@ __pycache__/
 # Python / Django
 *$py.class
 .Python
-venv/
-env/
-ENV/
+/venv/
+/env/
+/ENV/
 pip-wheel-metadata/
 .mypy_cache/
 .ruff_cache/

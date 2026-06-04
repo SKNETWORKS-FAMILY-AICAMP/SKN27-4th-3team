@@ -23,13 +23,16 @@
 {{case_title}}
 
 [서버 판정]
-- 결과: {{outcome}}
-- 종료 사유: {{end_reason}}
-- 획득한 진명 조각 수: {{true_name_fragment_count}}
+- 결과: {{result}}
+- 종료 사유: {{result_reason}}
+- 최종 이성: {{final_resources.sanity}}
+- 최종 의식력: {{final_resources.ritual_power}}
+- 최종 저주 흔적: {{final_resources.curse_marks}}
+- 획득한 진명 조각 수: {{final_resources.true_name_fragments}}
 - 턴 수: {{turn_count}}
 
 [정적 fallback 문장]
-{{fallback_summary}}
+{{story_result_text}}
 
 [금지]
 - 승패를 바꾸지 않는다.
@@ -38,3 +41,9 @@
 
 출력은 2~4문장으로 작성한다.
 ```
+
+## 입력 기준
+
+- `result`, `result_reason`은 official API enum 값을 그대로 사용한다.
+- `story_result_text`는 LLM 실패 시 표시되는 정적 결과 문장이다.
+- `llm_summary.text`만 LLM 생성 대상이며, `story_result_text`를 대체하지 않는다.
