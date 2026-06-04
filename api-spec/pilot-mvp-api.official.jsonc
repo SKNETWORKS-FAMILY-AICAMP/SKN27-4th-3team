@@ -25,6 +25,12 @@
         "request_id",
         "server_time"
       ],
+      "request_id_policy": {
+        "source": "server_generated",
+        "format": "req_<uuid4_hex>",
+        "external_header": "X-Request-ID ignored in 1st MVP",
+        "response_header": "X-Request-ID"
+      },
       "error_required_fields": [
         "code",
         "message",

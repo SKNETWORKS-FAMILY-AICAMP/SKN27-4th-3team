@@ -19,6 +19,7 @@ Updated: 2026-06-04
 - Dockerfile 기반 백엔드 이미지 빌드와 Django 배포 의도는 문서에 반영됐다. 현재 Dockerfile은 로컬/dev 이미지 빌드 시작점이며 production entrypoint나 운영 배포 자동화로 확정하지 않는다.
 - Dockerfile 이미지 빌드와 Django 배포 결정 타이밍은 `docs/09_Approved_Contracts/24_Dockerfile_이미지_빌드_배포_준비_계약.md`에 정리됐다.
 - PvP 모드는 없다. 기존 PvP-ready 구조 보존과 확정 후속 PvP 전제는 폐기됐고, 기준 문서는 `docs/09_Approved_Contracts/19_PvP_미사용_및_구조_정리_계약.md`의 PvP 미사용 계약이다.
+- `meta.request_id` 정책은 A안으로 확정했다. 서버가 매 요청마다 `req_<uuid4_hex>`를 생성하고, 1차 MVP에서는 외부 `X-Request-ID`를 무시하며, 응답 header에는 `X-Request-ID`를 내려준다.
 - README는 Obsidian 문서 기준으로 현재 사용 기술, 계약만 있는 기술, 후순위/미사용 기술을 분리한다.
 - ERD에 들어갈 RDB 테이블 구성은 문서와 Django model scaffold 수준에서 존재하지만, 별도 시각적 ERD 산출물은 아직 없다.
 
@@ -339,7 +340,7 @@ Updated: 2026-06-04
 - Docker image build와 Django production 배포는 아직 검증하지 않았다. production 배포 전 결정 타이밍과 구현 게이트는 승인 계약 24번을 따른다.
 - PvP 관련 기존 문서 표현은 핵심 source-of-truth에서 정리했고, `backend/apps/realtime/` placeholder도 제거했다. 발표용/generated 문서에 남은 PvP 표현은 폐기 기록으로만 취급하며, 구현 기준은 승인 계약 19번의 PvP 미사용 결정이다.
 - 실제 CORS 응답 처리는 아직 dependency/middleware가 없으므로, 프론트 origin 요구가 확정되는 API 연결 단계에서 다시 검증해야 한다.
-- API envelope helper는 아직 DRF `Response`, exception handler, middleware/request-id 생성 흐름에 연결되지 않았다.
+- request id 생성/전파는 `backend.apps.common.request_ids.RequestIdMiddleware`로 settings에 연결했다. API envelope helper는 아직 DRF `Response`와 exception handler에는 연결되지 않았다.
 - Auth API view는 official schema와 보안 금지선을 고정하는 스캐폴딩이다. 실제 signup/login/logout/refresh/me service, JWT 발급, cookie response runtime은 아직 구현하지 않았다.
 - official API schema가 변경되면 `backend/apps/common/errors.py`의 error code catalog도 함께 갱신해야 한다.
 - `API_ERROR_MESSAGES`는 official schema와 테스트로 동기화하지만, schema에서 자동 생성하는 파이프라인은 아직 없다.
@@ -378,7 +379,7 @@ Updated: 2026-06-04
 
 ## Recommended Next Actions
 
-1. Task 13 `API response envelope runtime boundary`를 진행하기 전에 `meta.request_id` 생성 방식, 외부 request id header 수용 여부, middleware 위치를 문서 기준으로 확정한다.
+1. Task 13 `API response envelope runtime boundary`는 확정된 A안 request_id 정책을 따른다. 실제 DB service가 없는 endpoint의 placeholder/501 처리 기준은 구현 전 별도 확정이 필요하다.
 2. Auth runtime 구현을 재개하기 전에 JWT 발급 service, refresh rotation DB transaction, SecurityEvent actor/metadata 정책을 문서 기준으로 확정한다.
 3. Dockerfile 배포 준비는 승인 계약 24번의 Gate A 문서 정렬 이후 Gate B 이미지 빌드 검증으로 진행한다.
 4. Dockerfile 이미지 빌드 검증을 수행하려면 승인 후 `docker build -f ops/docker/backend.Dockerfile -t skn27-backend:local .` 또는 `docker compose -f ops/docker/docker-compose.yml build api`를 실행한다.

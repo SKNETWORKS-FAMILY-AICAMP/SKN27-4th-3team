@@ -50,3 +50,16 @@ updated: "2026-06-02"
 - 실패 응답은 `error.code`, `error.message`, `error.details`를 사용한다.
 - 프론트는 사용자 표시 문구를 `error.code` 기준으로 매핑할 수 있다.
 - endpoint마다 응답 형태를 임의로 바꾸지 않는다.
+
+## request_id 생성 및 전파 정책
+
+`meta.request_id`는 백엔드 서버가 매 요청마다 생성한다.
+
+- 형식은 `req_` + UUIDv4 hex 문자열이다.
+- 클라이언트가 보낸 `X-Request-ID`는 1차 MVP에서 사용하지 않는다.
+- Django middleware가 요청 진입 시점에 `request.request_id`를 설정한다.
+- request id middleware는 `SecurityMiddleware`보다 앞에서 실행한다.
+- 모든 API envelope는 `request.request_id`를 사용한다.
+- middleware 밖에서 생성된 예외 상황만 fallback으로 새 `request_id`를 만든다.
+- HTTP 응답 header에는 `X-Request-ID`를 포함한다.
+- `request_id`는 `client_request_id`, `client_nonce`와 혼용하지 않는다.
