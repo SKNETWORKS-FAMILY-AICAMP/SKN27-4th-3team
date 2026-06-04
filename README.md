@@ -2,6 +2,18 @@
 
 초자연 공포 스릴러 미스터리 기반 1대1 턴제 심리전 웹 게임 MVP 프로젝트입니다. 플레이어는 첫 괴이 `거울 속의 손님`과 의식 결투를 진행하며, 서버가 턴 판정과 승패를 최종 결정합니다.
 
+이 README는 `docs/`의 Obsidian 문서와 승인 계약을 기준으로 현재 쓰는 것, 계약만 있는 것, 후순위로 보류한 것을 구분해 정리합니다.
+
+## 현재 상태 요약
+
+| 구분 | 항목 | 상태 |
+|---|---|---|
+| 현재 사용/구현 준비 | Django, Django REST Framework, PostgreSQL 기준 RDB 모델, `retrieval` 앱, PostgreSQL `pgvector` 준비, AI Profile 지표, 공식 API schema, pytest 계약 테스트 | 1차 MVP 백엔드/RAG/AI Profile 구현 준비 범위 |
+| 계약은 있으나 현재 저장소 구현 없음 | React/TypeScript/Vite 프론트엔드, 프론트 route/API 연결 기준 | 승인 계약은 있으나 실제 프론트 구현은 현재 저장소에 없음 |
+| 후순위/미사용 | 실제 LLM provider/prompt/generation, KAG 구현, GraphDB, Redis/Channels/WebSocket/PvP realtime, 운영 배포 자동화 | 1차 MVP 제외 |
+
+GraphDB는 사용하지 않습니다. KAG도 1차 MVP 구현 범위가 아니며, 후속 도입 시에도 현재 문서 기준은 별도 GraphDB가 아니라 RDB 기반 후보 구조입니다.
+
 ## 문서 기준
 
 이 프로젝트의 기획과 구현 기준은 `docs/`의 Obsidian 문서로 관리합니다.
@@ -12,30 +24,40 @@
 | 문서 운영 규칙 | [`docs/00_Project/00_문서_운영_규칙.md`](docs/00_Project/00_%EB%AC%B8%EC%84%9C_%EC%9A%B4%EC%98%81_%EA%B7%9C%EC%B9%99.md) | source of truth, 문서 상태, 미정 항목 관리 기준 |
 | 프로젝트 개요 | [`docs/00_Project/01_프로젝트_개요.md`](docs/00_Project/01_%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8_%EA%B0%9C%EC%9A%94.md) | 제품 방향과 기술 방향 |
 | MVP 범위 | [`docs/01_MVP/02_MVP_포함_제외_범위.md`](docs/01_MVP/02_MVP_%ED%8F%AC%ED%95%A8_%EC%A0%9C%EC%99%B8_%EB%B2%94%EC%9C%84.md) | 1차 MVP 포함/제외 범위 |
-| 승인 계약 | [`docs/09_Approved_Contracts/`](docs/09_Approved_Contracts) | 구현 기준으로 사용할 승인 문서 |
+| 백엔드/RAG/AI Profile 계약 | [`docs/09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약.md`](docs/09_Approved_Contracts/17_%EB%B0%B1%EC%97%94%EB%93%9C_RAG_AI_Profile_%EA%B5%AC%ED%98%84_%EA%B3%84%EC%95%BD.md) | 프론트/LLM 제외 백엔드 구현 기준 |
+| 프로젝트 폴더 구조 계약 | [`docs/09_Approved_Contracts/23_프로젝트_폴더_구조_계약.md`](docs/09_Approved_Contracts/23_%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8_%ED%8F%B4%EB%8D%94_%EA%B5%AC%EC%A1%B0_%EA%B3%84%EC%95%BD.md) | 최상위 폴더와 팀별 경계 |
 | 공식 API 스키마 | [`api-spec/pilot-mvp-api.official.jsonc`](api-spec/pilot-mvp-api.official.jsonc) | 사람이 읽는 공식 API 계약 |
 | 도구용 API 스키마 | [`api-spec/pilot-mvp-api.official.json`](api-spec/pilot-mvp-api.official.json) | strict JSON 생성본 |
 
 문서 운영 원칙은 다음과 같습니다.
 
+- `approved`, `implementation-ready`, official API schema만 구현 기준으로 사용합니다.
 - `draft` 문서는 구현 기준으로 단독 사용하지 않습니다.
 - `needs-decision` 문서는 미정 항목을 숨기지 않고 보류합니다.
-- `approved`, `implementation-ready`, official API schema만 구현 기준으로 사용합니다.
 - 문서에 없는 기본값, 테이블, 상태값, seed 데이터는 임의로 만들지 않습니다.
 
-## 기술 스택
+## 현재 사용하는 기술
 
 | 영역 | 사용 기술 | 현재 범위 |
 |---|---|---|
 | Backend | Django, Django REST Framework, ASGI/WSGI | 1차 MVP 백엔드 scaffold와 도메인 골격 |
 | Auth | Django custom user, JWT access/refresh token, HttpOnly cookie, CSRF | 인증 API scaffold와 refresh token 보안 모델 |
 | RDB | PostgreSQL 기준 Django model | Auth, Profile, Match, Story, AI Profile 저장 구조 |
-| VectorDB | PostgreSQL + `pgvector` | RAG chunk embedding 저장 준비 |
-| RAG | `retrieval` 앱, 문서 chunk, embedding, query log | 검색 구조와 근거 로그 준비 |
-| Frontend | React, TypeScript, Vite, React Router, CSS Modules | 승인 계약 존재, 실제 프론트 구현은 별도 범위 |
-| Realtime/PvP | Redis, Django Channels, WebSocket | 1차 MVP 제외, 구조만 PvP-ready로 보존 |
-| LLM | LLM adapter, prompt/generation | 1차 MVP 실제 생성 제외 |
-| KAG/Graph | RDB 기반 knowledge graph 후보 | 1차 MVP 제외 |
+| RAG 저장/검색 준비 | PostgreSQL + `pgvector`, `retrieval` 앱 | 문서/chunk/embedding/query log 구조 |
+| JSON 검증 | `jsonschema` | JSONField payload 검증 경계 |
+| API 계약 | official JSONC/JSON schema | 프론트와 백엔드가 공유할 endpoint/response shape |
+| 테스트 | pytest | 승인 계약 기반 백엔드 테스트 |
+
+## 현재 사용하지 않는 기술
+
+| 항목 | 문서상 상태 | README 반영 기준 |
+|---|---|---|
+| Frontend 구현 | 프론트 기술 계약은 승인됨 | 실제 저장소 구현은 아직 없으므로 현재 사용 기술로 쓰지 않음 |
+| LLM generation | `docs/07_Deferred/04_LLM_후순위_설계.md` 기준 후순위 | provider, prompt, generation 구현 없음 |
+| KAG | 1차 MVP 제외 | 구현하지 않음 |
+| GraphDB | 사용하지 않음 | 도입 대상 아님 |
+| Redis/Channels/WebSocket | realtime/PvP 후순위 | 1차 MVP 로컬 실행 구성에서 제외 |
+| 운영 배포 자동화 | 1차 MVP 제외 | 현재 범위 아님 |
 
 ## MVP 범위
 
@@ -45,7 +67,7 @@
 - AI 사건 선택
 - `거울 속의 손님` 브리핑과 의식 결투
 - 턴 제출, 서버 판정, 턴 결과 저장
-- 승패 처리, 결과/로그 표시
+- 승패 처리, 결과/로그 조회
 - 행동 이벤트 저장과 스타일 지표 계산
 - RAG 검색용 `retrieval` 앱 구조
 - RAG 문서 chunk 저장, query log 저장
@@ -55,33 +77,33 @@
 ### 제외
 
 - `우물 밑의 목소리`, `문밖의 어머니` 구현
+- 프론트엔드 실제 구현
 - 실시간 PvP, 매칭 대기열, WebSocket 대전
-- KAG 구현과 GraphDB 전용 저장소
-- 실제 LLM 생성
+- KAG 구현
+- GraphDB 도입
+- 실제 LLM provider/prompt/generation 구현
 - 랭크 시스템, cosmetic 보상
 - 운영 배포 자동화
 
 ## 시스템 구조
 
-프로젝트는 Monorepo + 팀별 경계 분리 구조를 기준으로 합니다.
+프로젝트는 Monorepo + 팀별 경계 분리 구조를 기준으로 합니다. 다만 실제 구현 상태는 백엔드와 문서/API 계약 중심입니다.
 
 ```text
 backend/   Django API, DB 모델, 서버 판정, Auth, RAG, AI Profile
-frontend/  React + TypeScript + Vite 프론트 구현 기준
-llm/       prompt, generation 정책, provider 실험 기준
 api-spec/  공식 API schema와 draft 명세
 docs/      Obsidian 승인 문서, 설계 문서, 후순위 문서
 tools/     문서 생성, 검증, 개발 보조 스크립트 후보
 output/    문서/이미지/PDF 산출물
 ops/       Docker Compose, env template, 운영 후보
-```
 
-현재 저장소에는 백엔드와 문서/API 계약 중심의 구현 scaffold가 생성되어 있습니다.
+frontend/  승인 계약상 프론트 구현 경계. 현재 저장소 구현 없음
+llm/       승인 전 prompt/generation 실험 경계. 현재 MVP 구현 없음
+```
 
 ```mermaid
 flowchart LR
-    User["사용자"] --> Frontend["React Frontend"]
-    Frontend --> API["Django API"]
+    Client["API Client 또는 후속 Frontend"] --> API["Django API"]
     API --> Rules["game_rules 결정적 룰 엔진"]
     API --> RDB["PostgreSQL RDB"]
     API --> Retrieval["retrieval RAG 앱"]
@@ -90,75 +112,72 @@ flowchart LR
     Docs["Obsidian 승인 문서"] --> Retrieval
     Docs --> APIContract["official API schema"]
     APIContract --> API
-    APIContract --> Frontend
+    APIContract --> Client
 ```
 
 핵심 원칙은 서버 권위입니다. LLM, RAG, KAG는 룰 판정, 승패, 인증/권한, 진명 조각, 거짓 단서, 괴이 행동 선택을 바꾸지 않습니다.
 
 ## 주요 서비스 흐름
 
+아래 시퀀스는 실제 프론트 구현 화면이 아니라 official API 계약 기준의 클라이언트-서버 흐름입니다.
+
 ### 인증 흐름
 
 ```mermaid
 sequenceDiagram
-    participant U as User
-    participant F as Frontend
+    participant C as Client
     participant A as Django API
     participant DB as PostgreSQL
 
-    U->>F: 로그인 정보 입력
-    F->>A: GET /api/v1/auth/csrf
-    A-->>F: csrf_token
-    F->>A: POST /api/v1/auth/login + X-CSRFToken
+    C->>A: GET /api/v1/auth/csrf
+    A-->>C: csrf_token
+    C->>A: POST /api/v1/auth/login + X-CSRFToken
     A->>DB: 사용자 확인, refresh token family/jti 저장
-    A-->>F: HttpOnly access/refresh cookie + { data, meta }
-    F->>A: GET /api/v1/auth/me
-    A-->>F: 현재 사용자와 profile
+    A-->>C: HttpOnly access/refresh cookie + { data, meta }
+    C->>A: GET /api/v1/auth/me
+    A-->>C: 현재 사용자와 profile
 ```
 
 ### AI 스토리 매치 시작
 
 ```mermaid
 sequenceDiagram
-    participant U as User
-    participant F as Frontend
+    participant C as Client
     participant A as Django API
     participant S as story
     participant M as matches
     participant DB as PostgreSQL
 
-    U->>F: AI 사건 선택
-    F->>A: GET /api/v1/story/cases
-    A-->>F: 사용 가능한 사건 목록
-    F->>A: GET /api/v1/story/cases/{case_id}/briefing
-    A->>S: 브리핑/정보 대상 조회
-    A-->>F: 사건 브리핑
-    U->>F: 사건 시작
-    F->>A: POST /api/v1/story/cases/{case_id}/matches + client_request_id
+    C->>A: GET /api/v1/story/cases
+    A-->>C: 사용 가능한 사건 목록
+    C->>A: GET /api/v1/story/cases/{case_id}/briefing
+    A->>S: 브리핑 정보 조회
+    A-->>C: 사건 브리핑
+    C->>A: POST /api/v1/story/cases/{case_id}/matches + client_request_id
     A->>M: 매치/참가자/턴 생성
     M->>DB: matches, participants, turns 저장
-    A-->>F: MatchState
+    A-->>C: MatchState
 ```
 
 ### 턴 제출과 판정
 
 ```mermaid
 sequenceDiagram
-    participant F as Frontend
+    participant C as Client
     participant A as Django API
     participant M as matches
     participant G as game_rules
     participant P as ai_profile
     participant DB as PostgreSQL
 
-    F->>A: POST /api/v1/matches/{match_id}/turns
+    C->>A: POST /api/v1/matches/{match_id}/turns
     A->>M: participant 권한, deadline, client_nonce 검증
     M->>G: player_action + apparition_action 판정 요청
     G-->>M: public_log, effect, outcome
     M->>DB: action_submission, turn_result 저장
-    M->>P: 턴 resolve 행동 이벤트 생성
+    M->>P: turn resolve 행동 이벤트 생성
     P->>DB: PlayerActionEvent, StyleMetricSnapshot 저장
-    A-->>F: TurnResult + 최신 MatchState
+    A-->>C: TurnResult + 최신 MatchState
 ```
 
 ### RAG 색인과 검색
@@ -182,7 +201,7 @@ sequenceDiagram
 
 ## RAG 환각 방지와 출처 정책
 
-RAG는 1차 MVP에서 판정 권위가 아니라 검색과 근거 로그를 담당합니다.
+RAG는 1차 MVP에서 판정 권위가 아니라 검색 구조와 근거 로그를 담당합니다.
 
 ### 환각 방지 기준
 
@@ -207,11 +226,19 @@ RAG는 1차 MVP에서 판정 권위가 아니라 검색과 근거 로그를 담�
 | 호출자 | `caller` |
 | 생성 시각 | `created_at` |
 
-LLM generation log와 retrieval log 연결 방식, 최종 사용자 화면에서 출처를 어떻게 표시할지는 후속 확정 항목입니다.
+최종 사용자 화면에서 출처를 어떻게 표시할지는 아직 프론트 구현 범위에서 확정/구현되지 않았습니다. 백엔드/RAG 기준으로는 retrieval query log와 chunk 식별자를 남겨 추적 가능성을 확보합니다.
 
-## RDB 설계
+## RDB와 ERD 구성 상태
 
-RDB는 PostgreSQL을 기준으로 합니다. 핵심 도메인은 정규화하고, JSONField는 결과 스냅샷, 공개/비공개 로그 스냅샷, 룰/정책 스냅샷, 괴이별 조건 같은 작은 정책 데이터로 제한합니다.
+ERD는 두 단계로 구분해서 봐야 합니다.
+
+| 항목 | 현재 상태 |
+|---|---|
+| RDB 테이블 구성 | 승인 문서와 Django model scaffold 수준에서 구성됨 |
+| 시각적 ERD 산출물 | 현재 저장소에서 별도 ERD 다이어그램 파일은 확인되지 않음 |
+| 물리 DB 검증 | migration 생성/실제 PostgreSQL 연결 검증은 별도 필요 |
+
+즉, ERD에 들어갈 핵심 RDB 구성은 잡혀 있지만, 발표나 산출물용 시각적 ERD 파일은 아직 만들어진 상태가 아닙니다.
 
 ### 인증/프로필
 
@@ -247,16 +274,24 @@ RDB는 PostgreSQL을 기준으로 합니다. 핵심 도메인은 정규화하고
 
 | 테이블/모델 | 주요 필드 | 목적 |
 |---|---|---|
-| `PlayerActionEvent` | user_id, match_id, stage_id, turn_number, action_code, info_target_key, decision_duration_ms, 자원 스냅샷, opponent_action_code, result_code, clue/outcome | 턴 resolve 시점 행동 이벤트 |
+| `PlayerActionEvent` | user_id, match_id, stage_id, turn_number, action_code, info_target_key, decision_duration_ms, opponent_action_code, result_code, clue/outcome | 턴 resolve 시점 행동 이벤트 |
 | `StyleMetricSnapshot` | aggression, defense, insight_focus, deception, risk_preference, silence_reliance, crisis_guard_rate, crisis_contract_rate, late_choice_rate | 스타일 지표 스냅샷 |
 
-## GraphDB/KAG 설계 상태
+### RAG
 
-현재 1차 MVP에서는 별도 GraphDB를 사용하지 않습니다.
+| 테이블/모델 | 주요 필드 | 목적 |
+|---|---|---|
+| `RetrievalDocument` | source_path, title, schema_version | 검색 대상 문서 |
+| `RetrievalChunk` | document_id, chunk_id, content, embedding, metadata | 문서 chunk와 embedding |
+| `RetrievalQueryLog` | query, caller, document_id, chunk_id, score, threshold, top_k, created_at | 검색 근거 로그 |
 
-문서상 KAG는 세계관 관계를 명시적으로 관리하는 지식 그래프이며, 후순위 설계로 보존됩니다. 후보 구조는 `knowledge_nodes`, `knowledge_edges`, `node_type`, `relation_type`, RAG 검색 범위 필터링입니다.
+## KAG와 GraphDB
 
-구현 전 확정이 필요한 항목은 다음과 같습니다.
+현재 프로젝트에서는 GraphDB를 사용하지 않습니다.
+
+문서상 KAG는 세계관 관계를 명시적으로 관리하는 지식 그래프 후보이지만, 1차 MVP에서는 구현하지 않습니다. 후속으로 도입하더라도 현재 기준은 `knowledge_nodes`, `knowledge_edges`, `node_type`, `relation_type` 같은 RDB 기반 후보 구조입니다.
+
+KAG 구현 전 확정이 필요한 항목은 다음과 같습니다.
 
 - 초기 node seed 데이터
 - relation weight 의미
@@ -284,7 +319,7 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 4. 문단을 900자 이하 chunk로 합칩니다.
 5. 긴 문단은 900자 단위로 분할합니다.
 6. chunk마다 `document_id:{index}` 형식의 `chunk_id`를 부여합니다.
-7. embedding을 `pgvector` 필드에 저장할 수 있게 준비합니다.
+7. embedding은 `pgvector` 필드에 저장할 수 있게 준비합니다.
 
 ## 수집 데이터와 전처리
 
@@ -292,7 +327,7 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 
 턴 resolve 시점에 행동 이벤트를 수집합니다.
 
-- 사용자/매치/스테이지/턴 식별자
+- 사용자, 매치, 스테이지, 턴 식별자
 - 선택 행동과 정보 대상
 - 선택 소요 시간
 - 선택 당시 이성, 의식력, 저주 흔적
@@ -319,7 +354,7 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 
 ### RAG 문서 데이터
 
-수집 대상은 승인 문서와 공식 스토리/룰 문서입니다.
+수집 대상은 승인된 Obsidian 문서와 공식 스토리/룰 문서입니다.
 
 - `docs/09_Approved_Contracts/*`
 - `docs/05_Story_Mode/02_거울_속의_손님.md`
@@ -331,47 +366,29 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 
 외부 데이터셋 수집은 현재 승인된 1차 MVP 범위에 없습니다.
 
-## 화면 설계
+## 화면 설계 상태
 
-프론트 MVP 화면 목록은 다음과 같습니다.
+프론트엔드 실제 구현은 현재 저장소에 없습니다.
 
-| 화면 | 목적 | MVP |
+다만 `docs/09_Approved_Contracts/15_프론트_기술_계약_오너_확정안.md`에는 프론트 기술 스택, route, API client, cookie/CSRF 연결, endpoint 사용 기준이 승인되어 있습니다. `docs/04_Frontend/*` 문서는 화면 기획 참고 문서로 볼 수 있지만, 현재 README에서는 실제 구현 완료 항목으로 취급하지 않습니다.
+
+| 화면 | 문서상 목적 | 현재 상태 |
 |---|---|---|
-| 로그인 | 계정 인증 | 포함 |
-| 회원가입 | 신규 계정 생성 | 포함 |
-| 비밀번호 재설정 | 계정 복구 | 포함 |
-| 로비 | 모드 선택 | 포함 |
-| AI 사건 선택 | 스토리 모드 진입 | 포함 |
-| 브리핑 | 괴이와 사건 소개 | 포함 |
-| 의식 결투 | 핵심 플레이 화면 | 포함 |
-| 결과 | 승패, 로그, 스타일 분석 표시 | 포함 |
-| 프로필 | 전적과 기본 성향 확인 | 포함 |
-| PvP 매칭 | 실시간 상대 찾기 | 제외 |
-
-의식 결투 화면 구성 기준:
-
-- 중앙: 괴이 또는 상대 실루엣
-- 하단: 내 행동 선택 패널
-- 좌측: 내 이성, 의식력, 저주 흔적
-- 우측: 상대 공개 상태
-- 상단: 턴 번호와 제한 시간
-- 중앙 하단: 이번 턴 공개 로그
-- 별도 패널: 획득 단서와 의심 단서
-
-화면 설계 참고 문서:
-
-- [`docs/04_Frontend/01_화면_목록.md`](docs/04_Frontend/01_%ED%99%94%EB%A9%B4_%EB%AA%A9%EB%A1%9D.md)
-- [`docs/04_Frontend/03_로비와_사건_선택.md`](docs/04_Frontend/03_%EB%A1%9C%EB%B9%84%EC%99%80_%EC%82%AC%EA%B1%B4_%EC%84%A0%ED%83%9D.md)
-- [`docs/04_Frontend/04_의식_결투_화면.md`](docs/04_Frontend/04_%EC%9D%98%EC%8B%9D_%EA%B2%B0%ED%88%AC_%ED%99%94%EB%A9%B4.md)
-- [`docs/04_Frontend/05_결과_화면.md`](docs/04_Frontend/05_%EA%B2%B0%EA%B3%BC_%ED%99%94%EB%A9%B4.md)
+| 로그인/회원가입 | 인증 | API 계약 존재, 프론트 구현 없음 |
+| 로비 | 모드 선택 | API 계약 존재, 프론트 구현 없음 |
+| AI 사건 선택/브리핑 | `거울 속의 손님` 진입 | API 계약 존재, 프론트 구현 없음 |
+| 의식 결투 | 턴 상태 조회와 행동 제출 | API 계약 존재, 프론트 구현 없음 |
+| 결과 | 승패, 로그, 스타일 요약 조회 | API 계약 존재, 프론트 구현 없음 |
+| 프로필 | 내 프로필과 전적 요약 조회 | API 계약 존재, 프론트 구현 없음 |
+| PvP 매칭 | 실시간 상대 찾기 | 1차 MVP 제외 |
 
 ## 테스트 시나리오와 결과
 
-현재 백엔드 테스트는 계약 기반 테스트를 중심으로 구성되어 있습니다.
+현재 백엔드 테스트는 승인 계약 기반 테스트를 중심으로 구성되어 있습니다.
 
 | 영역 | 주요 검증 |
 |---|---|
-| config | Django 설정, 앱 경계, 의존성 계약 |
+| config | Django 설정, 앱 경계, 환경변수 계약 |
 | common | API 성공/실패 envelope, error code catalog |
 | accounts | custom user, profile, refresh token, auth API scaffold |
 | game_rules | 7x7 상성표, 자원 상태, 승패 조건, 괴이 행동 정책 |
@@ -380,7 +397,7 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 | ai_profile | 행동 이벤트, 스타일 지표 계산 |
 | retrieval | RAG 문서/chunk/embedding/query log 구조와 allowlist |
 
-검증 결과:
+최근 검증 결과:
 
 ```text
 명령: C:\Python314\python.exe -m pytest backend\tests -v
@@ -397,21 +414,24 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 
 1. 프로젝트 개요
    - 장르: 초자연 공포 스릴러 미스터리
-   - 핵심 플레이: 괴이의 진명을 파헤치는 1대1 심리전
+   - 핵심 플레이: 괴이의 진명을 파헤치는 1대1 턴제 심리전
    - 1차 MVP 대상: `거울 속의 손님`
-2. 문서 기반 기획
-   - Obsidian 문서 운영 규칙
-   - 승인 계약과 draft 문서 분리
+2. Obsidian 문서 기반 기획
+   - 승인 문서, draft, deferred 문서 구분
    - official API schema 관리
-3. 시스템 아키텍처
-   - React Frontend, Django API, PostgreSQL, pgvector
+   - 문서에 없는 요구사항을 임의 구현하지 않는 원칙
+3. 시스템 워크프레임
+   - Django API, PostgreSQL, pgvector
    - 서버 권위 룰 엔진
    - PvP-ready Match 구조
-4. RDB 설계
+   - 프론트와 LLM은 별도 계약/후순위 경계로 분리
+4. RDB/ERD 구성
    - Auth/Profile
    - Match/Turn/Submission/Result
    - Story/Apparition/Clue
    - AI Profile
+   - RAG retrieval
+   - 시각적 ERD 산출물은 추가 제작 필요
 5. RAG와 환각 방지
    - 승인 문서 allowlist
    - chunking 기준
@@ -426,18 +446,15 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
    - 사건 선택/매치 시작
    - 턴 제출/판정
    - RAG 검색
-8. 화면 설계
-   - 로그인, 로비, 사건 선택, 브리핑, 의식 결투, 결과, 프로필
+8. 화면 설계 상태
+   - 프론트 API 연결 계약은 존재
+   - 실제 프론트 구현은 현재 저장소에 없음
+   - `docs/04_Frontend/*`는 화면 기획 참고 문서
 9. 테스트 시나리오와 결과
    - 계약 테스트 범위
    - `88 passed`
 10. 팀원별 느낀점
-   - 팀원 1: 작성 필요
-   - 팀원 2: 작성 필요
-   - 팀원 3: 작성 필요
-   - 팀원 4: 작성 필요
-
-팀원별 느낀점은 현재 저장소 문서에 확정 내용이 없으므로 임의로 작성하지 않았습니다.
+   - 현재 저장소 문서에 팀원별 회고 내용이 없으므로 임의 작성하지 않음
 
 ## 현재 구현 상태와 남은 리스크
 
@@ -446,15 +463,16 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 - 백엔드 scaffold와 도메인 모델/서비스 골격 구현
 - 공식 API schema와 계약 테스트 정리
 - RAG 구조, chunking, allowlist, 검색 기본값 구현 준비
-- 백엔드 테스트 88개 통과
+- 백엔드 테스트 88개 통과 기록
 
 남은 리스크:
 
 - 실제 DB migration과 PostgreSQL 연결 검증은 별도 필요합니다.
-- `story/cases`, `matches`, `profile` 등 전체 official endpoint의 runtime 연결은 후속 구현 대상입니다.
-- Frontend 실제 구현은 현재 저장소에 아직 없습니다.
+- `story/cases`, `matches`, `profile` 등 전체 official endpoint runtime 연결은 계속 구현 대상입니다.
+- 프론트엔드 실제 구현은 현재 저장소에 아직 없습니다.
 - LLM generation, KAG, WebSocket/PvP는 1차 MVP 제외입니다.
-- 사용자 화면에서 RAG 출처를 어떻게 표시할지는 후속 확정이 필요합니다.
+- 사용자 화면에서 RAG 출처를 어떻게 표시할지는 프론트 구현 단계에서 확정이 필요합니다.
+- 발표용 시각적 ERD 산출물은 아직 없습니다.
 
 ## 주요 참고 문서
 

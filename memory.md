@@ -1,11 +1,11 @@
 # Project Memory
 
-Updated: 2026-06-03
+Updated: 2026-06-04
 
 ## Current State
 
-- 이 workspace는 `docs/` 옵시디언 문서와 일부 백엔드 도메인 구현이 함께 있는 초기 monorepo다.
-- Git 저장소는 아니다. `git status`와 `git log`는 `.git` 부재로 실행되지 않는다.
+- 이 workspace는 `docs/` 옵시디언 문서, official API schema, 백엔드 MVP scaffold가 함께 있는 초기 monorepo다.
+- Git 저장소이며 현재 작업 브랜치는 `feature-backend-structure`다.
 - 구현 문서의 source of truth는 `docs/09_Approved_Contracts/*`, `docs/02_Game_Rules/*`, `docs/03_Backend/99_Backend_구현_확정.md`, `docs/06_AI_Profile/99_AI_Profile_구현_확정.md`, `api-spec/pilot-mvp-api.official.jsonc/json`이다.
 - 프론트엔드와 LLM generation 구현은 현재 작업 범위에서 제외한다.
 - `backend/apps/game_rules`는 전체 7x7 상성표, 자원/상태 일부, AI 스토리 승패 판정을 순수 Python 도메인 모듈로 구현했다.
@@ -13,7 +13,10 @@ Updated: 2026-06-03
 - Django project 최소 설정, 의존성 lock, 백엔드 MVP 앱 `AppConfig` 골격은 생성됐다.
 - Auth user/profile/refresh token/security event 저장 구조 일부는 구현됐다.
 - Auth API endpoint/serializer/view/cookie helper 스캐폴딩은 official schema와 보안 금지선 기준으로 추가됐다.
-- Match/Story/Retrieval DB 모델, 실제 Auth token 발급/JWT/cookie runtime/rotation service, retrieval 저장/검색 구현은 아직 없다.
+- Match/Story/Retrieval DB 모델 scaffold와 턴 resolve, RAG chunking/allowlist 구조가 추가됐다.
+- 실제 Auth token 발급/JWT/cookie runtime/rotation service, full official endpoint runtime 연결, migration/실제 PostgreSQL 연결 검증은 아직 남아 있다.
+- README는 Obsidian 문서 기준으로 현재 사용 기술, 계약만 있는 기술, 후순위/미사용 기술을 분리한다.
+- ERD에 들어갈 RDB 테이블 구성은 문서와 Django model scaffold 수준에서 존재하지만, 별도 시각적 ERD 산출물은 아직 없다.
 
 ## Operating Context
 
@@ -21,6 +24,7 @@ Updated: 2026-06-03
 - 백엔드 목표 스택은 Django API, PostgreSQL, `pgvector`, HttpOnly JWT cookie, refresh token rotation, Django CSRF middleware다.
 - 1차 MVP 로컬 실행 구성은 Django API + PostgreSQL + PostgreSQL `pgvector`로 제한한다.
 - Redis, WebSocket worker, LLM provider emulator, KAG 전용 저장소, 프론트엔드 구현, LLM provider/prompt/generation 구현은 제외한다.
+- GraphDB는 사용하지 않는다. KAG도 1차 MVP 제외이며, 후속 후보는 RDB 기반 구조다.
 
 ## Source Documents
 
