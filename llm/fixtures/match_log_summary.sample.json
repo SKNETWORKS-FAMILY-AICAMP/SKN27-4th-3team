@@ -1,7 +1,7 @@
 {
   "purpose": "match_log_summary",
   "match_id": "sample-match-001",
-  "case_id": "mirror_guest",
+  "case_id": "nameless_curse",
   "result": "player_win",
   "result_reason": "seal_success",
   "turn_count": 9,
@@ -10,22 +10,22 @@
     {
       "turn": 1,
       "player_action": "insight",
-      "info_target_key": "mirror_back",
-      "public_log": "깨진 거울의 뒷면에서 지워지지 않은 획이 드러났다.",
+      "info_target_key": "attic_diary",
+      "public_log": "다락방 일기장에서 벽 속에 묻힌 아이의 기록이 발견됐다.",
       "match_outcome": "unresolved"
     },
     {
       "turn": 5,
       "player_action": "contract",
-      "info_target_key": "missing_child_voice",
-      "public_log": "끊어진 목소리가 거울 안쪽에서 되돌아왔다.",
+      "info_target_key": "stitched_mouth",
+      "public_log": "무명실로 꿰매어진 입술의 흔적이 거울 표면에 떠올랐다.",
       "match_outcome": "unresolved"
     },
     {
       "turn": 9,
       "player_action": "seal",
-      "info_target_key": "forgotten_room",
-      "public_log": "봉인의 문장이 닫히자 방 안의 모든 반사가 멈췄다.",
+      "info_target_key": "truth_mirror",
+      "public_log": "진실의 거울 앞에서 피티의 이름이 불렸고, 무명실이 재처럼 흩어졌다.",
       "match_outcome": "player_win"
     }
   ]

@@ -5,8 +5,8 @@
     "result": "player_win",
     "result_reason": "seal_success",
     "case": {
-      "case_id": "mirror_guest",
-      "title": "거울 속의 손님"
+      "case_id": "nameless_curse",
+      "title": "무명(無名)의 저주"
     },
     "final_resources": {
       "sanity": 6,
@@ -17,15 +17,16 @@
     "turn_logs": [
       {
         "turn": 1,
-        "message": "깨진 거울의 뒷면에서 지워지지 않은 획이 드러났다."
+        "message": "다락방 일기장에서 벽 속에 묻힌 아이의 기록이 발견됐다."
       },
       {
         "turn": 9,
-        "message": "봉인의 문장이 닫히자 방 안의 모든 반사가 멈췄다."
+        "message": "진실의 거울 앞에서 피티의 이름이 불렸고, 무명실이 재처럼 흩어졌다."
       }
     ],
     "story_result_text": [
-      "진명은 완성되었고, 거울 속의 손님은 봉인의 문장 안에 갇혔다."
+      "진명은 완성되었고, 피티는 진실의 거울 앞에서 이름을 되찾았다.",
+      "저주는 끊어졌고, 아침의 빛이 저택 안으로 스며들었다."
     ],
     "style_summary": {
       "label": "신중한 추적자",

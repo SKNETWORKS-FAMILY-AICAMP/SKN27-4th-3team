@@ -4,11 +4,9 @@
 
 Fixture는 서버가 이미 확정한 결과를 흉내 내는 샘플이며, 공식 룰이나 실제 API schema로 취급하지 않는다.
 
-현재 fixture는 official API schema 필드명과 기존 `거울 속의 손님` 기준을 맞춘 샘플이다.
+현재 fixture는 official API schema 필드명을 유지하되, LLM 실험용 사건 샘플은 `무명(無名)의 저주`와 괴이 후보 `피티` 기준으로 맞춘다.
 
-`llm/docs/demo_story_reference.md`의 데모 스토리는 아직 fixture 기준을 대체하지 않는다.
-
-데모 스토리 반영 fixture는 스토리 확정 후 별도로 작성한다.
+이 fixture는 LLM 평가용 샘플이며, 서버 official story seed나 API schema 확정본으로 취급하지 않는다.
 
 ## 샘플 파일
 

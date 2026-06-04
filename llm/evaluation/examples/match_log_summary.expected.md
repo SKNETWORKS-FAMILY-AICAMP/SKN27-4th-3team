@@ -9,9 +9,9 @@
 ## 정상 출력 예시
 
 ```text
-- 1턴에는 `mirror_back`을 대상으로 `insight`가 제출됐고, 깨진 거울 뒷면의 단서가 공개됐다.
-- 5턴에는 `missing_child_voice`를 대상으로 `contract`가 제출됐고, 끊어진 목소리와 관련된 로그가 남았다.
-- 9턴에는 `forgotten_room`을 대상으로 `seal`이 제출됐고, 서버 결과는 `player_win`으로 종료됐다.
+- 1턴에는 `attic_diary`를 대상으로 `insight`가 제출됐고, 벽 속에 묻힌 아이의 기록이 공개됐다.
+- 5턴에는 `stitched_mouth`를 대상으로 `contract`가 제출됐고, 무명실로 꿰매어진 입술의 흔적이 기록됐다.
+- 9턴에는 `truth_mirror`를 대상으로 `seal`이 제출됐고, 서버 결과는 `player_win`으로 종료됐다.
 - 시간초과는 1회 기록됐지만, 최종 결과는 `seal_success`에 따른 플레이어 승리다.
 ```
 

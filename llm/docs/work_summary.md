@@ -4,9 +4,11 @@
 
 ## 현재 상태
 
-LLM 파트는 기본 폴더 구조와 실험 전 기준 문서가 정리된 상태다.
+LLM 파트는 기본 폴더 구조, 실험 전 기준 문서, Groq 실험 CLI 초안이 정리된 상태다.
 
-실제 Groq API 호출 코드는 아직 작성하지 않았다.
+Groq API 호출 코드는 `llm/generation/scripts/test_groq_generation.py`에 추가했다.
+
+현재 로컬 `.env`의 API key 값은 실제 key 형식이 아니라 placeholder로 감지되어 실제 호출은 `invalid_api_key_format`으로 건너뛴다.
 
 현재 LLM은 게임 판정자가 아니라 서버 판정 이후의 보조 기록자 역할로 제한한다.
 
@@ -86,6 +88,8 @@ PDF `game_scenario_the_nameless_curse.pdf`를 바탕으로 `무명(無名)의 �
 | `llm/docs/demo_story_reference.md` | `무명(無名)의 저주` 본 스토리 후보 참고 |
 | `llm/prompts/prompt_assembly.md` | fixture를 prompt로 조립하는 규칙 |
 | `llm/generation/adapter_contract.md` | Groq adapter 입출력과 실패 처리 계약 |
+| `llm/generation/config_contract.md` | LLM 환경 변수와 key 처리 계약 |
+| `llm/generation/scripts/test_groq_generation.py` | fixture 기반 prompt 조립과 Groq 호출 실험 CLI |
 | `llm/generation/groq_setup_checklist.md` | Groq 실제 연결 전 체크리스트 |
 | `llm/evaluation/guardrail_checklist.md` | LLM 금지선 검사 기준 |
 | `ops/env/llm.env.example` | Groq 기준 환경 변수 예시 |
@@ -108,7 +112,7 @@ PDF `game_scenario_the_nameless_curse.pdf`를 바탕으로 `무명(無名)의 �
 
 ## Fixture 상태
 
-현재 fixture는 official API schema 필드명과 기존 `거울 속의 손님` 기준 샘플에 맞춰져 있다.
+현재 fixture는 official API schema 필드명을 유지하되, LLM 실험용 사건 샘플은 `무명(無名)의 저주`와 괴이 후보 `피티` 기준으로 맞춰져 있다.
 
 ```text
 llm/fixtures/result_summary.sample.json
@@ -119,8 +123,10 @@ llm/fixtures/match_log_summary.sample.json
 검증 결과:
 
 - JSON 3개 모두 파싱 정상
+- `result_summary`, `style_summary`, `match_log_summary` dry-run prompt 조립 정상
+- placeholder API key는 `status=skipped`, `reason=invalid_api_key_format`으로 처리됨
 
-스토리가 확정되면 fixture를 `무명(無名)의 저주`와 `피티` 기준으로 다시 맞춰야 한다.
+스토리 official 계약이 확정되면 fixture의 `case_id`, `info_target_key`, 공식 문장과 expected output을 다시 맞춰야 한다.
 
 ## Evaluation 상태
 
@@ -214,7 +220,7 @@ LLM 환경 변수 설정 계약 추가
 
 ### 3. Groq 실험 스크립트 추가
 
-그 다음 만들 후보:
+추가 완료:
 
 ```text
 llm/generation/scripts/test_groq_generation.py
@@ -228,6 +234,7 @@ llm/generation/scripts/test_groq_generation.py
 - Groq 호출
 - 결과 출력
 - 실패 시 fallback 구조 출력
+- API key placeholder 형식 검사
 
 추천 커밋명:
 
