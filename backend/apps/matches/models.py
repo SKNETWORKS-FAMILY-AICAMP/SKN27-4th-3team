@@ -73,3 +73,20 @@ class TurnResult(models.Model):
 
     class Meta:
         db_table = "turn_results"
+
+
+class MatchStartRequest(models.Model):
+    user_id = models.PositiveBigIntegerField()
+    client_request_id = models.UUIDField()
+    case_id = models.TextField()
+    match_id = models.PositiveBigIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "match_start_requests"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("user_id", "client_request_id"),
+                name="match_start_request_user_client_request_unique",
+            )
+        ]

@@ -140,7 +140,7 @@ def test_story_case_briefing_service_returns_case_not_found_for_unknown_case(mon
     assert exc_info.value.status_code == 404
 
 
-def test_story_case_briefing_view_no_longer_returns_501_but_match_start_stays_501():
+def test_story_case_briefing_view_no_longer_returns_501():
     from pathlib import Path
 
     root_dir = Path(__file__).resolve().parents[3]
@@ -157,5 +157,3 @@ def test_story_case_briefing_view_no_longer_returns_501_but_match_start_stays_50
     assert "settings.ACCESS_TOKEN_COOKIE_NAME" in briefing_view_source
     assert "StoryAPIServiceNotImplemented" not in briefing_view_source
     assert "story.cases.briefing" not in briefing_view_source
-
-    assert 'StoryAPIServiceNotImplemented("story.cases.matches.start")' in views_source

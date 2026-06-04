@@ -10,7 +10,7 @@ class StoryCaseBriefingResponseSerializer(serializers.Serializer):
 
 
 class StoryCaseMatchStartRequestSerializer(serializers.Serializer):
-    client_request_id = serializers.CharField()
+    client_request_id = serializers.UUIDField()
 
 
 class StoryCaseMatchStartResponseSerializer(serializers.Serializer):

@@ -1,3 +1,4 @@
+from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
 from backend.apps.common.exceptions import ServiceNotImplementedError
@@ -14,6 +15,7 @@ class MatchAPIServiceNotImplemented(ServiceNotImplementedError):
 
 
 class MatchDetailView(APIView):
+    permission_classes = [AllowAny]
     response_serializer_class = MatchDetailResponseSerializer
 
     def get(self, request, match_id: str):
@@ -21,6 +23,7 @@ class MatchDetailView(APIView):
 
 
 class TurnSubmitView(APIView):
+    permission_classes = [AllowAny]
     request_serializer_class = TurnSubmitRequestSerializer
     response_serializer_class = TurnSubmitResponseSerializer
 
@@ -29,6 +32,7 @@ class TurnSubmitView(APIView):
 
 
 class MatchResultView(APIView):
+    permission_classes = [AllowAny]
     response_serializer_class = MatchResultResponseSerializer
 
     def get(self, request, match_id: str):

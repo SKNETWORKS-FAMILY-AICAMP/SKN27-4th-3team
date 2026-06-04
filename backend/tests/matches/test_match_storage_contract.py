@@ -56,7 +56,14 @@ def test_match_models_define_approved_tables_and_fields_without_unapproved_forei
     source = _read(MATCHES_DIR / "models.py")
     migration_source = _read(MATCHES_DIR / "migrations" / "0001_initial.py")
 
-    for class_name in ("Match", "MatchParticipant", "Turn", "ActionSubmission", "TurnResult"):
+    for class_name in (
+        "Match",
+        "MatchParticipant",
+        "Turn",
+        "ActionSubmission",
+        "TurnResult",
+        "MatchStartRequest",
+    ):
         assert f"class {class_name}(models.Model):" in source
 
     assert "('pvp', 'pvp')" not in migration_source
@@ -65,6 +72,7 @@ def test_match_models_define_approved_tables_and_fields_without_unapproved_forei
     assert "db_table = \"turns\"" in source
     assert "db_table = \"action_submissions\"" in source
     assert "db_table = \"turn_results\"" in source
+    assert "db_table = \"match_start_requests\"" in source
     assert "models.ForeignKey" not in source
     assert "on_delete=" not in source
 
@@ -111,6 +119,13 @@ def test_match_models_define_approved_tables_and_fields_without_unapproved_forei
     assert "private_log_json = models.JSONField()" in result_source
     assert "schema_version = models.TextField()" in result_source
 
+    start_request_source = _class_source(source, "MatchStartRequest")
+    assert "user_id = models.PositiveBigIntegerField()" in start_request_source
+    assert "client_request_id = models.UUIDField()" in start_request_source
+    assert "case_id = models.TextField()" in start_request_source
+    assert "match_id = models.PositiveBigIntegerField()" in start_request_source
+    assert "created_at = models.DateTimeField(auto_now_add=True)" in start_request_source
+
 
 def test_action_submission_nonce_is_unique_in_participant_and_turn_scope_only():
     source = _read(MATCHES_DIR / "models.py")
@@ -120,6 +135,16 @@ def test_action_submission_nonce_is_unique_in_participant_and_turn_scope_only():
     assert "fields=(\"turn_id\", \"participant_id\", \"client_nonce\")" in submission_source
     assert "client_nonce = models.UUIDField(unique=True)" not in submission_source
     assert "user_id" not in submission_source
+
+
+def test_match_start_request_is_unique_per_user_and_client_request_id():
+    source = _read(MATCHES_DIR / "models.py")
+    start_request_source = _class_source(source, "MatchStartRequest")
+
+    assert "models.UniqueConstraint(" in start_request_source
+    assert "fields=(\"user_id\", \"client_request_id\")" in start_request_source
+    assert "name=\"match_start_request_user_client_request_unique\"" in start_request_source
+    assert "client_request_id = models.UUIDField(unique=True)" not in start_request_source
 
 
 def test_match_storage_services_validate_participant_identity_and_json_schema_version():
