@@ -305,6 +305,12 @@ def validate_output(generation_input: dict[str, Any], text: str) -> list[str]:
         if any(
             word in text
             for word in {
+                "공개 로그",
+                "출력:",
+                "예시",
+                "무엇인가",
+                "누군가",
+                "보이기 시작",
                 "획득했다",
                 "진짜 단서",
                 "거짓 단서",
@@ -312,17 +318,21 @@ def validate_output(generation_input: dict[str, Any], text: str) -> list[str]:
                 "실패했다",
                 "비밀",
                 "진실",
+                "드러났다",
+                "밝혀졌다",
+                "제공",
                 "깨트",
                 "부서",
                 "달려 있었다",
                 "원인",
+                "다음 턴",
             }
         ):
             violations.append("unsupported_story_fact")
         public_log_text = payload["turn_result"]["public_log"]["text"]
         if "단서" in text and "단서" not in public_log_text:
             violations.append("unsupported_story_fact")
-        if "?" in text or any(word in text for word in {"인가", "듯하다", "것 같다", "마치"}):
+        if "?" in text or any(word in text for word in {"인가", "듯하다", "것 같다", "마치", "아마"}):
             violations.append("unsupported_story_fact")
 
     if purpose == "match_log_summary":

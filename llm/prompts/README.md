@@ -24,3 +24,11 @@ fixture 또는 서버 결과를 prompt로 조립하는 규칙은 `prompt_assembl
 | 파일 | 역할 |
 |---|---|
 | `prompt_templates.py` | 실제 adapter가 import하는 프롬프트 조립 코드 |
+
+## 품질 기준
+
+- 서버 공개 로그나 결과의 의미를 바꾸지 않는다.
+- UI에 바로 표시할 수 있게 제목, 번호, markdown, 해설을 붙이지 않는다.
+- `turn_flavor_text`는 새 사건보다 감각 묘사를 우선한다.
+- `style_summary`는 사람 성격이 아니라 게임 선택 경향만 말한다.
+- 문서 초안과 실행 프롬프트가 어긋나면 `prompt_templates.py`를 기준으로 본다.
