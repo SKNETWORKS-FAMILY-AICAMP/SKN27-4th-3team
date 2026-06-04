@@ -224,8 +224,12 @@ def build_turn_flavor_text_input(payload: dict[str, Any]) -> dict[str, Any]:
 - 단서 획득 여부나 진위를 새로 말하지 않는다.
 - 다음 괴이 행동을 예고하지 않는다.
 - 안내문처럼 설명하지 않는다.
+- 질문형이나 추측형으로 쓰지 않는다.
+- 공개 로그에 없는 비밀, 단서, 진실을 덧붙이지 않는다.
+- 공개 로그에 없는 파괴, 소유, 원인 관계를 덧붙이지 않는다.
 
 출력은 1~2줄로 작성한다.
+따옴표, 번호, markdown 없이 문구만 출력한다.
 전체 20~90자로 작성한다.
 각 줄은 45자 이하로 작성한다."""
     return {
@@ -342,7 +346,16 @@ def call_groq_sdk(generation_input: dict[str, Any], options: LlmOptions) -> tupl
     text = response.choices[0].message.content
     if text is None or not text.strip():
         raise ValueError("empty response text")
-    return text.strip(), latency_ms
+    return normalize_generated_text(text), latency_ms
+
+
+def normalize_generated_text(text: str) -> str:
+    lines = []
+    for line in text.strip().splitlines():
+        normalized = line.strip().strip('"').strip("'").strip()
+        if normalized:
+            lines.append(normalized)
+    return "\n".join(lines)
 
 
 def sdk_base_url(base_url: str) -> str:
@@ -418,10 +431,27 @@ def validate_output(generation_input: dict[str, Any], text: str) -> list[str]:
             violations.append("resource_conflict")
 
     if purpose == "turn_flavor_text":
-        if any(word in text for word in {"획득했다", "진짜 단서", "거짓 단서", "성공했다", "실패했다"}):
+        if any(
+            word in text
+            for word in {
+                "획득했다",
+                "진짜 단서",
+                "거짓 단서",
+                "성공했다",
+                "실패했다",
+                "비밀",
+                "진실",
+                "깨트",
+                "부서",
+                "달려 있었다",
+                "원인",
+            }
+        ):
             violations.append("unsupported_story_fact")
         public_log_text = payload["turn_result"]["public_log"]["text"]
         if "단서" in text and "단서" not in public_log_text:
+            violations.append("unsupported_story_fact")
+        if "?" in text or any(word in text for word in {"인가", "듯하다", "것 같다", "마치"}):
             violations.append("unsupported_story_fact")
 
     if purpose == "match_log_summary":
@@ -510,7 +540,12 @@ def generate(generation_input: dict[str, Any], options: LlmOptions, dry_run: boo
 
     violations = validate_output(generation_input, text)
     if violations:
-        return failed(generation_input, options, "guardrail_violation", {"violations": violations})
+        return failed(
+            generation_input,
+            options,
+            "guardrail_violation",
+            {"violations": violations, "rejected_text_preview": text[:120]},
+        )
     return result_payload(generation_input, "succeeded", text, False, options, {"latency_ms": latency_ms})
 
 
