@@ -31,7 +31,7 @@
 - 최종 확인 일시: 2026-06-04
 - 실행 위치: `D:\dev\Project\SKN27-4th-3team`
 - 전체 테스트 명령: `.\.venv\Scripts\python.exe -m pytest backend\tests -v`
-- 전체 테스트 결과: `88 passed`
+- 전체 테스트 결과: `92 passed`
 - Django check 명령: `.\.venv\Scripts\python.exe backend\manage.py check`
 - Django check 결과: `System check identified no issues (0 silenced).`
 - migration check 명령: `.\.venv\Scripts\python.exe backend\manage.py makemigrations accounts profiles matches story ai_profile retrieval --dry-run --check`
@@ -55,6 +55,7 @@
 | Task 9 | AI Profile persistence 연결 | 완료, 정적/순수 테스트 검증 | `backend/apps/ai_profile/models.py`, `backend/apps/ai_profile/services.py` |
 | Task 10 | Retrieval 구조 | 완료, Django check/정적/순수 테스트 검증 | `backend/apps/retrieval/models.py`, `backend/apps/retrieval/chunking.py`, `backend/apps/retrieval/services.py` |
 | Task 11 | Django initial migrations | 완료, migration check/Django check/전체 테스트 검증 | `backend/apps/*/migrations/0001_initial.py` |
+| Task 12 | Official API endpoint routing scaffold | 완료, URL resolver/Django check/전체 테스트 검증 | `backend/apps/story/urls.py`, `backend/apps/matches/urls.py`, `backend/apps/profiles/urls.py` |
 
 ## Task 8 상세 기록
 
@@ -323,7 +324,74 @@
 
 ## 다음 구현 후보
 
-### Task 12: Official API endpoint 연결
+### Task 12: Official API endpoint routing scaffold
+
+상태: 완료, URL resolver/Django check/전체 테스트 검증
+
+#### 참조한 승인 문서/공식 schema
+
+- `api-spec/pilot-mvp-api.official.json`
+- `api-spec/pilot-mvp-api.official.jsonc`
+- `docs/09_Approved_Contracts/06_API_응답_형태_기준.md`
+- `docs/09_Approved_Contracts/22_API_상세_Schema_계약.md`
+
+#### 구현/수정한 파일
+
+- 생성: `backend/tests/api/test_official_endpoint_routing_contract.py`
+- 생성: `backend/apps/story/serializers.py`
+- 생성: `backend/apps/story/views.py`
+- 생성: `backend/apps/story/urls.py`
+- 생성: `backend/apps/matches/serializers.py`
+- 생성: `backend/apps/matches/views.py`
+- 생성: `backend/apps/matches/urls.py`
+- 생성: `backend/apps/profiles/serializers.py`
+- 생성: `backend/apps/profiles/views.py`
+- 생성: `backend/apps/profiles/urls.py`
+- 수정: `backend/config/urls.py`
+
+#### 구현 내용
+
+- official schema의 13개 endpoint가 Django URL resolver에서 모두 연결되도록 `story`, `matches`, `profiles` URLConf를 추가했다.
+- `GET /api/v1/story/cases`, `GET /api/v1/story/cases/{case_id}/briefing`, `POST /api/v1/story/cases/{case_id}/matches` 라우팅을 추가했다.
+- `GET /api/v1/matches/{match_id}`, `POST /api/v1/matches/{match_id}/turns`, `GET /api/v1/matches/{match_id}/result` 라우팅을 추가했다.
+- `GET /api/v1/profile/me` 라우팅을 추가했다.
+- 각 view는 response/request serializer class만 연결하고 실제 DB/JWT/service runtime은 `NotImplementedError`로 명시했다.
+- draft path `/api/v1/auth/register`, `/api/v1/matches/{match_id}/turns/{turn_id}/actions`가 라우팅되지 않음을 검증했다.
+- `/api/v1/matches/ai-story`는 공식 `/api/v1/matches/{match_id}` 동적 segment와 충돌할 수 있으므로 404를 강제하지 않고 `MatchDetailView`로만 해석되는지 검증했다.
+
+#### 의도적으로 구현하지 않은 범위
+
+- 실제 endpoint response envelope 생성
+- `meta.request_id` 생성/전파 정책
+- Auth JWT 발급, refresh rotation, session lookup runtime
+- Story/Match/Profile DB 조회와 저장
+- Story seed 데이터, 공식 문장, 프론트 구현
+- 기존 draft endpoint를 별도 endpoint로 구현하는 것
+
+#### 검증
+
+- RED 실행 위치: `D:\dev\Project\SKN27-4th-3team`
+- RED 명령: `.\.venv\Scripts\python.exe -m pytest backend\tests\api\test_official_endpoint_routing_contract.py -v`
+- RED 결과: `1 failed, 3 passed`; `/api/v1/story/cases` route 누락 확인.
+- GREEN 실행 위치: `D:\dev\Project\SKN27-4th-3team`
+- GREEN 명령: `.\.venv\Scripts\python.exe -m pytest backend\tests\api\test_official_endpoint_routing_contract.py -v`
+- GREEN 결과: 최초 `1 failed, 3 passed`; `/api/v1/matches/ai-story`가 공식 `{match_id}` 동적 segment로 해석되는 테스트 과제 확인 후 테스트를 정렬했다. 최종 `4 passed`.
+- Django check 명령: `.\.venv\Scripts\python.exe backend\manage.py check`
+- Django check 결과: `System check identified no issues (0 silenced).`
+- migration check 명령: `.\.venv\Scripts\python.exe backend\manage.py makemigrations accounts profiles matches story ai_profile retrieval --dry-run --check`
+- migration check 결과: `No changes detected in apps 'ai_profile', 'matches', 'story', 'profiles', 'retrieval', 'accounts'`
+- 전체 테스트 명령: `.\.venv\Scripts\python.exe -m pytest backend\tests -v`
+- 전체 테스트 결과: `92 passed`
+
+#### 남은 리스크
+
+- endpoint routing만 연결됐고 runtime service는 아직 구현되지 않았다.
+- `meta.request_id`의 생성 방식, 외부 header 수용 여부, middleware 위치는 문서에 구체화되어 있지 않다.
+- 실제 PostgreSQL DB 연결과 migration apply는 여전히 `pilot` 사용자 인증 실패로 미검증이다.
+
+## 다음 구현 후보
+
+### Task 13: API response envelope runtime boundary
 
 예정 source of truth:
 
