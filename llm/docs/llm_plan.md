@@ -263,6 +263,8 @@ Groq adapter는 내부적으로 OpenAI-compatible chat completion 요청 형태�
 
 상세 input, options, result, 실패 처리 기준은 `../generation/adapter_contract.md`를 따른다.
 
+React 프론트 팀원과 공유할 응답 타입과 확인 사항은 `frontend_handoff.md`를 따른다.
+
 ### Hugging Face 후보
 
 ```env
