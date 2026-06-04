@@ -1,0 +1,8 @@
+# Backend dependency lock for pilot MVP.
+# Django 5.2 LTS is used because the approved auth/security contract cites Django 5.2 docs.
+Django==5.2.14
+djangorestframework==3.17.1
+PyJWT==2.13.0
+jsonschema==4.26.0
+pgvector==0.4.2
+psycopg[binary]==3.3.4

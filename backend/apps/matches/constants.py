@@ -1,0 +1,47 @@
+from backend.apps.game_rules.matchups import ACTION_CODES
+
+
+MATCH_MODE_AI_STORY = "ai_story"
+MATCH_MODE_PVP = "pvp"
+MATCH_MODES = (
+    MATCH_MODE_AI_STORY,
+    MATCH_MODE_PVP,
+)
+MVP_MATCH_MODES = (MATCH_MODE_AI_STORY,)
+MATCH_MODE_CHOICES = tuple((mode, mode) for mode in MATCH_MODES)
+
+MATCH_STATUS_ACTIVE = "active"
+MATCH_STATUS_RESOLVED = "resolved"
+MATCH_STATUS_ABANDONED = "abandoned"
+MATCH_STATUSES = (
+    MATCH_STATUS_ACTIVE,
+    MATCH_STATUS_RESOLVED,
+    MATCH_STATUS_ABANDONED,
+)
+MATCH_STATUS_CHOICES = tuple((status, status) for status in MATCH_STATUSES)
+
+TURN_STATUS_AWAITING_PLAYER = "awaiting_player"
+TURN_STATUS_SUBMITTED = "submitted"
+TURN_STATUS_RESOLVED = "resolved"
+TURN_STATUS_TIMED_OUT = "timed_out"
+TURN_STATUSES = (
+    TURN_STATUS_AWAITING_PLAYER,
+    TURN_STATUS_SUBMITTED,
+    TURN_STATUS_RESOLVED,
+    TURN_STATUS_TIMED_OUT,
+)
+TURN_STATUS_CHOICES = tuple((status, status) for status in TURN_STATUSES)
+
+PARTICIPANT_TYPE_HUMAN = "human"
+PARTICIPANT_TYPE_APPARITION = "apparition"
+PARTICIPANT_TYPES = (
+    PARTICIPANT_TYPE_HUMAN,
+    PARTICIPANT_TYPE_APPARITION,
+)
+PARTICIPANT_TYPE_CHOICES = tuple(
+    (participant_type, participant_type) for participant_type in PARTICIPANT_TYPES
+)
+
+ACTION_CODE_CHOICES = tuple((action_code, action_code) for action_code in ACTION_CODES)
+
+MATCH_STORAGE_SCHEMA_VERSION_FIELD = "schema_version"
