@@ -1,5 +1,7 @@
 # style_summary 기대 출력 예시
 
+> 이 문서는 LLM 평가용 초안 예시다. 공식 스토리 문장, 서버 판정, 프론트 표시 문구로 사용하지 않는다.
+
 ## 입력 fixture
 
 `llm/fixtures/style_summary.sample.json`
