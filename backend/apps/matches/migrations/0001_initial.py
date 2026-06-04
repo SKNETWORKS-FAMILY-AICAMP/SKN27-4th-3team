@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
             name='Match',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('mode', models.TextField(choices=[('ai_story', 'ai_story'), ('pvp', 'pvp')])),
+                ('mode', models.TextField(choices=[('ai_story', 'ai_story')])),
                 ('status', models.TextField(choices=[('active', 'active'), ('resolved', 'resolved'), ('abandoned', 'abandoned')])),
                 ('winner_participant_id', models.PositiveBigIntegerField(blank=True, null=True)),
                 ('started_at', models.DateTimeField()),

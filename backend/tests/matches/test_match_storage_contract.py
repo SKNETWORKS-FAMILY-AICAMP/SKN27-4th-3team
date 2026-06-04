@@ -34,6 +34,11 @@ def test_match_storage_constants_follow_official_domain_enums_without_duplicatio
     constants_source = _read(MATCHES_DIR / "constants.py")
     domain_enums = _official_domain_enums()
 
+    assert domain_enums["match_mode"] == ["ai_story"]
+    assert "pvp" not in domain_enums["match_mode"]
+    assert "MATCH_MODE_PVP" not in constants_source
+    assert '= "pvp"' not in constants_source
+
     for match_mode in domain_enums["match_mode"]:
         assert f'= "{match_mode}"' in constants_source
     for match_status in domain_enums["match_status"]:
@@ -49,10 +54,12 @@ def test_match_storage_constants_follow_official_domain_enums_without_duplicatio
 
 def test_match_models_define_approved_tables_and_fields_without_unapproved_foreign_keys():
     source = _read(MATCHES_DIR / "models.py")
+    migration_source = _read(MATCHES_DIR / "migrations" / "0001_initial.py")
 
     for class_name in ("Match", "MatchParticipant", "Turn", "ActionSubmission", "TurnResult"):
         assert f"class {class_name}(models.Model):" in source
 
+    assert "('pvp', 'pvp')" not in migration_source
     assert "db_table = \"matches\"" in source
     assert "db_table = \"match_participants\"" in source
     assert "db_table = \"turns\"" in source

@@ -2,10 +2,8 @@ from backend.apps.game_rules.matchups import ACTION_CODES
 
 
 MATCH_MODE_AI_STORY = "ai_story"
-MATCH_MODE_PVP = "pvp"
 MATCH_MODES = (
     MATCH_MODE_AI_STORY,
-    MATCH_MODE_PVP,
 )
 MVP_MATCH_MODES = (MATCH_MODE_AI_STORY,)
 MATCH_MODE_CHOICES = tuple((mode, mode) for mode in MATCH_MODES)

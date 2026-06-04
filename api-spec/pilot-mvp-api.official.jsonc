@@ -105,14 +105,12 @@
       "network_disconnect": "not an immediate timeout",
       "no_valid_submission_until_deadline": "resolve as timeout",
       "timeout_default_player_action": "silence",
-      "reconnect": "GET /api/v1/matches/{match_id}",
-      "pvp_reconnect_grace": "future scope"
+      "reconnect": "GET /api/v1/matches/{match_id}"
     }
   },
   "domain_enums": {
     "match_mode": [
-      "ai_story",
-      "pvp"
+      "ai_story"
     ],
     "mvp_match_mode": [
       "ai_story"

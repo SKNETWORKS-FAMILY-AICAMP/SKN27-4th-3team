@@ -36,6 +36,10 @@ FORBIDDEN_APP_FRAGMENTS = (
     "corsheaders",
 )
 
+FORBIDDEN_PROJECT_APP_DIRS = (
+    BACKEND_DIR / "apps" / "realtime",
+)
+
 
 def _active_requirement_lines() -> list[str]:
     assert REQUIREMENTS_FILE.exists(), "requirements.txt must exist at project root"
@@ -144,6 +148,11 @@ def test_settings_install_only_in_scope_mvp_apps():
     assert EXPECTED_PROJECT_APPS.issubset(installed_apps)
     for forbidden_fragment in FORBIDDEN_APP_FRAGMENTS:
         assert not any(forbidden_fragment in app for app in installed_apps)
+
+
+def test_out_of_scope_realtime_app_scaffold_does_not_exist():
+    for forbidden_app_dir in FORBIDDEN_PROJECT_APP_DIRS:
+        assert not forbidden_app_dir.exists(), f"{forbidden_app_dir} must not exist"
 
 
 def test_settings_app_config_modules_exist_for_installed_project_apps():

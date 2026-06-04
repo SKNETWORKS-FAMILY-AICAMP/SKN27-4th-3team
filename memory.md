@@ -337,7 +337,7 @@ Updated: 2026-06-04
 - 추천 RAG embedding model id는 코드에서 제거했고, 로컬 env template `ops/env/backend.env.example`에 명시했다.
 - 로컬 Docker Compose 구성은 정적 계약 테스트로 검증했지만, `docker compose up`과 컨테이너 내부 DB migration apply는 아직 실행하지 않았다.
 - Docker image build와 Django production 배포는 아직 검증하지 않았다. production 배포 전 결정 타이밍과 구현 게이트는 승인 계약 24번을 따른다.
-- PvP 관련 기존 문서 표현은 핵심 source-of-truth에서 정리했지만, 발표용/generated 문서나 기존 placeholder 폴더에는 잔여 표현이 있을 수 있다. 구현 기준은 승인 계약 19번의 PvP 미사용 결정이다.
+- PvP 관련 기존 문서 표현은 핵심 source-of-truth에서 정리했고, `backend/apps/realtime/` placeholder도 제거했다. 발표용/generated 문서에 남은 PvP 표현은 폐기 기록으로만 취급하며, 구현 기준은 승인 계약 19번의 PvP 미사용 결정이다.
 - 실제 CORS 응답 처리는 아직 dependency/middleware가 없으므로, 프론트 origin 요구가 확정되는 API 연결 단계에서 다시 검증해야 한다.
 - API envelope helper는 아직 DRF `Response`, exception handler, middleware/request-id 생성 흐름에 연결되지 않았다.
 - Auth API view는 official schema와 보안 금지선을 고정하는 스캐폴딩이다. 실제 signup/login/logout/refresh/me service, JWT 발급, cookie response runtime은 아직 구현하지 않았다.

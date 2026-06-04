@@ -71,7 +71,7 @@ PvP가 없어도 아래 보안 기준은 유지한다.
 
 아래 항목은 별도 구현/문서 정리 작업에서 제거하거나 범위를 재확정한다.
 
-- `backend/apps/realtime/` placeholder
+- `backend/apps/realtime/` placeholder 제거 완료
 - 문서 내 PvP 확장 메모
 - 화면 설계 문서의 PvP 매칭/대전 항목
 - Match schema의 `mode` 값이 AI story 외 값을 가져야 하는지 여부
