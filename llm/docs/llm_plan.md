@@ -134,6 +134,30 @@ LLM이 실패하거나 비활성화된 경우:
 
 `story_result_text`는 서버가 내려주는 정적 결과 문장이며, LLM 결과로 대체하지 않는다.
 
+### 프론트 전달용 공통 응답
+
+프론트에는 내부 generation result를 그대로 보내기보다 아래 래핑 형태를 사용한다.
+
+```json
+{
+  "enabled": true,
+  "purpose": "turn_flavor_text",
+  "text": "거울 속 시선이 더 선명해졌다.",
+  "display_slot": "right_apparition_message",
+  "fallback_used": false,
+  "generation_id": null,
+  "context_refs": [],
+  "metadata": {
+    "status": "succeeded",
+    "provider": "groq",
+    "model_id": "llama-3.1-8b-instant",
+    "latency_ms": 480
+  }
+}
+```
+
+`enabled=false` 또는 `fallback_used=true`이면 프론트는 서버가 내려준 정적 문장만 표시한다.
+
 ## Fallback 정책
 
 ### 결과 요약

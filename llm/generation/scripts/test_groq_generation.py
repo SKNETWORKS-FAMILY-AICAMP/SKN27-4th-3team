@@ -297,6 +297,31 @@ def result_payload(
     }
 
 
+def frontend_payload(generation_input: dict[str, Any], generation_result: dict[str, Any]) -> dict[str, Any]:
+    payload = generation_input["payload"]
+    result_metadata = {
+        key: value
+        for key, value in generation_result.get("metadata", {}).items()
+        if key not in {"system_prompt", "user_prompt"}
+    }
+    metadata = {
+        "status": generation_result["status"],
+        "provider": generation_result["provider"],
+        "model_id": generation_result["model_id"],
+        **result_metadata,
+    }
+    return {
+        "enabled": generation_result["status"] == "succeeded" and generation_result.get("text") is not None,
+        "purpose": generation_result["purpose"],
+        "text": generation_result.get("text"),
+        "display_slot": payload.get("display_slot"),
+        "fallback_used": generation_result["fallback_used"],
+        "generation_id": generation_result.get("generation_id"),
+        "context_refs": generation_result.get("context_refs", []),
+        "metadata": metadata,
+    }
+
+
 def skipped(generation_input: dict[str, Any], options: LlmOptions, reason: str) -> dict[str, Any]:
     return result_payload(generation_input, "skipped", None, True, options, {"reason": reason})
 
@@ -389,7 +414,7 @@ def call_groq_urllib(generation_input: dict[str, Any], options: LlmOptions) -> t
         raw = response.read().decode("utf-8")
     latency_ms = int((time.perf_counter() - started_at) * 1000)
     payload = json.loads(raw)
-    text = payload["choices"][0]["message"]["content"].strip()
+    text = normalize_generated_text(payload["choices"][0]["message"]["content"])
     if not text:
         raise ValueError("empty response text")
     return text, latency_ms
@@ -582,6 +607,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument("--fixture", type=Path, help="fixture JSON 경로. 생략하면 purpose별 sample을 사용한다.")
     parser.add_argument("--dry-run", action="store_true", help="provider 호출 없이 조립된 prompt만 결과 metadata에 출력한다.")
+    parser.add_argument("--frontend-output", action="store_true", help="프론트 전달용 응답 계약 형태로 출력한다.")
     return parser.parse_args(argv)
 
 
@@ -593,7 +619,8 @@ def main(argv: list[str]) -> int:
     generation_input = build_generation_input(payload)
     options = read_options(root)
     result = generate(generation_input, options, args.dry_run)
-    print(json.dumps(result, ensure_ascii=False, indent=2))
+    output = frontend_payload(generation_input, result) if args.frontend_output else result
+    print(json.dumps(output, ensure_ascii=False, indent=2))
     return 0
 
 

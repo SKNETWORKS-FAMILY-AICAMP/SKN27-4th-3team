@@ -56,6 +56,30 @@ generate(purpose, input, options) -> generation_result
 
 LLM 호출 실패 시 화면은 서버 판정 결과와 정적 fallback 문장만으로 완성되어야 한다.
 
+## 프론트 전달용 응답 초안
+
+프론트에는 `enabled`, `text`, `display_slot`, `fallback_used` 중심의 래핑 결과를 전달한다.
+
+```json
+{
+  "enabled": true,
+  "purpose": "turn_flavor_text",
+  "text": "거울 속 시선이 더 선명해졌다.",
+  "display_slot": "right_apparition_message",
+  "fallback_used": false,
+  "generation_id": null,
+  "context_refs": [],
+  "metadata": {
+    "status": "succeeded",
+    "provider": "groq",
+    "model_id": "llama-3.1-8b-instant",
+    "latency_ms": 480
+  }
+}
+```
+
+실험 CLI에서는 `--frontend-output` 옵션으로 이 형태를 확인한다.
+
 ## MatchResult 연결 초안
 
 official API의 `MatchResult.llm_summary`에는 아래 값만 연결한다.

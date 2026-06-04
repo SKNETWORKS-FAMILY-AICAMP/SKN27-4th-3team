@@ -141,6 +141,90 @@ Groq adapter는 내부적으로 아래 형태의 chat completion 요청으로 �
 }
 ```
 
+## 프론트 전달용 출력
+
+프론트에는 내부 generation result를 그대로 노출하지 않고 아래 형태로 래핑해서 전달한다.
+
+```json
+{
+  "enabled": true,
+  "purpose": "turn_flavor_text",
+  "text": "거울 속 시선이 더 선명해졌다.",
+  "display_slot": "right_apparition_message",
+  "fallback_used": false,
+  "generation_id": "string-or-null",
+  "context_refs": [],
+  "metadata": {
+    "status": "succeeded",
+    "provider": "groq",
+    "model_id": "llama-3.1-8b-instant",
+    "latency_ms": 480
+  }
+}
+```
+
+| 필드 | 설명 |
+|---|---|
+| `enabled` | 프론트가 `text`를 표시해도 되는지 여부 |
+| `purpose` | 생성 목적 |
+| `text` | 표시 후보 문구. 실패 또는 비활성화 시 `null` |
+| `display_slot` | 프론트 표시 위치 힌트. 없으면 `null` |
+| `fallback_used` | LLM 실패/비활성화로 fallback이 필요한지 여부 |
+| `generation_id` | 생성 로그 ID. 저장하지 않으면 `null` |
+| `context_refs` | RAG 근거 참조. 없으면 빈 배열 |
+| `metadata` | 디버깅용 상태, provider, 모델, 지연 시간, 오류 사유 |
+
+### turn_flavor_text 연결
+
+`turn_flavor_text`는 공식 턴 로그를 대체하지 않는다.
+
+성공 시 프론트는 `text`를 `display_slot` 위치에 연출 문구로 표시할 수 있다.
+
+```json
+{
+  "enabled": true,
+  "purpose": "turn_flavor_text",
+  "text": "거울 속 시선이 더 선명해졌다.",
+  "display_slot": "right_apparition_message",
+  "fallback_used": false,
+  "generation_id": null,
+  "context_refs": [],
+  "metadata": {
+    "status": "succeeded",
+    "provider": "groq",
+    "model_id": "llama-3.1-8b-instant",
+    "latency_ms": 480
+  }
+}
+```
+
+실패, 비활성화, API key 누락, guardrail 실패 시 프론트는 `TurnResult.public_log.text`를 그대로 사용한다.
+
+```json
+{
+  "enabled": false,
+  "purpose": "turn_flavor_text",
+  "text": null,
+  "display_slot": "left_system_message",
+  "fallback_used": true,
+  "generation_id": null,
+  "context_refs": [],
+  "metadata": {
+    "status": "failed",
+    "provider": "groq",
+    "model_id": "llama-3.1-8b-instant",
+    "error_code": "LLM_SUMMARY_UNAVAILABLE",
+    "error_reason": "guardrail_violation"
+  }
+}
+```
+
+실험 CLI에서는 아래처럼 확인한다.
+
+```powershell
+python .\llm\generation\scripts\test_groq_generation.py --purpose turn_flavor_text --frontend-output
+```
+
 ## 실패 처리 기준
 
 아래 상황은 LLM 실패로 처리한다.

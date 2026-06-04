@@ -127,6 +127,8 @@ llm/fixtures/match_log_summary.sample.json
 - JSON 4개 모두 파싱 정상
 - `result_summary`, `turn_flavor_text`, `style_summary`, `match_log_summary` dry-run prompt 조립 정상
 - placeholder API key는 `status=skipped`, `reason=invalid_api_key_format`으로 처리됨
+- `--frontend-output` 옵션으로 프론트 전달용 `enabled`, `text`, `display_slot`, `fallback_used`, `metadata` 구조 출력 가능
+- `turn_flavor_text`는 행동별 fixture를 추가했고, 실제 Groq 호출 기준 프론트용 출력 스키마 검증을 완료함
 
 스토리 official 계약이 확정되면 fixture의 `case_id`, `info_target_key`, 공식 문장과 expected output을 다시 맞춰야 한다.
 
