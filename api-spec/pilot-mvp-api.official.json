@@ -1,0 +1,1032 @@
+{
+  "meta": {
+    "name": "pilot-mvp-api",
+    "status": "official-implementation-contract",
+    "schema_status": "approved",
+    "schema_version": "2026-06-02.mvp.v1",
+    "created": "2026-06-02",
+    "updated": "2026-06-02",
+    "source_documents": [
+      "docs/09_Approved_Contracts/05_API_명세_관리_기준.md",
+      "docs/09_Approved_Contracts/06_API_응답_형태_기준.md",
+      "docs/09_Approved_Contracts/15_프론트_기술_계약_오너_확정안.md",
+      "docs/09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약.md",
+      "docs/09_Approved_Contracts/20_Django_Auth_보안_계약.md",
+      "docs/09_Approved_Contracts/21_AI_스토리_시간초과_판정_계약.md"
+    ],
+    "decision": "A안: 구현 직전용 최소 완성 schema"
+  },
+  "api": {
+    "prefix": "/api/v1",
+    "response_envelope": {
+      "success": "{ data, meta }",
+      "error": "{ error, meta }",
+      "meta_required_fields": [
+        "request_id",
+        "server_time"
+      ],
+      "error_required_fields": [
+        "code",
+        "message",
+        "details"
+      ]
+    },
+    "auth": {
+      "access_token_delivery": "HttpOnly cookie",
+      "refresh_token_delivery": "HttpOnly cookie",
+      "access_token_type": "JWT",
+      "access_token_ttl_minutes": 15,
+      "refresh_token_type": "JWT",
+      "refresh_token_ttl_days": 14,
+      "refresh_token_claims": [
+        "jti",
+        "family_id"
+      ],
+      "refresh_token_family_id": "UUIDv4 generated on successful login",
+      "refresh_token_jti": "UUIDv4 generated for each refresh token",
+      "refresh_token_storage": "HMAC-SHA256 hash only; raw token storage forbidden",
+      "refresh_token_rotation": "old token becomes rotated; new refresh token is issued",
+      "refresh_token_reuse_detection": {
+        "reused_statuses": [
+          "rotated",
+          "revoked",
+          "reused"
+        ],
+        "on_reuse": [
+          "revoke entire family_id",
+          "clear access and refresh cookies",
+          "write security event log",
+          "return REFRESH_TOKEN_REUSED"
+        ],
+        "grace_window": "none",
+        "concurrency": "DB transaction with row lock"
+      },
+      "token_storage_forbidden": [
+        "localStorage",
+        "sessionStorage",
+        "Authorization Bearer header from frontend"
+      ],
+      "same_site": "Lax",
+      "cookie_paths": {
+        "access": "/api/v1",
+        "refresh": "/api/v1/auth/refresh"
+      },
+      "secure_cookie": {
+        "local_dev": false,
+        "production": true
+      }
+    },
+    "csrf": {
+      "applies_to_methods": [
+        "POST",
+        "PATCH",
+        "PUT",
+        "DELETE"
+      ],
+      "endpoint": "GET /api/v1/auth/csrf",
+      "header": "X-CSRFToken",
+      "rotation": {
+        "login": "rotate",
+        "refresh": "keep",
+        "after_logout": "new GET /api/v1/auth/csrf required"
+      },
+      "storage": "frontend memory only",
+      "trusted_origins": "explicit allowlist only",
+      "cors_origins": "explicit allowlist only"
+    },
+    "idempotency": {
+      "match_start": "client_request_id",
+      "turn_submit": "client_nonce"
+    },
+    "timeout_policy": {
+      "scope": "1st MVP AI story",
+      "basis": "server deadline_at",
+      "browser_close": "not an immediate timeout",
+      "network_disconnect": "not an immediate timeout",
+      "no_valid_submission_until_deadline": "resolve as timeout",
+      "timeout_default_player_action": "silence",
+      "reconnect": "GET /api/v1/matches/{match_id}",
+      "pvp_reconnect_grace": "future scope"
+    }
+  },
+  "domain_enums": {
+    "match_mode": [
+      "ai_story",
+      "pvp"
+    ],
+    "mvp_match_mode": [
+      "ai_story"
+    ],
+    "match_status": [
+      "active",
+      "resolved",
+      "abandoned"
+    ],
+    "turn_status": [
+      "awaiting_player",
+      "submitted",
+      "resolved",
+      "timed_out"
+    ],
+    "participant_type": [
+      "human",
+      "apparition"
+    ],
+    "action_code": [
+      "curse",
+      "guard",
+      "insight",
+      "trick",
+      "silence",
+      "contract",
+      "seal"
+    ],
+    "information_action_code": [
+      "insight",
+      "contract",
+      "seal"
+    ],
+    "mirror_guest_info_target_key": [
+      "mirror_surface",
+      "mirror_back",
+      "missing_child_voice",
+      "forgotten_room",
+      "self_reflection"
+    ],
+    "match_result": [
+      "player_win",
+      "player_loss",
+      "unresolved"
+    ],
+    "result_reason": [
+      "seal_success",
+      "sanity_zero",
+      "curse_marks_loss",
+      "turn_limit",
+      "unresolved"
+    ],
+    "clue_truth_state": [
+      "unknown",
+      "true_revealed",
+      "false_revealed"
+    ]
+  },
+  "shared_schemas": {
+    "Meta": {
+      "type": "object",
+      "required": [
+        "request_id",
+        "server_time"
+      ],
+      "properties": {
+        "request_id": "string",
+        "server_time": "string:iso-8601-utc"
+      }
+    },
+    "Error": {
+      "type": "object",
+      "required": [
+        "code",
+        "message",
+        "details"
+      ],
+      "properties": {
+        "code": "string:error_code",
+        "message": "string",
+        "details": "object"
+      }
+    },
+    "User": {
+      "type": "object",
+      "required": [
+        "id",
+        "email"
+      ],
+      "properties": {
+        "id": "string",
+        "email": "string:email",
+        "created_at": "string:iso-8601-utc"
+      }
+    },
+    "ProfileSummary": {
+      "type": "object",
+      "required": [
+        "nickname",
+        "public_record",
+        "style_summary"
+      ],
+      "properties": {
+        "nickname": "string",
+        "public_record": {
+          "ai_story_matches": "integer",
+          "ai_story_wins": "integer",
+          "ai_story_losses": "integer"
+        },
+        "style_summary": {
+          "$ref": "shared_schemas.StyleSummary"
+        }
+      }
+    },
+    "StyleSummary": {
+      "type": "object",
+      "required": [
+        "metrics",
+        "updated_at"
+      ],
+      "properties": {
+        "label": "string|null",
+        "display_text": "string|null",
+        "metrics": {
+          "aggression": "number",
+          "defense": "number",
+          "insight_focus": "number",
+          "deception": "number",
+          "risk_preference": "number",
+          "silence_reliance": "number",
+          "crisis_guard_rate": "number",
+          "crisis_contract_rate": "number",
+          "late_choice_rate": "number"
+        },
+        "updated_at": "string:iso-8601-utc|null"
+      }
+    },
+    "StoryCaseSummary": {
+      "type": "object",
+      "required": [
+        "case_id",
+        "title",
+        "mvp_available"
+      ],
+      "properties": {
+        "case_id": "string",
+        "title": "string",
+        "summary": "string",
+        "difficulty": "string",
+        "mvp_available": "boolean",
+        "estimated_turns": "integer"
+      }
+    },
+    "StoryCaseBriefing": {
+      "type": "object",
+      "required": [
+        "case_id",
+        "title",
+        "apparition_alias",
+        "briefing_text",
+        "taboo",
+        "info_targets",
+        "max_turns"
+      ],
+      "properties": {
+        "case_id": "string",
+        "title": "string",
+        "apparition_alias": "string",
+        "briefing_text": "array:string",
+        "taboo": {
+          "title": "string",
+          "description": "string"
+        },
+        "info_targets": "array:InfoTarget",
+        "max_turns": "integer"
+      }
+    },
+    "InfoTarget": {
+      "type": "object",
+      "required": [
+        "key",
+        "display_name"
+      ],
+      "properties": {
+        "key": "string:mirror_guest_info_target_key",
+        "display_name": "string"
+      }
+    },
+    "ResourceState": {
+      "type": "object",
+      "required": [
+        "sanity",
+        "sanity_max",
+        "ritual_power",
+        "ritual_power_max",
+        "curse_marks",
+        "curse_marks_max",
+        "true_name_fragments",
+        "true_name_fragments_required",
+        "false_clues",
+        "false_clues_max",
+        "suspicion",
+        "suspicion_max",
+        "shield",
+        "shield_max",
+        "timeout_count"
+      ],
+      "properties": {
+        "sanity": "integer",
+        "sanity_max": "integer",
+        "ritual_power": "integer",
+        "ritual_power_max": "integer",
+        "curse_marks": "integer",
+        "curse_marks_max": "integer",
+        "true_name_fragments": "integer",
+        "true_name_fragments_required": "integer",
+        "incomplete_true_name_fragments": "integer",
+        "false_clues": "integer",
+        "false_clues_max": "integer",
+        "suspicion": "integer",
+        "suspicion_max": "integer",
+        "shield": "integer",
+        "shield_max": "integer",
+        "timeout_count": "integer"
+      }
+    },
+    "TurnState": {
+      "type": "object",
+      "required": [
+        "turn_id",
+        "turn_number",
+        "max_turns",
+        "status",
+        "deadline_at",
+        "remaining_seconds"
+      ],
+      "properties": {
+        "turn_id": "string",
+        "turn_number": "integer",
+        "max_turns": "integer",
+        "status": "string:turn_status",
+        "deadline_at": "string:iso-8601-utc",
+        "remaining_seconds": "integer",
+        "resolved_at": "string:iso-8601-utc|null"
+      }
+    },
+    "ActionAvailability": {
+      "type": "object",
+      "required": [
+        "code",
+        "display_name",
+        "ritual_power_cost",
+        "enabled"
+      ],
+      "properties": {
+        "code": "string:action_code",
+        "display_name": "string",
+        "ritual_power_cost": "integer",
+        "enabled": "boolean",
+        "disabled_reason": "string|null",
+        "requires_info_target": "boolean"
+      }
+    },
+    "Clue": {
+      "type": "object",
+      "required": [
+        "clue_id",
+        "text",
+        "truth_state",
+        "source_turn_number"
+      ],
+      "properties": {
+        "clue_id": "string",
+        "text": "string",
+        "truth_state": "string:clue_truth_state",
+        "source_turn_number": "integer"
+      }
+    },
+    "PublicLog": {
+      "type": "object",
+      "required": [
+        "turn_number",
+        "text"
+      ],
+      "properties": {
+        "turn_number": "integer",
+        "text": "string",
+        "log_key": "string|null"
+      }
+    },
+    "MatchState": {
+      "type": "object",
+      "required": [
+        "match_id",
+        "mode",
+        "status",
+        "case",
+        "turn",
+        "player",
+        "opponent",
+        "available_actions",
+        "clues",
+        "recent_public_logs"
+      ],
+      "properties": {
+        "match_id": "string",
+        "mode": "string:match_mode",
+        "status": "string:match_status",
+        "case": {
+          "case_id": "string",
+          "title": "string"
+        },
+        "turn": {
+          "$ref": "shared_schemas.TurnState"
+        },
+        "player": {
+          "participant_id": "string",
+          "participant_type": "human",
+          "display_name": "string",
+          "resources": {
+            "$ref": "shared_schemas.ResourceState"
+          }
+        },
+        "opponent": {
+          "participant_id": "string",
+          "participant_type": "apparition",
+          "display_name": "string",
+          "public_state": {
+            "true_name_fragments_revealed": "integer",
+            "true_name_fragments_required": "integer",
+            "seal_available": "boolean"
+          }
+        },
+        "available_actions": "array:ActionAvailability",
+        "clues": "array:Clue",
+        "recent_public_logs": "array:PublicLog"
+      }
+    },
+    "ActionView": {
+      "type": "object",
+      "required": [
+        "code",
+        "display_name"
+      ],
+      "properties": {
+        "code": "string:action_code",
+        "display_name": "string",
+        "info_target_key": "string:mirror_guest_info_target_key|null",
+        "timeout_applied": "boolean"
+      }
+    },
+    "TurnResult": {
+      "type": "object",
+      "required": [
+        "turn_id",
+        "turn_number",
+        "player_action",
+        "opponent_action",
+        "public_log",
+        "state_delta",
+        "clue_delta"
+      ],
+      "properties": {
+        "turn_id": "string",
+        "turn_number": "integer",
+        "player_action": {
+          "$ref": "shared_schemas.ActionView"
+        },
+        "opponent_action": {
+          "$ref": "shared_schemas.ActionView"
+        },
+        "public_log": {
+          "$ref": "shared_schemas.PublicLog"
+        },
+        "state_delta": "object",
+        "clue_delta": {
+          "added": "array:Clue",
+          "removed_clue_ids": "array:string",
+          "revealed": "array:Clue"
+        },
+        "match_outcome": "string:match_result"
+      }
+    },
+    "MatchResult": {
+      "type": "object",
+      "required": [
+        "match_id",
+        "result",
+        "result_reason",
+        "case",
+        "final_resources",
+        "turn_logs",
+        "story_result_text",
+        "style_summary",
+        "llm_summary"
+      ],
+      "properties": {
+        "match_id": "string",
+        "result": "string:match_result",
+        "result_reason": "string:result_reason",
+        "case": {
+          "case_id": "string",
+          "title": "string"
+        },
+        "final_resources": {
+          "$ref": "shared_schemas.ResourceState"
+        },
+        "turn_logs": "array:PublicLog",
+        "story_result_text": "array:string",
+        "style_summary": {
+          "$ref": "shared_schemas.StyleSummary"
+        },
+        "llm_summary": {
+          "enabled": "boolean",
+          "text": "string|null",
+          "generation_id": "string|null"
+        }
+      }
+    }
+  },
+  "endpoints": [
+    {
+      "id": "auth.csrf",
+      "method": "GET",
+      "path": "/api/v1/auth/csrf",
+      "auth_required": false,
+      "csrf_required": false,
+      "purpose": "CSRF token 발급",
+      "success_status": 200,
+      "request": {
+        "path_params": {},
+        "query": {},
+        "body": null
+      },
+      "response": {
+        "data": {
+          "csrf_token": "string"
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "RATE_LIMITED"
+      ],
+      "schema_status": "approved"
+    },
+    {
+      "id": "auth.signup",
+      "method": "POST",
+      "path": "/api/v1/auth/signup",
+      "auth_required": false,
+      "csrf_required": true,
+      "purpose": "회원가입",
+      "success_status": 201,
+      "request": {
+        "path_params": {},
+        "query": {},
+        "body": {
+          "email": "string:email",
+          "nickname": "string",
+          "password": "string"
+        }
+      },
+      "response": {
+        "data": {
+          "user": {
+            "$ref": "shared_schemas.User"
+          }
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "CSRF_TOKEN_MISSING",
+        "CSRF_TOKEN_INVALID",
+        "VALIDATION_ERROR",
+        "RATE_LIMITED"
+      ],
+      "schema_status": "approved"
+    },
+    {
+      "id": "auth.login",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "auth_required": false,
+      "csrf_required": true,
+      "purpose": "로그인",
+      "success_status": 200,
+      "side_effects": [
+        "set access token HttpOnly cookie",
+        "set refresh token HttpOnly cookie",
+        "rotate CSRF token"
+      ],
+      "request": {
+        "path_params": {},
+        "query": {},
+        "body": {
+          "email": "string:email",
+          "password": "string"
+        }
+      },
+      "response": {
+        "data": {
+          "user": {
+            "$ref": "shared_schemas.User"
+          },
+          "profile": {
+            "$ref": "shared_schemas.ProfileSummary"
+          },
+          "session": {
+            "authenticated": true,
+            "access_expires_in_seconds": 900
+          }
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "CSRF_TOKEN_MISSING",
+        "CSRF_TOKEN_INVALID",
+        "INVALID_CREDENTIALS",
+        "VALIDATION_ERROR",
+        "RATE_LIMITED"
+      ],
+      "schema_status": "approved"
+    },
+    {
+      "id": "auth.logout",
+      "method": "POST",
+      "path": "/api/v1/auth/logout",
+      "auth_required": true,
+      "csrf_required": true,
+      "purpose": "로그아웃",
+      "success_status": 200,
+      "side_effects": [
+        "revoke current refresh token family according to auth security contract",
+        "clear access token cookie",
+        "clear refresh token cookie"
+      ],
+      "request": {
+        "path_params": {},
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "data": {
+          "logged_out": true
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "AUTH_REQUIRED",
+        "SESSION_EXPIRED",
+        "CSRF_TOKEN_MISSING",
+        "CSRF_TOKEN_INVALID"
+      ],
+      "schema_status": "approved"
+    },
+    {
+      "id": "auth.refresh",
+      "method": "POST",
+      "path": "/api/v1/auth/refresh",
+      "auth_required": false,
+      "csrf_required": true,
+      "purpose": "token refresh",
+      "success_status": 200,
+      "side_effects": [
+        "rotate refresh token",
+        "set new access token HttpOnly cookie",
+        "set new refresh token HttpOnly cookie",
+        "keep CSRF token"
+      ],
+      "request": {
+        "path_params": {},
+        "query": {},
+        "body": {}
+      },
+      "response": {
+        "data": {
+          "refreshed": true,
+          "access_expires_in_seconds": 900
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "SESSION_EXPIRED",
+        "CSRF_TOKEN_MISSING",
+        "CSRF_TOKEN_INVALID",
+        "REFRESH_TOKEN_REUSED",
+        "RATE_LIMITED"
+      ],
+      "schema_status": "approved"
+    },
+    {
+      "id": "auth.me",
+      "method": "GET",
+      "path": "/api/v1/auth/me",
+      "auth_required": true,
+      "csrf_required": false,
+      "purpose": "현재 사용자/session 확인",
+      "success_status": 200,
+      "request": {
+        "path_params": {},
+        "query": {},
+        "body": null
+      },
+      "response": {
+        "data": {
+          "authenticated": true,
+          "user": {
+            "$ref": "shared_schemas.User"
+          },
+          "profile": {
+            "$ref": "shared_schemas.ProfileSummary"
+          }
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "AUTH_REQUIRED",
+        "SESSION_EXPIRED"
+      ],
+      "schema_status": "approved"
+    },
+    {
+      "id": "story.cases.list",
+      "method": "GET",
+      "path": "/api/v1/story/cases",
+      "auth_required": true,
+      "csrf_required": false,
+      "purpose": "AI 사건 목록",
+      "success_status": 200,
+      "request": {
+        "path_params": {},
+        "query": {},
+        "body": null
+      },
+      "response": {
+        "data": {
+          "cases": [
+            {
+              "$ref": "shared_schemas.StoryCaseSummary"
+            }
+          ]
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "AUTH_REQUIRED",
+        "SESSION_EXPIRED"
+      ],
+      "schema_status": "approved"
+    },
+    {
+      "id": "story.cases.briefing",
+      "method": "GET",
+      "path": "/api/v1/story/cases/{case_id}/briefing",
+      "auth_required": true,
+      "csrf_required": false,
+      "purpose": "브리핑 조회",
+      "success_status": 200,
+      "request": {
+        "path_params": {
+          "case_id": "string"
+        },
+        "query": {},
+        "body": null
+      },
+      "response": {
+        "data": {
+          "case": {
+            "$ref": "shared_schemas.StoryCaseBriefing"
+          }
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "AUTH_REQUIRED",
+        "SESSION_EXPIRED",
+        "CASE_NOT_FOUND",
+        "CASE_NOT_AVAILABLE"
+      ],
+      "schema_status": "approved"
+    },
+    {
+      "id": "story.cases.matches.start",
+      "method": "POST",
+      "path": "/api/v1/story/cases/{case_id}/matches",
+      "auth_required": true,
+      "csrf_required": true,
+      "purpose": "AI 스토리 매치 시작",
+      "success_status": 201,
+      "request": {
+        "path_params": {
+          "case_id": "string"
+        },
+        "query": {},
+        "body": {
+          "client_request_id": "string:uuid"
+        }
+      },
+      "response": {
+        "data": {
+          "match": {
+            "$ref": "shared_schemas.MatchState"
+          }
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "AUTH_REQUIRED",
+        "SESSION_EXPIRED",
+        "CSRF_TOKEN_MISSING",
+        "CSRF_TOKEN_INVALID",
+        "CASE_NOT_FOUND",
+        "CASE_NOT_AVAILABLE",
+        "VALIDATION_ERROR",
+        "IDEMPOTENCY_CONFLICT",
+        "RATE_LIMITED"
+      ],
+      "schema_status": "approved"
+    },
+    {
+      "id": "matches.detail",
+      "method": "GET",
+      "path": "/api/v1/matches/{match_id}",
+      "auth_required": true,
+      "csrf_required": false,
+      "purpose": "현재 매치 상태 조회",
+      "success_status": 200,
+      "request": {
+        "path_params": {
+          "match_id": "string"
+        },
+        "query": {},
+        "body": null
+      },
+      "response": {
+        "data": {
+          "match": {
+            "$ref": "shared_schemas.MatchState"
+          }
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "AUTH_REQUIRED",
+        "SESSION_EXPIRED",
+        "MATCH_NOT_FOUND",
+        "MATCH_ACCESS_DENIED"
+      ],
+      "schema_status": "approved"
+    },
+    {
+      "id": "matches.turns.submit",
+      "method": "POST",
+      "path": "/api/v1/matches/{match_id}/turns",
+      "auth_required": true,
+      "csrf_required": true,
+      "purpose": "행동 제출",
+      "success_status": 200,
+      "request": {
+        "path_params": {
+          "match_id": "string"
+        },
+        "query": {},
+        "body": {
+          "action_code": "string:action_code",
+          "info_target_key": "string:mirror_guest_info_target_key|null",
+          "client_nonce": "string:uuid"
+        }
+      },
+      "request_rules": [
+        "info_target_key is required for insight, contract, seal",
+        "client_nonce is unique in participant + turn scope",
+        "server rejects submissions after deadline_at"
+      ],
+      "response": {
+        "data": {
+          "turn_result": {
+            "$ref": "shared_schemas.TurnResult"
+          },
+          "match": {
+            "$ref": "shared_schemas.MatchState"
+          }
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "AUTH_REQUIRED",
+        "SESSION_EXPIRED",
+        "CSRF_TOKEN_MISSING",
+        "CSRF_TOKEN_INVALID",
+        "MATCH_NOT_FOUND",
+        "MATCH_ACCESS_DENIED",
+        "MATCH_ALREADY_FINISHED",
+        "TURN_ALREADY_SUBMITTED",
+        "TURN_DEADLINE_EXPIRED",
+        "ACTION_NOT_AVAILABLE",
+        "INFO_TARGET_REQUIRED",
+        "INSUFFICIENT_RITUAL_POWER",
+        "VALIDATION_ERROR",
+        "RATE_LIMITED"
+      ],
+      "schema_status": "approved"
+    },
+    {
+      "id": "matches.result",
+      "method": "GET",
+      "path": "/api/v1/matches/{match_id}/result",
+      "auth_required": true,
+      "csrf_required": false,
+      "purpose": "결과 조회",
+      "success_status": 200,
+      "request": {
+        "path_params": {
+          "match_id": "string"
+        },
+        "query": {},
+        "body": null
+      },
+      "response": {
+        "data": {
+          "result": {
+            "$ref": "shared_schemas.MatchResult"
+          }
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "AUTH_REQUIRED",
+        "SESSION_EXPIRED",
+        "MATCH_NOT_FOUND",
+        "MATCH_ACCESS_DENIED",
+        "MATCH_NOT_RESOLVED"
+      ],
+      "schema_status": "approved"
+    },
+    {
+      "id": "profile.me",
+      "method": "GET",
+      "path": "/api/v1/profile/me",
+      "auth_required": true,
+      "csrf_required": false,
+      "purpose": "내 프로필과 요약 조회",
+      "success_status": 200,
+      "request": {
+        "path_params": {},
+        "query": {},
+        "body": null
+      },
+      "response": {
+        "data": {
+          "user": {
+            "$ref": "shared_schemas.User"
+          },
+          "profile": {
+            "$ref": "shared_schemas.ProfileSummary"
+          }
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "AUTH_REQUIRED",
+        "SESSION_EXPIRED"
+      ],
+      "schema_status": "approved"
+    }
+  ],
+  "error_codes": {
+    "AUTH_REQUIRED": "인증이 필요하다.",
+    "SESSION_EXPIRED": "세션이 만료되었거나 refresh에 실패했다.",
+    "INVALID_CREDENTIALS": "로그인 정보가 올바르지 않다.",
+    "CSRF_TOKEN_MISSING": "CSRF token이 없다.",
+    "CSRF_TOKEN_INVALID": "CSRF token이 유효하지 않다.",
+    "VALIDATION_ERROR": "요청 payload가 schema 또는 서버 검증을 통과하지 못했다.",
+    "CASE_NOT_FOUND": "사건을 찾을 수 없다.",
+    "CASE_NOT_AVAILABLE": "사건이 1차 MVP에서 사용 가능하지 않다.",
+    "MATCH_NOT_FOUND": "매치를 찾을 수 없다.",
+    "MATCH_ACCESS_DENIED": "요청 사용자가 해당 match participant가 아니다.",
+    "MATCH_ALREADY_FINISHED": "매치가 이미 종료되었다.",
+    "MATCH_NOT_RESOLVED": "결과 조회 시점에 매치가 아직 종료되지 않았다.",
+    "TURN_ALREADY_SUBMITTED": "현재 participant가 해당 턴에 이미 행동을 제출했다.",
+    "TURN_DEADLINE_EXPIRED": "제출이 서버 deadline_at 이후 도착했다.",
+    "ACTION_NOT_AVAILABLE": "선택할 수 없는 행동이다.",
+    "INFO_TARGET_REQUIRED": "정보 행동에 필요한 info_target_key가 없다.",
+    "INSUFFICIENT_RITUAL_POWER": "의식력이 부족하다.",
+    "REFRESH_TOKEN_REUSED": "refresh token 재사용이 감지되어 token family가 폐기되었다.",
+    "IDEMPOTENCY_CONFLICT": "동일 idempotency key가 다른 요청 내용으로 재사용되었다.",
+    "RATE_LIMITED": "요청 제한에 걸렸다.",
+    "LLM_SUMMARY_UNAVAILABLE": "LLM 요약을 사용할 수 없어 정적 문장을 표시해야 한다."
+  },
+  "remaining_decisions": []
+}

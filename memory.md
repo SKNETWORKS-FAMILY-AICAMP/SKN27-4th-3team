@@ -1,0 +1,350 @@
+# Project Memory
+
+Updated: 2026-06-04
+
+## Current State
+
+- 이 workspace는 `docs/` 옵시디언 문서, official API schema, 백엔드 MVP scaffold가 함께 있는 초기 monorepo다.
+- Git 저장소이며 현재 작업 브랜치는 `feature-backend-structure`다.
+- 구현 문서의 source of truth는 `docs/09_Approved_Contracts/*`, `docs/02_Game_Rules/*`, `docs/03_Backend/99_Backend_구현_확정.md`, `docs/06_AI_Profile/99_AI_Profile_구현_확정.md`, `api-spec/pilot-mvp-api.official.jsonc/json`이다.
+- 프론트엔드와 LLM generation 구현은 현재 작업 범위에서 제외한다.
+- `backend/apps/game_rules`는 전체 7x7 상성표, 자원/상태 일부, AI 스토리 승패 판정을 순수 Python 도메인 모듈로 구현했다.
+- `backend/apps/ai_profile/metrics.py`는 승인된 행동 이벤트 필드와 스타일 지표 계산식을 순수 Python 도메인 모듈로 구현했다.
+- Django project 최소 설정, 의존성 lock, 백엔드 MVP 앱 `AppConfig` 골격은 생성됐다.
+- Auth user/profile/refresh token/security event 저장 구조 일부는 구현됐다.
+- Auth API endpoint/serializer/view/cookie helper 스캐폴딩은 official schema와 보안 금지선 기준으로 추가됐다.
+- Match/Story/Retrieval DB 모델 scaffold와 턴 resolve, RAG chunking/allowlist 구조가 추가됐다.
+- 실제 Auth token 발급/JWT/cookie runtime/rotation service, full official endpoint runtime 연결, 실제 PostgreSQL migration 적용 검증은 아직 남아 있다.
+- README는 Obsidian 문서 기준으로 현재 사용 기술, 계약만 있는 기술, 후순위/미사용 기술을 분리한다.
+- ERD에 들어갈 RDB 테이블 구성은 문서와 Django model scaffold 수준에서 존재하지만, 별도 시각적 ERD 산출물은 아직 없다.
+
+## Operating Context
+
+- 승인된 목표 구조는 `backend/`, `frontend/`, `llm/`, `api-spec/`, `docs/`, `tools/`, `output/`, `ops/`를 포함하는 monorepo다.
+- 백엔드 목표 스택은 Django API, PostgreSQL, `pgvector`, HttpOnly JWT cookie, refresh token rotation, Django CSRF middleware다.
+- 1차 MVP 로컬 실행 구성은 Django API + PostgreSQL + PostgreSQL `pgvector`로 제한한다.
+- Redis, WebSocket worker, LLM provider emulator, KAG 전용 저장소, 프론트엔드 구현, LLM provider/prompt/generation 구현은 제외한다.
+- GraphDB는 사용하지 않는다. KAG도 1차 MVP 제외이며, 후속 후보는 RDB 기반 구조다.
+
+## Source Documents
+
+- `docs/03_Backend/99_Backend_구현_확정.md`: backend 구현은 `implementation-ready`.
+- `docs/02_Game_Rules/99_Game_Rules_구현_확정.md`: game rules 구현은 `implementation-ready`.
+- `docs/06_AI_Profile/99_AI_Profile_구현_확정.md`: AI Profile 구현 기준은 `approved`.
+- `docs/09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약.md`: 프론트/LLM 제외 백엔드, RAG, AI Profile 구현 준비 기준.
+- `docs/09_Approved_Contracts/18_게임_규칙_상성표_상태_승패_계약.md`: 7x7 상성표, 상태, 봉인, 동시 승패 우선순위.
+- `docs/09_Approved_Contracts/20_Django_Auth_보안_계약.md`: HttpOnly cookie JWT, refresh token family/reuse, CSRF 보안 기준.
+- `docs/09_Approved_Contracts/21_AI_스토리_시간초과_판정_계약.md`: 서버 `deadline_at` 기준 시간초과.
+- `docs/09_Approved_Contracts/22_API_상세_Schema_계약.md`: official API schema 기준.
+- `docs/09_Approved_Contracts/23_프로젝트_폴더_구조_계약.md`: 팀별 폴더 경계.
+
+## Implemented Structure
+
+- `backend/apps/game_rules/resources.py`
+  - `ResourceState`, 자원 기본값/상한, 의심/거짓 단서/보호막/불완전 진명 조각 처리.
+- `backend/apps/game_rules/matchups.py`
+  - 승인된 7x7 행동 상성표, 방향별 공개 로그, 봉인 방해 단계, `간파` vs `침묵` 다음 행동 후보 생성.
+- `backend/apps/game_rules/outcomes.py`
+  - 12턴 AI 스토리 제한과 봉인 성공 우선 승패 판정.
+- `backend/apps/game_rules/policies.py`
+  - `거울 속의 손님` 기본 가중치와 tie-break 순서.
+- `backend/apps/ai_profile/metrics.py`
+  - `ActionEvent`, `StyleMetrics`, 승인 산식 기반 스타일 지표 계산.
+- `requirements.txt`
+  - 공식 출처 기준 backend dependency lock: `Django==5.2.14`, `djangorestframework==3.17.1`, `PyJWT==2.13.0`, `jsonschema==4.26.0`, `pgvector==0.4.2`, `psycopg[binary]==3.3.4`.
+- `backend/config/settings.py`
+  - API prefix `/api/v1`, `AUTH_USER_MODEL = "accounts.User"`, CSRF middleware, explicit CSRF/CORS allowlist, HttpOnly cookie path/TTL/SameSite 계약값.
+  - `RAG_EMBEDDING_MODEL_ID`는 코드 기본값 없이 env에서만 읽는다. 추천값 `text-embedding-3-small`은 코드가 아니라 env template 또는 운영 설정에서 주입해야 한다.
+  - `DJANGO_CSRF_TRUSTED_ORIGINS`, `DJANGO_CORS_ALLOWED_ORIGINS`에 wildcard가 포함되면 settings load 단계에서 실패한다.
+- `backend/config/urls.py`, `backend/config/asgi.py`, `backend/config/wsgi.py`, `backend/manage.py`
+  - Django project entrypoint 골격. `backend/manage.py`는 `backend.config.settings` import를 위해 project root를 `sys.path`에 추가한다. `backend/config/urls.py`는 `api/v1/auth/`를 accounts URLConf에 연결한다.
+- `backend/apps/*/apps.py`
+  - `accounts`, `profiles`, `game_rules`, `matches`, `story`, `ai_profile`, `retrieval` 최소 Django app config.
+- `backend/apps/common/errors.py`
+  - official API schema의 `error_codes` catalog, immutable `API_ERROR_MESSAGES`, `ApiError`, `make_api_error`.
+  - `ApiError` 직접 생성 시에도 `message`가 `API_ERROR_MESSAGES[code]`와 같아야 하므로 official message 계약을 우회할 수 없다.
+- `backend/apps/common/responses.py`
+  - 성공 `{ data, meta }`, 실패 `{ error, meta }` envelope 생성 helper. `meta.request_id`, `meta.server_time` 필수.
+- `backend/apps/accounts/models.py`
+  - `AbstractBaseUser + PermissionsMixin` 기반 `accounts.User` custom user model. 로그인 식별자는 email. nickname/전적/스타일 표시 필드는 없다. 승인 문서에 테이블명이 없으므로 `db_table`은 지정하지 않는다.
+  - `RefreshToken`은 승인 문서의 최소 저장 필드인 `user_id`, `jti`, `family_id`, `token_hash`, `status`, `issued_at`, `expires_at`, `rotated_at`, `revoked_at`, `reused_at`, `replaced_by_jti`를 가진다. 원문 refresh token 필드는 없다.
+  - `SecurityEvent`는 현재 확정된 event type, created time만 가진다. actor/user_id와 metadata schema는 승인 문서 확정 전 구현하지 않는다.
+- `backend/apps/accounts/tokens.py`
+  - refresh token status/reuse status, `REFRESH_TOKEN_REUSED`, 문서 문구 기반 security event type catalog, `jti`/`family_id` lifecycle별 UUIDv4 생성 helper, 서버 secret 기반 HMAC-SHA256 hash helper.
+- `backend/apps/accounts/serializers.py`
+  - official schema 기준 Auth request/response serializer 스캐폴딩. access/refresh token을 response body field로 두지 않는다.
+- `backend/apps/accounts/views.py`
+  - Auth endpoint view 스캐폴딩, CSRF cookie/get token/rotation 지점, access/refresh cookie set/delete helper. 실제 DB/JWT/service 로직은 `AuthServiceNotImplemented`로 명시한다.
+- `backend/apps/accounts/urls.py`
+  - official schema 기준 Auth endpoint 6개: `csrf`, `signup`, `login`, `logout`, `refresh`, `me`.
+- `backend/apps/accounts/managers.py`
+  - email 정규화, password hashing, superuser 권한 플래그 검증을 담당하는 `UserManager`.
+- `backend/apps/profiles/models.py`
+  - `profiles.Profile`은 `settings.AUTH_USER_MODEL`과 1:1 연결되며 nickname, AI story 전적 요약, style label/display text/update time을 담당한다. 승인 문서에 테이블명과 신규 전적 기본값이 없으므로 `db_table`과 `default=0`은 지정하지 않는다.
+
+## Verification
+
+- 2026-06-02, `D:\dev\Project\pilot`
+  - `C:\Python314\python.exe -m pytest backend\tests -v`
+  - Result: 29 passed.
+- AI Profile TDD RED
+  - `C:\Python314\python.exe -m pytest backend\tests\ai_profile\test_style_metrics_contract.py -v`
+  - Result before implementation: `ModuleNotFoundError: No module named 'backend.apps.ai_profile.metrics'`.
+- AI Profile GREEN
+  - same command
+  - Result after implementation: 5 passed.
+- Game Rules review RED
+  - `C:\Python314\python.exe -m pytest backend\tests\game_rules\test_matchup_contract.py -v`
+  - Result before fix: 4 failed, 7 passed. Failures covered `저주`/`간파` vs `봉인` directional logs and timeout strong-pattern priority.
+- Game Rules review GREEN
+  - same command
+  - Result after fix: 11 passed.
+- Game Rules policy immutability GREEN
+  - `C:\Python314\python.exe -m pytest backend\tests\game_rules\test_matchup_contract.py -v`
+  - Result after constants/immutability hardening: 12 passed.
+- Django config Task 1 RED
+  - `C:\Python314\python.exe -m pytest backend\tests\config\test_project_contract.py -v`
+  - Result before implementation: 6 failed. Missing `requirements.txt`, `backend/manage.py`, `backend/config`, and MVP app `apps.py` files.
+- Django config Task 1 GREEN
+  - `C:\Python314\python.exe -m pytest backend\tests\config\test_project_contract.py -v`
+  - Result after implementation: 7 passed.
+- Django config Task 1 manage.py path RED
+  - `C:\Python314\python.exe -m pytest backend\tests\config\test_project_contract.py -v`
+  - Result before fix: 1 failed, 6 passed. `backend/manage.py` did not add project root to `sys.path`.
+- 2026-06-02, `D:\dev\Project\pilot`
+  - `C:\Python314\python.exe -m pytest backend\tests -v`
+  - Result: 36 passed.
+- Django config review follow-up RED
+  - `C:\Python314\python.exe -m pytest backend\tests\config\test_project_contract.py -v`
+  - Result before fix: 2 failed, 7 passed. Failures covered hardcoded `text-embedding-3-small` in settings and wildcard CSRF/CORS origin env acceptance.
+- Django config review follow-up GREEN
+  - `C:\Python314\python.exe -m pytest backend\tests\config\test_project_contract.py -v`
+  - Result after fix: 9 passed.
+- 2026-06-02, `D:\dev\Project\pilot`
+  - `C:\Python314\python.exe -m pytest backend\tests -v`
+  - Result: 38 passed.
+- API envelope Task 2 RED
+  - `C:\Python314\python.exe -m pytest backend\tests\common\test_response_contract.py -v`
+  - Result before implementation: 7 failed. Missing `backend.apps.common.errors` and `backend.apps.common.responses`.
+- API envelope Task 2 GREEN
+  - `C:\Python314\python.exe -m pytest backend\tests\common\test_response_contract.py -v`
+  - Result after implementation: 7 passed.
+- 2026-06-02, `D:\dev\Project\pilot`
+  - `C:\Python314\python.exe -m pytest backend\tests -v`
+  - Result: 45 passed.
+- API envelope Task 2 review RED
+  - `C:\Python314\python.exe -m pytest backend\tests\common\test_response_contract.py -v`
+  - Result before fix: 1 failed, 7 passed. `ApiError` direct construction could override official message.
+- API envelope Task 2 review GREEN
+  - `C:\Python314\python.exe -m pytest backend\tests\common\test_response_contract.py -v`
+  - Result after fix: 8 passed.
+- 2026-06-02, `D:\dev\Project\pilot`
+  - `C:\Python314\python.exe -m pytest backend\tests -v`
+  - Result: 46 passed.
+- Accounts/Profile Task 3 RED
+  - `C:\Python314\python.exe -m pytest backend\tests\accounts\test_user_profile_contract.py -v`
+  - Result before implementation: 4 failed, 1 passed. Missing `accounts/models.py`, `accounts/managers.py`, `profiles/models.py`.
+- Accounts/Profile Task 3 GREEN
+  - `C:\Python314\python.exe -m pytest backend\tests\accounts\test_user_profile_contract.py -v`
+  - Result after implementation: 5 passed.
+- 2026-06-02, `D:\dev\Project\pilot`
+  - `C:\Python314\python.exe -m pytest backend\tests -v`
+  - Result: 51 passed.
+- Refresh token/Security Event Task 4 RED
+  - `C:\Python314\python.exe -m pytest backend\tests\accounts\test_refresh_token_contract.py -v`
+  - Result before implementation: 5 failed. Missing `RefreshToken`, `SecurityEvent`, and `backend.apps.accounts.tokens`.
+- Refresh token/Security Event Task 4 GREEN
+  - `C:\Python314\python.exe -m pytest backend\tests\accounts\test_refresh_token_contract.py -v`
+  - Result after implementation: 5 passed.
+- Accounts contract after Task 4
+  - `C:\Python314\python.exe -m pytest backend\tests\accounts -v`
+  - Result: 10 passed.
+- 2026-06-02, `D:\dev\Project\pilot`
+  - `C:\Python314\python.exe -m pytest backend\tests -v`
+  - Result: 56 passed.
+- Django install check
+  - `C:\Python314\python.exe -c "import importlib.util; print(importlib.util.find_spec('django'))"`
+  - Result: `None`.
+- Refresh token/Security Event Task 4A review RED
+  - `C:\Python314\python.exe -m pytest backend\tests\accounts\test_refresh_token_contract.py -v`
+  - Result before fix: 1 failed, 4 passed. Tests caught document-unapproved SecurityEvent actor/metadata fields.
+- Refresh token/Security Event Task 4A review GREEN
+  - `C:\Python314\python.exe -m pytest backend\tests\accounts\test_refresh_token_contract.py -v`
+  - Result after fix: 5 passed.
+- Accounts contract after Task 4A
+  - `C:\Python314\python.exe -m pytest backend\tests\accounts -v`
+  - Result: 10 passed.
+- 2026-06-02, `D:\dev\Project\pilot`
+  - `C:\Python314\python.exe -m pytest backend\tests -v`
+  - Result: 56 passed.
+- Accounts/Profile Task 3 public-record default RED
+  - `C:\Python314\python.exe -m pytest backend\tests\accounts\test_user_profile_contract.py -v`
+  - Result before fix: 1 failed, 4 passed. Tests caught document-unapproved `default=0` values for profile public record counters.
+- Accounts/Profile Task 3 public-record default GREEN
+  - `C:\Python314\python.exe -m pytest backend\tests\accounts\test_user_profile_contract.py -v`
+  - Result after fix: 5 passed.
+- 2026-06-02, `D:\dev\Project\pilot`
+  - `C:\Python314\python.exe -m pytest backend\tests -v`
+  - Result: 51 passed.
+- Accounts/Profile Task 3 table-name review RED
+  - `C:\Python314\python.exe -m pytest backend\tests\accounts\test_user_profile_contract.py -v`
+  - Result before fix: 2 failed, 3 passed. Tests caught document-unapproved `db_table` values.
+- Accounts/Profile Task 3 table-name review GREEN
+  - `C:\Python314\python.exe -m pytest backend\tests\accounts\test_user_profile_contract.py -v`
+  - Result after fix: 5 passed.
+- 2026-06-02, `D:\dev\Project\pilot`
+  - `C:\Python314\python.exe -m pytest backend\tests -v`
+  - Result: 51 passed.
+- Auth API/CSRF Task 5 RED
+  - `C:\Python314\python.exe -m pytest backend\tests\accounts\test_auth_api_contract.py -v`
+  - Result before implementation: 5 failed, 1 passed. Missing `accounts/serializers.py`, `accounts/views.py`, `accounts/urls.py`.
+- Auth API/CSRF Task 5 GREEN
+  - `C:\Python314\python.exe -m pytest backend\tests\accounts\test_auth_api_contract.py -v`
+  - Result after implementation: 6 passed.
+- Accounts contract after Task 5
+  - `C:\Python314\python.exe -m pytest backend\tests\accounts -v`
+  - Result: 16 passed.
+- 2026-06-03, `D:\dev\Project\pilot`
+  - `C:\Python314\python.exe -m pytest backend\tests -v`
+  - Result: 62 passed.
+- Django install check
+  - `C:\Python314\python.exe -c "import importlib.util; print(importlib.util.find_spec('django'))"`
+  - Result: `None`.
+- Auth API schema realignment RED
+  - `C:\Python314\python.exe -m pytest backend\tests\accounts\test_auth_api_contract.py::test_login_response_serializer_keeps_session_fields_nested_like_official_schema -v`
+  - Result before fix: 1 failed. The test caught the missing nested `LoginSessionSerializer`.
+- Auth API schema realignment GREEN
+  - `C:\Python314\python.exe -m pytest backend\tests\accounts\test_auth_api_contract.py::test_login_response_serializer_keeps_session_fields_nested_like_official_schema -v`
+  - Result after fix: 1 passed.
+- Auth API contract after schema realignment
+  - `C:\Python314\python.exe -m pytest backend\tests\accounts\test_auth_api_contract.py -v`
+  - Result: 7 passed.
+- Match storage Task 6 RED
+  - `C:\Python314\python.exe -m pytest backend\tests\matches\test_match_storage_contract.py -v`
+  - Result before implementation: 5 failed. Missing `matches/constants.py`, `matches/models.py`, `matches/services.py`.
+- Match storage Task 6 GREEN
+  - `C:\Python314\python.exe -m pytest backend\tests\matches\test_match_storage_contract.py -v`
+  - Result after implementation: 5 passed.
+- 2026-06-03, `D:\dev\Project\pilot`
+  - `C:\Python314\python.exe -m pytest backend\tests -v`
+  - Result: 68 passed.
+- Django/jsonschema install check
+  - `C:\Python314\python.exe -c "import importlib.util; print(importlib.util.find_spec('django')); print(importlib.util.find_spec('jsonschema'))"`
+  - Result: `None`, `None`.
+- Dependency install
+  - Created local virtualenv: `.venv`.
+  - Installed runtime requirements with `.\.venv\Scripts\python.exe -m pip install -r requirements.txt`.
+  - Installed test runner in `.venv`: `pytest==9.0.3`.
+  - Import check with `.venv`: Django `5.2.14`, jsonschema `4.26.0`, DRF `3.17.1`.
+- Django runtime check
+  - `.\.venv\Scripts\python.exe backend\manage.py check`
+  - Result: `System check identified no issues (0 silenced).`
+- Implementation report file
+  - Created: `docs/superpowers/reports/2026-06-04-backend-implementation-report.md`.
+  - Purpose: record source-of-truth checks, changed files, verification, skipped runtime checks, and remaining risks for each backend implementation task.
+- AI Profile persistence Task 9 RED
+  - `C:\Python314\python.exe -m pytest backend\tests\ai_profile\test_ai_profile_persistence_contract.py -v`
+  - Result before implementation: 5 failed. Missing `backend/apps/ai_profile/models.py` and `backend/apps/ai_profile/services.py`.
+- AI Profile persistence Task 9 GREEN
+  - `C:\Python314\python.exe -m pytest backend\tests\ai_profile\test_ai_profile_persistence_contract.py -v`
+  - Result after implementation: 5 passed.
+- AI Profile test scope
+  - `C:\Python314\python.exe -m pytest backend\tests\ai_profile -v`
+  - Result: 10 passed.
+- 2026-06-04, `D:\dev\Project\pilot`
+  - `C:\Python314\python.exe -m pytest backend\tests -v`
+  - Result: 82 passed.
+- Django/jsonschema install check
+  - `C:\Python314\python.exe -c "import importlib.util; print(importlib.util.find_spec('django')); print(importlib.util.find_spec('jsonschema'))"`
+  - Result: `None`, `None`.
+- Retrieval Task 10 RED
+  - `.\.venv\Scripts\python.exe -m pytest backend\tests\retrieval\test_retrieval_contract.py -v`
+  - Result before implementation: 5 failed, 1 passed. Missing `backend/apps/retrieval/models.py`, `chunking.py`, `services.py`.
+- Retrieval Task 10 GREEN
+  - `.\.venv\Scripts\python.exe -m pytest backend\tests\retrieval\test_retrieval_contract.py -v`
+  - Result after implementation: 6 passed.
+- 2026-06-04, `D:\dev\Project\pilot`
+  - `.\.venv\Scripts\python.exe -m pytest backend\tests -v`
+  - Result: 88 passed.
+- Django runtime check
+  - `.\.venv\Scripts\python.exe backend\manage.py check`
+  - Result: `System check identified no issues (0 silenced).`
+- Story storage Task 7 RED
+  - `C:\Python314\python.exe -m pytest backend\tests\story\test_story_storage_contract.py -v`
+  - Result before implementation: 4 failed. Missing `story/models.py` and `story/services.py`.
+- Story storage Task 7 GREEN
+  - `C:\Python314\python.exe -m pytest backend\tests\story\test_story_storage_contract.py -v`
+  - Result after implementation: 4 passed.
+- 2026-06-04, `D:\dev\Project\pilot`
+  - `C:\Python314\python.exe -m pytest backend\tests -v`
+  - Result: 72 passed.
+- Django/jsonschema install check
+  - `C:\Python314\python.exe -c "import importlib.util; print(importlib.util.find_spec('django')); print(importlib.util.find_spec('jsonschema'))"`
+  - Result: `None`, `None`.
+- Obsidian docs source-of-truth audit
+  - Checked: `docs/00_Project/00_문서_운영_규칙.md`, `docs/09_Approved_Contracts/00_승인본_목차.md`, `docs/03_Backend/99_Backend_구현_확정.md`, `docs/02_Game_Rules/99_Game_Rules_구현_확정.md`, approved contracts 02/03/04/09/12/17/18/20/22/23, and Story Mode docs.
+  - Result: implementation must prioritize `09_Approved_Contracts/*` and `99_*_구현_확정` documents; `draft` and `needs-decision` documents are not standalone implementation authority.
+- Turn resolution Task 8 RED
+  - `C:\Python314\python.exe -m pytest backend\tests\matches\test_turn_resolution_contract.py -v`
+  - Result before implementation: 5 failed. Missing `backend/apps/matches/resolution.py`.
+- Turn resolution Task 8 GREEN
+  - `C:\Python314\python.exe -m pytest backend\tests\matches\test_turn_resolution_contract.py -v`
+  - Result after implementation: 5 passed.
+- 2026-06-04, `D:\dev\Project\pilot`
+  - `C:\Python314\python.exe -m pytest backend\tests -v`
+  - Result: 77 passed.
+- Django/jsonschema install check
+  - `C:\Python314\python.exe -c "import importlib.util; print(importlib.util.find_spec('django')); print(importlib.util.find_spec('jsonschema'))"`
+  - Result: `None`, `None`.
+
+## Known Gaps And Risks
+
+- Obsidian document hierarchy is now treated as follows: `09_Approved_Contracts/*` and `99_*_구현_확정`/`implementation-ready` documents are implementation authority; `draft` documents are only usable when an approved contract explicitly references a bounded part; `needs-decision` content must not be implemented without owner confirmation.
+- `docs/05_Story_Mode/02_거울_속의_손님.md` has `needs-decision` status, but some content is backed by approved contracts and the approved owner worksheet. Use approved contracts 02/03/04/12 and `docs/05_Story_Mode/07_거울_속의_손님_오너_확정_워크시트.md` for specific story rules, not the needs-decision document as a standalone source.
+- API implementation authority is `api-spec/pilot-mvp-api.official.jsonc` and `api-spec/pilot-mvp-api.official.json`; draft API paths must not be implemented.
+- RAG/LLM must not change rule resolution, win/loss, auth/permission policy, true-name fragments, false clues, or apparition action selection.
+- Django dependency file은 생성됐지만, 현재 로컬 Python 환경에 설치 검증은 하지 않았다.
+- `.venv`에 backend requirements와 pytest를 설치했고, `manage.py check`, migration check, 전체 테스트를 통과했다. 실제 PostgreSQL 연결과 migration 적용 검증은 아직 남아 있다.
+- 추천 RAG embedding model id는 코드에서 제거했으므로, Task 12의 `ops/env/backend.env.example` 또는 배포 설정 문서에 명시해야 한다.
+- 실제 CORS 응답 처리는 아직 dependency/middleware가 없으므로, 프론트 origin 요구가 확정되는 API 연결 단계에서 다시 검증해야 한다.
+- API envelope helper는 아직 DRF `Response`, exception handler, middleware/request-id 생성 흐름에 연결되지 않았다.
+- Auth API view는 official schema와 보안 금지선을 고정하는 스캐폴딩이다. 실제 signup/login/logout/refresh/me service, JWT 발급, cookie response runtime은 아직 구현하지 않았다.
+- official API schema가 변경되면 `backend/apps/common/errors.py`의 error code catalog도 함께 갱신해야 한다.
+- `API_ERROR_MESSAGES`는 official schema와 테스트로 동기화하지만, schema에서 자동 생성하는 파이프라인은 아직 없다.
+- Accounts/Profile 모델 검증은 정적 소스 계약 테스트와 Django migration check를 통과했다. DB runtime 검증은 아직 필요하다.
+- nickname 길이 제한, nickname 고유성, profile 생성 서비스 호출 시점은 승인 문서에 구체 값이 없어 구현하지 않았다.
+- Accounts/Profile 테이블명을 명시해야 한다면 먼저 Obsidian 승인 문서에 확정값을 추가해야 한다.
+- 신규 profile 전적 기본값을 `0`으로 고정해야 한다면 먼저 Obsidian 승인 문서에 확정값을 추가해야 한다.
+- Refresh token 저장 구조와 Security Event 모델은 정적 소스 계약, 순수 helper 테스트, Django migration check를 통과했다. DB runtime 검증은 아직 필요하다.
+- `RefreshToken`은 문서에 명시된 token 소유자 `user_id` 저장 필드를 가진다. 실제 FK, `CASCADE`/`PROTECT`/`SET_NULL` 정책이 필요하면 먼저 Obsidian 승인 문서에 확정해야 한다.
+- 실제 refresh API service, JWT 발급, family revoke, DB transaction + row lock은 아직 구현하지 않았다.
+- security event의 비인증 상황(CSRF 실패, 로그인 실패 반복)에서 actor/user_id를 어떻게 처리할지, metadata schema를 둘지 여부는 승인 문서에 구체화되어 있지 않다. 확정 전에는 해당 필드를 구현하지 않는다.
+- Auth login response serializer는 official schema의 nested `session` 구조에 맞췄다. Cookie name `pilot_access`, `pilot_refresh`는 아직 승인 문서 확정값을 찾지 못했으므로 임의 변경하지 않았다.
+- Match storage Task 6은 `matches`, `match_participants`, `turns`, `action_submissions`, `turn_results` 모델 골격과 participant/json snapshot 검증 helper까지 구현했다.
+- Match storage 모델은 삭제 정책을 임의 결정하지 않기 위해 `ForeignKey(on_delete=...)`를 쓰지 않고 문서의 `*_id` 필드로 구성했다. 실제 FK 정책이 필요하면 승인 문서 확정 후 변경해야 한다.
+- `jsonschema`는 `requirements.txt`에 고정되어 있지만 현재 로컬 Python 환경에는 설치되어 있지 않아 `validate_json_snapshot_payload()` runtime 검증은 아직 수행하지 못한다.
+- `matches/story` 세부 문서는 `draft`지만, 승인 계약 17번에서 핵심 테이블과 JSONField 원칙은 확정되어 있다.
+- Story storage Task 7은 `story_cases`, `apparitions`, `stages`, `true_name_fragments`, `false_clues`, `player_story_progress` 모델 골격과 `schema_version` 검증 helper까지만 구현했다.
+- Story 공식 콘텐츠 seed, 공식 단서/거짓 단서 텍스트 생성, trigger/reveal 실행 로직은 `needs-decision` 문서가 섞여 있어 구현하지 않았다.
+- Story 모델도 삭제 정책을 임의 결정하지 않기 위해 `ForeignKey(on_delete=...)`를 쓰지 않고 문서의 `*_id` 필드로 구성했다.
+- `jsonschema`는 현재 로컬 Python 환경에 설치되어 있지 않아 `validate_story_policy_payload()` runtime 검증은 아직 수행하지 못한다.
+- Turn resolution Task 8은 `backend/apps/matches/resolution.py`에 순수 resolve service로 구현됐다. Deadline 초과 제출은 official `TURN_DEADLINE_EXPIRED` `ApiError` 객체를 반환하고, 미제출 deadline 초과는 player action `silence`, `timed_out`, timeout count +1로 resolve한다.
+- Task 8 resolve는 `game_rules.matchups.get_matchup_result()`와 `game_rules.outcomes.determine_ai_story_outcome()`을 사용한다. LLM/RAG/embedding, 공포 상태, 상성표 외부 봉인 방해 가산, Story trigger 실행, DB 저장은 추가하지 않았다.
+- `ApiError`는 예외가 아니라 official response payload 객체다. API view/service 경계에서 이를 HTTP error response로 바꾸는 방식은 이후 DRF 연결 단계에서 확정해야 한다.
+- `ActionView.display_name` 매핑 값은 승인 문서에서 별도 확정값을 찾지 못했으므로 Task 8에서는 구현하지 않았다.
+- `submitted_at == deadline_at`, `server_time == deadline_at` 경계값은 문서에 별도 문구가 없어 현재 구현은 `>`인 경우만 deadline 초과로 본다.
+- AI Profile Task 9은 `PlayerActionEvent`와 `StyleMetricSnapshot` 모델 골격, `build_action_event_from_turn_resolution()`, `calculate_style_snapshot()`, `recalculate_final_style_snapshot()` 순수 service까지 구현했다.
+- AI Profile 모델에는 문서에 없는 `db_table`, `ForeignKey`, `on_delete`, JSONField, timestamp, result/clue enum을 추가하지 않았다.
+- AI Profile 실제 DB save/delete, transaction 연결, `profiles.Profile` style summary 표시 필드 업데이트는 Django/DRF service 단계에서 별도 구현해야 한다.
+- Retrieval Task 10은 `RetrievalDocument`, `RetrievalChunk`, `RetrievalQueryLog`, chunking 순수 함수, source allowlist, config 기반 search default/embedding model getter까지 구현했다.
+- Retrieval allowlist는 `docs/09_Approved_Contracts/*`, `docs/05_Story_Mode/02_거울_속의_손님.md`, approved/implementation-ready game rule docs only로 제한했다. `docs/02_Game_Rules/07_확률_판정.md`는 needs-decision 상태라 제외했다.
+- Task 11로 `accounts`, `profiles`, `matches`, `story`, `ai_profile`, `retrieval`의 initial migration을 생성했다.
+- Retrieval provider 호출, vector search, query log write path, LLM generation log 연결은 아직 구현하지 않았다.
+- Auth 구현은 보안 요구가 높으므로 Django project scaffolding, dependency contract, token model, CSRF/cookie test가 선행되어야 한다.
+- RAG는 구현 범위에 포함되지만 검색 결과가 룰/승패/인증/단서를 바꾸면 안 된다.
+
+## Recommended Next Actions
+
+1. 계획 문서 순서대로 Task 12 `Official API endpoint 연결` 계약 테스트를 먼저 작성하되, official API schema와 approved contract 22를 먼저 대조한다.
+2. Auth runtime 구현을 재개하기 전에 request-id envelope middleware, JWT 발급 service, SecurityEvent actor/metadata 정책을 문서 기준으로 확정한다.
+3. DB runtime 검증을 수행하려면 로컬 PostgreSQL의 `pilot` 사용자 인증 또는 Docker 실행 구성을 먼저 맞춘 뒤 `backend/manage.py migrate`를 실행한다.

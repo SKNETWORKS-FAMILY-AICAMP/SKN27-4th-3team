@@ -1,0 +1,1001 @@
+{
+  // pilot MVP API pre-decision review template.
+  //
+  // This file is JSONC, not strict JSON.
+  // Reason: frontend/backend/story/AI workers need inline explanations.
+  //
+  // Usage:
+  // - Treat this as a discussion draft, not an implementation contract.
+  // - Examples here are candidate shapes for review.
+  // - Nothing in this file is final until the owner approves it and it is moved to official implementation docs.
+  // - Approved base contract now lives in:
+  //   api-spec/pilot-mvp-api.official.jsonc
+  //   api-spec/pilot-mvp-api.official.json
+  // - Before implementing from this file, review owner decisions in:
+  //   docs/08_Implementation_Contracts/03_오너_결정_워크시트.md
+  //   docs/09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약.md
+  // - Fields marked decision_required are intentionally unresolved.
+  //
+  // Design direction under review:
+  // - Frontend submits user intent.
+  // - Backend validates, calculates, stores, and returns authoritative state.
+  // - LLM/RAG may generate or retrieve flavor/context text, while rule authority remains an owner decision.
+  "meta": {
+    "name": "pilot-mvp-api",
+    "version": "0.1.0-draft",
+    "updated": "2026-06-02",
+    "status": "pre_decision_review",
+    "warning": "This JSONC is a commented proposal/template. It is not an approved API contract.",
+    "official_base_contract": "api-spec/pilot-mvp-api.official.jsonc",
+    "proposed_base_url": "/api/v1",
+    "content_type": "application/json",
+    "proposed_auth": "JWT access token + refresh token rotation",
+    "source_docs": [
+      "docs/08_Implementation_Contracts/01_세계관_프론트_공통_기준.md",
+      "docs/08_Implementation_Contracts/02_API_Auth_DB_LLM_RAG_공통_계약.md",
+      "docs/08_Implementation_Contracts/03_오너_결정_워크시트.md",
+      "docs/01_MVP/04_MVP_확정_필요_항목.md",
+      "docs/02_Game_Rules/04_상성_규칙.md",
+      "docs/05_Story_Mode/02_거울_속의_손님.md"
+    ]
+  },
+
+  "owner_decision_refs": {
+    // These IDs are defined in docs/08_Implementation_Contracts/03_오너_결정_워크시트.md.
+    // They explain which unresolved owner decisions affect this API proposal.
+    "document_role": "D-001",
+    "api_spec_format": "D-100",
+    "response_envelope": "D-110",
+    "auth_access_token_delivery": "D-120",
+    "csrf_policy": "D-130",
+    "backend_app_boundary": "D-200",
+    "llm_phase": "D-300",
+    "rag_phase": "D-310",
+    "rag_retrieval_scope": "D-320",
+    "mirror_guest_taboo_definition": "D-400",
+    "info_target_required_policy": "D-401",
+    "mirror_guest_info_targets": "D-402",
+    "backend_rag_ai_profile_contract": "D-500"
+  },
+
+  "global_conventions": {
+    // Candidate success response shape.
+    // `data` is the actual payload.
+    // `meta` is optional metadata useful for frontend debugging, pagination, request tracing, etc.
+    "success_shape": {
+      "data": {},
+      "meta": {
+        "request_id": "req_01H...",
+        "server_time": "2026-06-01T09:00:00Z"
+      }
+    },
+
+    // Candidate error response shape.
+    // Review idea: frontend keys off `error.code`, not English/Korean message text.
+    "error_shape": {
+      "error": {
+        "code": "ERROR_CODE",
+        "message": "Human-readable fallback message.",
+        "details": {}
+      },
+      "meta": {
+        "request_id": "req_01H...",
+        "server_time": "2026-06-01T09:00:00Z"
+      }
+    },
+
+    // Candidate time format.
+    "proposed_time_format": "ISO-8601 UTC",
+
+    // ID format is not final.
+    // Backend may use UUIDs or sortable IDs. Candidate frontend rule: treat all IDs as opaque strings.
+    "id_policy": {
+      "frontend_rule_candidate": "Treat every id as an opaque string. Do not parse meaning from it.",
+      "decision_required": "Final ID format: UUIDv4, ULID, or database-generated string."
+    },
+
+    // Localized display text may be server-provided for story/log content.
+    // UI chrome text such as button labels may live in frontend.
+    "text_policy": {
+      "server_provides": [
+        "case title",
+        "briefing text",
+        "turn public log",
+        "result story text",
+        "clue text"
+      ],
+      "frontend_provides": [
+        "button labels",
+        "navigation labels",
+        "generic empty states",
+        "error message mapping by error.code"
+      ]
+    }
+  },
+
+  "auth_policy_options": {
+    // Draft option, not a decision.
+    // Refresh token is stored in an HttpOnly cookie.
+    // Access token is returned in response body for early frontend development,
+    // review note: avoid saving it in localStorage/sessionStorage if this option is selected.
+    "access_token": {
+      "proposed_delivery": "response_body",
+      "proposed_storage_rule": "memory_only",
+      "expires_in_seconds": 900,
+      "decision_required": "Confirm whether access token remains body-delivered or moves to HttpOnly cookie only."
+    },
+    "refresh_token": {
+      "proposed_delivery": "http_only_cookie",
+      "expires_in_days": 14,
+      "rotation": "rotate_on_every_refresh",
+      "reuse_detection": "revoke_entire_token_family"
+    },
+    "csrf": {
+      "applies_to": [
+        "POST /auth/refresh",
+        "POST /auth/logout"
+      ],
+      "header_name_draft": "X-CSRF-Token",
+      "decision_required": "Confirm CSRF token issuing endpoint and exact header name."
+    }
+  },
+
+  "domain_enums": {
+    "match_mode": [
+      "ai_story"
+    ],
+    "match_status": [
+      "briefing",
+      "active",
+      "resolved",
+      "abandoned"
+    ],
+    "turn_status": [
+      "awaiting_player",
+      "submitted",
+      "resolved",
+      "timed_out"
+    ],
+    "action_code": [
+      "curse",
+      "guard",
+      "insight",
+      "trick",
+      "silence",
+      "contract",
+      "seal"
+    ],
+    "participant_kind": [
+      "human",
+      "ai_apparition"
+    ],
+    "mirror_guest_info_target_key": [
+      // Owner decision D-402.
+      // Frontend display labels may vary, but API keys should stay stable.
+      "mirror_surface",
+      "mirror_back",
+      "missing_child_voice",
+      "forgotten_room",
+      "self_reflection"
+    ],
+    "match_result": [
+      "player_win",
+      "player_loss",
+      "abandoned",
+      "unresolved"
+    ],
+    "clue_truth_state": [
+      // unknown: candidate UX keeps the truth value hidden.
+      "unknown",
+      // true_revealed: server has confirmed this as a true-name fragment.
+      "true_revealed",
+      // false_revealed: server has confirmed this as a false clue.
+      "false_revealed"
+    ]
+  },
+
+  "shared_models": {
+    "User": {
+      "id": "usr_...",
+      "email": "player@example.com",
+      "nickname": "survivor01",
+      "created_at": "2026-06-01T09:00:00Z"
+    },
+
+    "PlayerProfile": {
+      "user_id": "usr_...",
+      "nickname": "survivor01",
+      "public_record": {
+        "ai_story_matches": 3,
+        "ai_story_wins": 1,
+        "ai_story_losses": 2
+      },
+      "style_summary": {
+        // Label is server-calculated from behavior events.
+        // Frontend may display it. Final calculation ownership is still under review.
+        "label": "careful_investigator",
+        "display_text": "신중하게 단서를 확인하는 생존자",
+        "metrics": {
+          "aggression": 0.12,
+          "defense": 0.25,
+          "insight_focus": 0.42,
+          "deception": 0.08,
+          "risk_preference": 0.13,
+          "silence_reliance": 0.20,
+          "late_choice_rate": 0.31
+        }
+      }
+    },
+
+    "StoryCaseSummary": {
+      "case_id": "case_mirror_guest",
+      "title": "거울 속의 손님",
+      "subtitle": "거울을 통해 사람의 기억을 훔치는 괴이",
+      "mvp_available": true,
+      "difficulty": "mvp_01",
+      "estimated_turns": 12,
+      "tags": [
+        "mirror",
+        "memory",
+        "taboo"
+      ],
+      "thumbnail_asset_key": "case.mirror_guest.thumbnail",
+      "briefing_excerpt": "오래된 방의 거울은 사람을 비추지 않는다."
+    },
+
+    "StoryCaseDetail": {
+      "case_id": "case_mirror_guest",
+      "title": "거울 속의 손님",
+      "apparition_alias": "거울 속의 손님",
+      "concept": "거울을 통해 사람의 기억을 훔치는 괴이.",
+      "taboo": {
+        "title": "같은 질문을 두 번 반복하지 마라",
+        "description": "두 번째 질문은 네가 묻는 것이 아니다.",
+        "frontend_hint": "브리핑과 결투 보조 패널에서 다시 확인 가능하게 표시한다."
+      },
+      "briefing_text": [
+        "사건 파일 01. 거울 속의 손님.",
+        "오래된 방의 거울은 사람을 비추지 않는다. 잊어버린 기억과 사라진 목소리를 대신 보여준다.",
+        "같은 질문을 반복하지 마라. 두 번째 질문은 네가 묻는 것이 아니다."
+      ],
+      "known_true_name_fragments": [
+        // These are content definitions, not necessarily all visible at match start.
+        "깨진 거울의 뒷면에 남은 이름",
+        "사라진 아이의 마지막 목소리",
+        "플레이어가 잊어버린 자기 방 번호"
+      ],
+      "known_false_clues": [
+        "거울을 깨면 끝난다.",
+        "불을 끄면 안전하다.",
+        "이름을 부르면 괴이가 약해진다."
+      ],
+      "decision_required": [
+        "Final reveal condition for each true-name fragment.",
+        "Final trigger condition for each false clue."
+      ]
+    },
+
+    "MatchState": {
+      "match_id": "mat_...",
+      "mode": "ai_story",
+      "status": "active",
+      "case": {
+        "case_id": "case_mirror_guest",
+        "title": "거울 속의 손님"
+      },
+      "turn": {
+        "turn_id": "turn_...",
+        "turn_number": 4,
+        "max_turns": 12,
+        "status": "awaiting_player",
+        "deadline_at": "2026-06-01T09:01:25Z",
+        "remaining_seconds": 18
+      },
+      "player": {
+        "participant_id": "ptc_player",
+        "kind": "human",
+        "display_name": "survivor01",
+        "resources": {
+          "sanity": 9,
+          "sanity_max": 12,
+          "ritual_power": 3,
+          "ritual_power_max": 5,
+          "curse_marks": 1,
+          "curse_marks_max": 5,
+          "shield": 0,
+          "suspicion": 1,
+          "suspicion_max": 3
+        }
+      },
+      "opponent": {
+        "participant_id": "ptc_apparition",
+        "kind": "ai_apparition",
+        "display_name": "거울 속의 손님",
+        "public_state": {
+          // Frontend may render progress via mirror cracks or seal slots.
+          "true_name_fragments_revealed": 1,
+          "true_name_fragments_required": 3,
+          "seal_available": false
+        }
+      },
+      "clues": [
+        {
+          "clue_id": "clue_...",
+          "text": "깨진 거울의 뒷면에 남은 이름",
+          "truth_state": "true_revealed",
+          "source_turn_number": 2
+        },
+        {
+          "clue_id": "clue_...",
+          "text": "불을 끄면 안전하다.",
+          "truth_state": "unknown",
+          "source_turn_number": 3
+        }
+      ],
+      "available_actions": [
+        {
+          "code": "curse",
+          "display_name": "저주",
+          "cost": {
+            "ritual_power": 2
+          },
+          "enabled": true,
+          "disabled_reason": null
+        },
+        {
+          "code": "seal",
+          "display_name": "봉인",
+          "cost": {
+            "ritual_power": 2
+          },
+          "enabled": false,
+          "disabled_reason": "TRUE_NAME_FRAGMENTS_NOT_ENOUGH"
+        }
+      ],
+      "recent_public_logs": [
+        {
+          "turn_number": 3,
+          "text": "간파가 거짓 기척을 더듬었다. 진실과 속임수 중 하나가 모습을 드러냈다."
+        }
+      ]
+    },
+
+    "TurnResult": {
+      "turn_id": "turn_...",
+      "turn_number": 4,
+      "player_action": {
+        "code": "insight",
+        "display_name": "간파"
+      },
+      "opponent_action": {
+        // Candidate: opponent action is server-selected.
+        // Frontend would wait for the result response before revealing it.
+        "code": "trick",
+        "display_name": "속임수"
+      },
+      "public_log": {
+        "text": "간파가 거짓 기척을 더듬었다. 진실과 속임수 중 하나가 모습을 드러냈다.",
+        "log_key": "matchup.insight_vs_trick.default"
+      },
+      "state_delta": {
+        "player": {
+          "sanity": 0,
+          "ritual_power": -1,
+          "curse_marks": 0,
+          "suspicion": -1
+        },
+        "opponent_public": {
+          "true_name_fragments_revealed": 0
+        }
+      },
+      "clue_delta": {
+        "added": [],
+        "removed": [
+          "clue_false_01"
+        ],
+        "revealed": []
+      },
+      "probability": {
+        // Present only when a probability rule was used.
+        // Frontend may show this in detail view, but basic UI can ignore it.
+        "used": true,
+        "kind": "insight_vs_trick_false_clue_detection",
+        "seed_public_id": "seed_...",
+        "final_success_rate": 0.6,
+        "success": true
+      },
+      "match_resolution": {
+        "result": "unresolved",
+        "reason": null
+      },
+      "next_state": {
+        // Same shape as MatchState, included after resolving a turn.
+        // Backend may return this to reduce one extra GET.
+        "$ref": "shared_models.MatchState"
+      }
+    }
+  },
+
+  "endpoints": [
+    {
+      "id": "auth.register",
+      "method": "POST",
+      "path": "/auth/register",
+      "summary": "Create a new user account.",
+      "frontend_when_to_call": "회원가입 화면에서 사용자가 이메일/닉네임/비밀번호를 제출할 때 호출한다.",
+      "backend_responsibility": [
+        "Validate email format and uniqueness.",
+        "Validate password policy.",
+        "Create user and default profile.",
+        "Optionally issue access token and refresh cookie."
+      ],
+      "request": {
+        "body": {
+          "email": "player@example.com",
+          "nickname": "survivor01",
+          "password": "plain-text-password-submitted-over-https"
+        }
+      },
+      "response": {
+        "data": {
+          "user": {
+            "$ref": "shared_models.User"
+          },
+          "access_token": "jwt_access_token_or_null",
+          "expires_in": 900
+        },
+        "meta": {
+          "request_id": "req_..."
+        }
+      },
+      "errors": [
+        "EMAIL_ALREADY_EXISTS",
+        "NICKNAME_ALREADY_EXISTS",
+        "PASSWORD_TOO_WEAK",
+        "VALIDATION_ERROR"
+      ],
+      "notes": [
+        "Review note: if this auth option is selected, frontend avoids localStorage/sessionStorage for access_token.",
+        "If backend decides not to auto-login after register, access_token may be null."
+      ]
+    },
+
+    {
+      "id": "auth.login",
+      "method": "POST",
+      "path": "/auth/login",
+      "summary": "Authenticate user and start a session.",
+      "frontend_when_to_call": "로그인 화면에서 이메일/비밀번호를 제출할 때 호출한다.",
+      "backend_responsibility": [
+        "Verify credentials.",
+        "Create refresh token family if needed.",
+        "Set refresh token HttpOnly cookie.",
+        "Return short-lived access token."
+      ],
+      "request": {
+        "body": {
+          "email": "player@example.com",
+          "password": "plain-text-password-submitted-over-https"
+        }
+      },
+      "response": {
+        "data": {
+          "user": {
+            "$ref": "shared_models.User"
+          },
+          "access_token": "jwt_access_token",
+          "expires_in": 900
+        },
+        "meta": {
+          "request_id": "req_..."
+        }
+      },
+      "errors": [
+        "INVALID_CREDENTIALS",
+        "ACCOUNT_LOCKED",
+        "VALIDATION_ERROR"
+      ],
+      "notes": [
+        "Review option: refresh token in HttpOnly cookie instead of response body.",
+        "Frontend stores access token in memory only."
+      ]
+    },
+
+    {
+      "id": "auth.refresh",
+      "method": "POST",
+      "path": "/auth/refresh",
+      "summary": "Rotate refresh token and issue a new access token.",
+      "frontend_when_to_call": "Access token 만료 직전 또는 401 AUTH_TOKEN_EXPIRED 응답을 받은 뒤 호출한다.",
+      "backend_responsibility": [
+        "Read refresh token from HttpOnly cookie.",
+        "Validate token hash and family.",
+        "Detect reuse.",
+        "Rotate refresh token.",
+        "Return new access token."
+      ],
+      "request": {
+        "headers": {
+          "X-CSRF-Token": "csrf-token-if-required"
+        },
+        "body": {}
+      },
+      "response": {
+        "data": {
+          "access_token": "new_jwt_access_token",
+          "expires_in": 900
+        },
+        "meta": {
+          "request_id": "req_..."
+        }
+      },
+      "errors": [
+        "REFRESH_TOKEN_MISSING",
+        "REFRESH_TOKEN_EXPIRED",
+        "REFRESH_TOKEN_REUSED",
+        "CSRF_FAILED"
+      ],
+      "notes": [
+        "Review option: if REFRESH_TOKEN_REUSED occurs, frontend forces logout and shows a security warning.",
+        "CSRF details are still decision_required."
+      ]
+    },
+
+    {
+      "id": "auth.logout",
+      "method": "POST",
+      "path": "/auth/logout",
+      "summary": "End current session.",
+      "frontend_when_to_call": "사용자가 로그아웃을 선택할 때 호출한다.",
+      "backend_responsibility": [
+        "Revoke current refresh token or token family depending on policy.",
+        "Clear refresh cookie."
+      ],
+      "request": {
+        "headers": {
+          "Authorization": "Bearer access-token-if-available",
+          "X-CSRF-Token": "csrf-token-if-required"
+        },
+        "body": {
+          "logout_all_devices": false
+        }
+      },
+      "response": {
+        "data": {
+          "logged_out": true
+        }
+      },
+      "errors": [
+        "CSRF_FAILED"
+      ],
+      "notes": [
+        "Review option: treat logout as successful on frontend even if access token is already expired, as long as cookie is cleared."
+      ]
+    },
+
+    {
+      "id": "profile.me",
+      "method": "GET",
+      "path": "/me",
+      "summary": "Get current user and profile summary.",
+      "frontend_when_to_call": "앱 부팅 후 로그인 상태 확인, 프로필 화면, 로비 상단 표시에서 호출한다.",
+      "auth_required": true,
+      "response": {
+        "data": {
+          "user": {
+            "$ref": "shared_models.User"
+          },
+          "profile": {
+            "$ref": "shared_models.PlayerProfile"
+          }
+        }
+      },
+      "errors": [
+        "AUTH_REQUIRED",
+        "AUTH_TOKEN_EXPIRED"
+      ]
+    },
+
+    {
+      "id": "story.cases.list",
+      "method": "GET",
+      "path": "/story/cases",
+      "summary": "List available AI story cases.",
+      "frontend_when_to_call": "로비 또는 AI 사건 선택 화면 진입 시 호출한다.",
+      "auth_required": true,
+      "backend_responsibility": [
+        "Return available cases for MVP.",
+        "Mark non-MVP cases unavailable if included as teasers."
+      ],
+      "response": {
+        "data": {
+          "cases": [
+            {
+              "$ref": "shared_models.StoryCaseSummary"
+            }
+          ]
+        }
+      },
+      "notes": [
+        "Review option: MVP returns 거울 속의 손님 as available.",
+        "우물 밑의 목소리 and 문밖의 어머니 may be omitted or returned with mvp_available=false."
+      ]
+    },
+
+    {
+      "id": "story.cases.detail",
+      "method": "GET",
+      "path": "/story/cases/{case_id}",
+      "summary": "Get case briefing and static story details.",
+      "frontend_when_to_call": "사건 선택 후 브리핑 화면을 열 때 호출한다.",
+      "auth_required": true,
+      "path_params": {
+        "case_id": "case_mirror_guest"
+      },
+      "response": {
+        "data": {
+          "case": {
+            "$ref": "shared_models.StoryCaseDetail"
+          }
+        }
+      },
+      "errors": [
+        "CASE_NOT_FOUND",
+        "CASE_NOT_AVAILABLE"
+      ],
+      "notes": [
+        "This endpoint returns content definitions and briefing text, not current match state.",
+        "True/false clue definitions in this response are for content review and may not all be shown to players in final UX."
+      ]
+    },
+
+    {
+      "id": "matches.start_ai_story",
+      "method": "POST",
+      "path": "/matches/ai-story",
+      "summary": "Start an AI story match.",
+      "frontend_when_to_call": "브리핑 화면에서 사용자가 사건 시작 버튼을 누를 때 호출한다.",
+      "auth_required": true,
+      "backend_responsibility": [
+        "Create Match, MatchParticipant, first Turn.",
+        "Initialize player resources.",
+        "Initialize apparition policy state.",
+        "Return authoritative initial match state."
+      ],
+      "request": {
+        "body": {
+          "case_id": "case_mirror_guest",
+          // Optional client id for duplicate-click protection.
+          // If the same client_request_id is repeated by the same user,
+          // candidate backend behavior: return the same created match or a clear idempotency error.
+          "client_request_id": "uuid-generated-by-frontend"
+        }
+      },
+      "response": {
+        "data": {
+          "match": {
+            "$ref": "shared_models.MatchState"
+          }
+        }
+      },
+      "errors": [
+        "CASE_NOT_FOUND",
+        "CASE_NOT_AVAILABLE",
+        "ACTIVE_MATCH_EXISTS",
+        "IDEMPOTENCY_CONFLICT"
+      ],
+      "notes": [
+        "MVP policy may allow only one active AI story match per user.",
+        "Review option: if ACTIVE_MATCH_EXISTS occurs, frontend offers resume existing match."
+      ]
+    },
+
+    {
+      "id": "matches.current",
+      "method": "GET",
+      "path": "/matches/current",
+      "summary": "Get current active match if one exists.",
+      "frontend_when_to_call": "앱 부팅, 로비 진입, 새 사건 시작 전 기존 매치 확인에 사용한다.",
+      "auth_required": true,
+      "query": {
+        "mode": "ai_story"
+      },
+      "response": {
+        "data": {
+          "has_active_match": true,
+          "match": {
+            "$ref": "shared_models.MatchState"
+          }
+        }
+      },
+      "errors": [
+        "AUTH_REQUIRED"
+      ],
+      "notes": [
+        "Review option: if has_active_match=false, match is null.",
+        "This prevents users from accidentally starting duplicate MVP matches."
+      ]
+    },
+
+    {
+      "id": "matches.detail",
+      "method": "GET",
+      "path": "/matches/{match_id}",
+      "summary": "Get authoritative match state.",
+      "frontend_when_to_call": "결투 화면 진입, 새로고침, 턴 결과 후 상태 재동기화에 사용한다.",
+      "auth_required": true,
+      "path_params": {
+        "match_id": "mat_..."
+      },
+      "response": {
+        "data": {
+          "match": {
+            "$ref": "shared_models.MatchState"
+          }
+        }
+      },
+      "errors": [
+        "MATCH_NOT_FOUND",
+        "MATCH_ACCESS_DENIED"
+      ],
+      "notes": [
+        "Review option: frontend treats this as stronger than locally cached state."
+      ]
+    },
+
+    {
+      "id": "turns.submit_action",
+      "method": "POST",
+      "path": "/matches/{match_id}/turns/{turn_id}/actions",
+      "summary": "Submit player action for the current turn.",
+      "frontend_when_to_call": "결투 화면에서 사용자가 행동 버튼을 누를 때 호출한다.",
+      "auth_required": true,
+      "path_params": {
+        "match_id": "mat_...",
+        "turn_id": "turn_..."
+      },
+      "request": {
+        "body": {
+          "action_code": "insight",
+          // Optional at schema level, required for information actions.
+          //
+          // Owner decision D-401:
+          // - Required for: insight, contract, seal.
+          // - Optional for: curse, guard, trick, silence.
+          //
+          // Owner decision D-400:
+          // Same-question repetition for Mirror Guest is tracked by repeated info_target_key,
+          // not by free-text similarity or LLM judgment.
+          "info_target_key": "mirror_back",
+          // Client nonce is required for duplicate-submit protection.
+          // candidate frontend behavior: generate a fresh UUID when the user attempts a turn submission.
+          "client_nonce": "uuid-generated-by-frontend",
+          // Optional UI telemetry. Backend can store it for behavior metrics,
+          // review note: do not use this as security-critical timing unless the owner approves it.
+          "client_submitted_at": "2026-06-01T09:01:07Z",
+          "client_remaining_seconds": 18
+        }
+      },
+      "backend_responsibility": [
+        "Check match ownership.",
+        "Check match and turn are active.",
+        "Check turn_id is current.",
+        "Check action is available.",
+        "Check resource cost.",
+        "Prevent duplicate client_nonce submission.",
+        "Select AI apparition action using server policy.",
+        "Resolve matchup through game_rules.",
+        "Store ActionSubmission and TurnResult.",
+        "Return authoritative TurnResult and next MatchState."
+      ],
+      "response": {
+        "data": {
+          "turn_result": {
+            "$ref": "shared_models.TurnResult"
+          }
+        }
+      },
+      "errors": [
+        "MATCH_NOT_FOUND",
+        "MATCH_ACCESS_DENIED",
+        "MATCH_ALREADY_RESOLVED",
+        "TURN_NOT_CURRENT",
+        "TURN_ALREADY_SUBMITTED",
+        "ACTION_NOT_AVAILABLE",
+        "INSUFFICIENT_RITUAL_POWER",
+        "CLIENT_NONCE_REUSED",
+        "TURN_DEADLINE_EXPIRED"
+      ],
+      "frontend_notes": [
+        "Disable action buttons while the request is in flight.",
+        "If TURN_ALREADY_SUBMITTED occurs, call GET /matches/{match_id} to resync.",
+        "Do not locally apply resource deltas before the server response, except as a temporary loading animation.",
+        "If TURN_DEADLINE_EXPIRED occurs, backend may resolve the turn as silence or timeout policy."
+      ]
+    },
+
+    {
+      "id": "turns.result",
+      "method": "GET",
+      "path": "/matches/{match_id}/turns/{turn_id}/result",
+      "summary": "Get result for a resolved turn.",
+      "frontend_when_to_call": "행동 제출 후 결과를 다시 가져오거나, 새로고침 후 특정 턴 로그를 확인할 때 호출한다.",
+      "auth_required": true,
+      "response": {
+        "data": {
+          "turn_result": {
+            "$ref": "shared_models.TurnResult"
+          }
+        }
+      },
+      "errors": [
+        "MATCH_NOT_FOUND",
+        "TURN_NOT_FOUND",
+        "TURN_NOT_RESOLVED",
+        "MATCH_ACCESS_DENIED"
+      ],
+      "notes": [
+        "POST submit_action response already includes turn_result, so this endpoint is mainly for resync/history."
+      ]
+    },
+
+    {
+      "id": "matches.result",
+      "method": "GET",
+      "path": "/matches/{match_id}/result",
+      "summary": "Get final match result and summary.",
+      "frontend_when_to_call": "매치가 resolved 상태가 된 후 결과 화면에서 호출한다.",
+      "auth_required": true,
+      "response": {
+        "data": {
+          "match_id": "mat_...",
+          "result": "player_win",
+          "result_reason": "seal_success",
+          "case": {
+            "case_id": "case_mirror_guest",
+            "title": "거울 속의 손님"
+          },
+          "final_resources": {
+            "sanity": 5,
+            "ritual_power": 1,
+            "curse_marks": 2,
+            "true_name_fragments": 3,
+            "false_clues": 1
+          },
+          "story_result_text": [
+            "세 조각의 이름이 맞물리자 거울 안쪽의 방이 무너졌다.",
+            "손님은 마지막으로 네 얼굴을 흉내 냈지만, 봉인지의 글자가 먼저 닫혔다.",
+            "사건 파일은 봉인됨으로 기록된다."
+          ],
+          "turn_logs": [
+            {
+              "turn_number": 1,
+              "text": "침묵은 답을 내놓지 않았다. 대신 다음 의식의 방향이 조금 좁혀졌다."
+            }
+          ],
+          "style_summary": {
+            "$ref": "shared_models.PlayerProfile.style_summary"
+          },
+          "llm_summary": {
+            // MVP can keep this null and use story_result_text instead.
+            // Review option: if later enabled, generate only after match resolution.
+            "enabled": false,
+            "text": null,
+            "generation_id": null
+          }
+        }
+      },
+      "errors": [
+        "MATCH_NOT_FOUND",
+        "MATCH_NOT_RESOLVED",
+        "MATCH_ACCESS_DENIED"
+      ],
+      "notes": [
+        "Review boundary: LLM summary does not change final_resources, result, or turn_logs.",
+        "Frontend can render story_result_text even when llm_summary.enabled=false."
+      ]
+    },
+
+    {
+      "id": "ai.style_profile",
+      "method": "GET",
+      "path": "/ai-profile/me",
+      "summary": "Get current player's behavior style metrics.",
+      "frontend_when_to_call": "프로필 화면 또는 결과 화면에서 스타일 지표를 별도 조회할 때 사용한다.",
+      "auth_required": true,
+      "response": {
+        "data": {
+          "style_summary": {
+            "$ref": "shared_models.PlayerProfile.style_summary"
+          },
+          "calculation": {
+            "sample_match_count": 3,
+            "sample_turn_count": 28,
+            "updated_at": "2026-06-01T09:30:00Z"
+          }
+        }
+      },
+      "errors": [
+        "AUTH_REQUIRED"
+      ],
+      "decision_required": [
+        "Calculate every turn, after every match, or by background job.",
+        "Default values when denominator is zero.",
+        "Whether frontend displays raw numbers, labels, or both."
+      ]
+    }
+  ],
+
+  "llm_and_rag_review": {
+    "candidate_llm_uses": [
+      "briefing variant generation",
+      "apparition flavor dialogue",
+      "post-match narrative summary",
+      "player style prose summary",
+      "operator/debug log summary"
+    ],
+    "candidate_forbidden_llm_uses": [
+      "action success or failure",
+      "sanity/ritual_power/curse_marks calculation",
+      "win/loss decision",
+      "matchmaking or ranking",
+      "reward calculation",
+      "hidden rule mutation"
+    ],
+    "candidate_rag_sources": [
+      "world bible docs",
+      "case briefing docs",
+      "apparition docs",
+      "taboo and clue docs",
+      "public log text docs",
+      "result text docs"
+    ],
+    "candidate_rag_non_authority": [
+      "RAG result cannot override matchup table.",
+      "RAG result cannot override auth or permission policy.",
+      "RAG result cannot invent official clues without story data approval."
+    ],
+    "mvp_option": {
+      "phase_1": "Option: use static text and deterministic rule logs first, so the game can complete without LLM/RAG.",
+      "phase_2": "Add llm adapter and retrieval adapter behind feature flags.",
+      "phase_3": "Enable post-match summary generation only after server result is finalized."
+    }
+  },
+
+  "error_codes_draft": {
+    "AUTH_REQUIRED": "No valid access token was provided.",
+    "AUTH_TOKEN_EXPIRED": "Access token expired. Frontend may call auth.refresh.",
+    "INVALID_CREDENTIALS": "Login failed.",
+    "CSRF_FAILED": "CSRF validation failed for cookie-based request.",
+    "VALIDATION_ERROR": "Request body did not pass validation.",
+    "CASE_NOT_FOUND": "Story case does not exist.",
+    "CASE_NOT_AVAILABLE": "Story case exists but is not available in MVP.",
+    "ACTIVE_MATCH_EXISTS": "User already has an active MVP match.",
+    "MATCH_NOT_FOUND": "Match does not exist.",
+    "MATCH_ACCESS_DENIED": "User cannot access this match.",
+    "MATCH_ALREADY_RESOLVED": "Match is already finished.",
+    "MATCH_NOT_RESOLVED": "Result requested before match is finished.",
+    "TURN_NOT_FOUND": "Turn does not exist.",
+    "TURN_NOT_CURRENT": "Submitted turn is not the current turn.",
+    "TURN_NOT_RESOLVED": "Turn result is not ready.",
+    "TURN_ALREADY_SUBMITTED": "Action was already submitted for this turn.",
+    "TURN_DEADLINE_EXPIRED": "Submission arrived after deadline.",
+    "ACTION_NOT_AVAILABLE": "Action is not currently selectable.",
+    "INSUFFICIENT_RITUAL_POWER": "Player does not have enough ritual power.",
+    "CLIENT_NONCE_REUSED": "Duplicate action submission nonce.",
+    "IDEMPOTENCY_CONFLICT": "Same client request id was reused with a different request body."
+  },
+
+  "decision_required": [
+    "Strict ID format.",
+    "Full 7x7 matchup table and public log keys.",
+    "Mirror Guest true-name reveal conditions.",
+    "Mirror Guest false clue trigger conditions.",
+    "Final auth cookie/access-token policy.",
+    "CSRF token issuing and header naming.",
+    "DB exact fields and indexes.",
+    "JSONField validation mechanism.",
+    "LLM provider and embedding model.",
+    "Whether to export this JSONC into strict JSON or OpenAPI later."
+  ]
+}
