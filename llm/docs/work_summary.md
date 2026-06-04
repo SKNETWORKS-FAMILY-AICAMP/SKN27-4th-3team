@@ -4,11 +4,11 @@
 
 ## 현재 상태
 
-LLM 파트는 기본 폴더 구조, 실험 전 기준 문서, Groq 실험 CLI 초안이 정리된 상태다.
+LLM 파트는 Groq 호출, 프롬프트 템플릿, guardrail, fallback, 프론트 전달용 응답 계약, 백엔드 import용 adapter 함수까지 정리된 상태다.
 
-Groq API 호출 코드는 `llm/generation/scripts/test_groq_generation.py`에 추가했다.
+백엔드 연결용 핵심 코드는 `llm/generation/adapter.py`에 있고, 실제 실행 프롬프트는 `llm/prompts/prompt_templates.py`에 있다.
 
-현재 로컬 `.env`의 API key 값은 실제 key 형식이 아니라 placeholder로 감지되어 실제 호출은 `invalid_api_key_format`으로 건너뛴다.
+로컬 실험 CLI는 `llm/generation/scripts/test_groq_generation.py`에 있으며, fixture 기반 dry-run과 실제 Groq 호출을 모두 지원한다.
 
 현재 LLM은 게임 판정자가 아니라 서버 판정 이후의 보조 기록자 역할로 제한한다.
 
@@ -40,6 +40,7 @@ llm/
 - LLM은 보상, 랭킹, 매칭에 관여하지 않는다.
 - LLM은 공식 설정이나 룰을 추가하지 않는다.
 - LLM 결과가 없어도 `story_result_text`로 결과 화면이 완성되어야 한다.
+- LLM 실패 시 `enabled=false`, `text=null`, `fallback_used=true`로 내려보내고 서버 기본 문장을 사용한다.
 
 ## Provider 기준
 
@@ -59,7 +60,9 @@ LLM_TEMPERATURE=0.4
 
 `LLM_MODEL_ID`는 Groq 공식 콘솔 또는 문서에서 사용 가능한 모델을 확인한 뒤 입력한다.
 
-현재 추천 후보는 `llama-3.3-70b-versatile`이다.
+현재 로컬 실험에서는 `llama-3.1-8b-instant`로 실제 호출을 확인했다.
+
+모델은 팀 상황과 Groq 사용 가능 목록에 따라 변경할 수 있다.
 
 ## 스토리 기준
 
@@ -129,10 +132,13 @@ llm/fixtures/match_log_summary.sample.json
 
 - JSON 4개 모두 파싱 정상
 - `result_summary`, `turn_flavor_text`, `style_summary`, `match_log_summary` dry-run prompt 조립 정상
-- placeholder API key는 `status=skipped`, `reason=invalid_api_key_format`으로 처리됨
+- `LLM_DISABLED=true` 또는 API key/model id 누락 시 fallback 구조로 처리됨
 - `--frontend-output` 옵션으로 프론트 전달용 `enabled`, `text`, `display_slot`, `fallback_used`, `metadata` 구조 출력 가능
 - `turn_flavor_text`는 행동별 fixture를 추가했고, 실제 Groq 호출 기준 프론트용 출력 스키마 검증을 완료함
 - `generate_llm_ui_text(purpose, payload)` 함수로 백엔드에서 adapter를 직접 호출할 수 있음
+- `turn_flavor_text` 괴이 반응 문구는 PDF 서사 참고에 맞춰 피티 페르소나 기준을 추가함
+- 피티는 단순 악역이 아니라 이름과 목소리를 빼앗긴 상처의 잔향처럼 표현하도록 조정함
+- 노골적 협박보다 거울, 침묵, 이름, 시선, 금속 냄새, 식은 손끝 같은 감각 이미지를 우선하도록 프롬프트를 보강함
 
 스토리 official 계약이 확정되면 fixture의 `case_id`, `info_target_key`, 공식 문장과 expected output을 다시 맞춰야 한다.
 
@@ -165,6 +171,9 @@ LLM 출력에서 아래가 나오면 실패 처리한다.
 - 플레이어 성격 단정
 - 괴이 다음 행동 단정
 - 룰 변경 또는 운영 조치 제안
+- `turn_flavor_text`에서 공개 로그에 없는 비밀, 진실, 파괴, 소유, 원인 관계를 덧붙이는 표현
+- `turn_flavor_text`에서 `공개 로그`, `출력:`, `예시` 같은 라벨을 그대로 출력하는 경우
+- `turn_flavor_text`에서 `무엇인가`, `누군가`, `보이기 시작`, `온도에`, `냄새가 났다`처럼 모호하거나 추상적인 표현
 
 실패 시 출력은 아래 기준을 따른다.
 
@@ -185,106 +194,68 @@ LLM 출력에서 아래가 나오면 실패 처리한다.
 }
 ```
 
-## 다음 작업 순서
+## 내일 이어서 할 일
 
-### 1. 로컬 `.env` 설정
+### 1. 프론트 팀원과 display_slot 확정
 
-현재 `.env` 파일은 존재하지만 비어 있다.
-
-집에서 Groq API key를 발급한 뒤 아래처럼 채운다.
-
-```env
-LLM_PROVIDER=groq
-LLM_API_KEY=실제_Groq_API_key
-LLM_MODEL_ID=llama-3.3-70b-versatile
-LLM_BASE_URL=https://api.groq.com/openai/v1
-LLM_TIMEOUT_SECONDS=30
-LLM_MAX_OUTPUT_TOKENS=400
-LLM_TEMPERATURE=0.4
-```
-
-API key는 커밋하지 않는다.
-
-### 2. 환경 변수 설정 계약 추가
-
-다음으로 만들 문서:
+공유 문서:
 
 ```text
-llm/generation/config_contract.md
+llm/docs/frontend_handoff.md
 ```
 
-정리할 내용:
+확인할 것:
 
-- `.env` 변수별 필수/선택 여부
-- 기본값
-- Python에서 읽는 예시
-- API key 로그 출력 금지
+- 실제 사용할 `display_slot` 값 목록
+- `turn_flavor_text` 20-90자, 1-2줄, 줄당 45자 기준이 UI에 맞는지
+- `\n` 줄바꿈을 그대로 렌더링할지
+- `enabled=false`일 때 LLM 영역을 숨길지, `publicLog.text`를 같은 위치에 보여줄지
+- LLM 응답이 턴 결과와 같이 내려올지, 늦게 따로 도착할지
 
-추천 커밋명:
+### 2. 백엔드 실제 payload와 adapter 연결
 
-```text
-LLM 환경 변수 설정 계약 추가
+현재 백엔드에서 사용할 함수:
+
+```python
+from llm.generation.adapter import generate_llm_ui_text
+
+llm = generate_llm_ui_text("turn_flavor_text", turn_payload)
 ```
 
-### 3. Groq 실험 스크립트 추가
+확인할 것:
 
-추가 완료:
+- 실제 `TurnResult` 필드명이 fixture와 맞는지
+- 실제 `MatchResult` 필드명이 fixture와 맞는지
+- API 응답에서 `llm` 필드를 어디에 붙일지
+- LLM 호출을 동기 처리할지, 지연/비동기 처리할지
 
-```text
-llm/generation/scripts/test_groq_generation.py
-```
+### 3. 프롬프트 품질 추가 점검
 
-역할:
+오늘 보강한 내용:
 
-- `.env` 읽기
-- fixture 읽기
-- prompt 조립
-- Groq 호출
-- 결과 출력
-- 실패 시 fallback 구조 출력
-- API key placeholder 형식 검사
+- 피티 페르소나 기준 추가
+- 시스템 위치와 괴이 반응 위치 문체 분리
+- 막연한 감각 표현과 예시 라벨 출력 guardrail 보강
 
-추천 커밋명:
+내일 확인할 것:
 
-```text
-LLM Groq 실험 스크립트 추가
-```
+- 실제 프론트 화면에서 괴이 반응 문구가 너무 길거나 겹치지 않는지
+- `right_apparition_message`에서 피티 목소리가 충분히 살아나는지
+- `left_system_message`, `center_system_message`에서 괴이 직접 발화가 과하지 않은지
+- Groq 호출 결과가 guardrail 실패로 자주 떨어지는 케이스가 있는지
 
-### 4. 간단 guardrail 검사 구현
-
-처음에는 정교한 AI 검사가 아니라 문자열과 enum 기반으로 시작한다.
-
-검사 예:
-
-- `player_win`인데 패배 표현이 있는지 확인
-- 입력 없이 `이안`, `피티`, `엘리자베스`가 나왔는지 확인
-- 보상, 랭킹, 제재 같은 금지어가 있는지 확인
-
-추천 커밋명:
-
-```text
-LLM 금지선 검사 초안 구현
-```
-
-### 5. 스토리 확정 후 fixture 업데이트
+### 4. 스토리 확정 후 fixture 업데이트
 
 스토리가 `무명(無名)의 저주`와 `피티` 기준으로 확정되면 아래를 업데이트한다.
 
 - fixture
 - expected output
-- prompt 예시
+- prompt 문서
 - guardrail 고유명사 기준
+- 프론트 결과/턴 화면 공식 문장
 
-추천 커밋명:
-
-```text
-LLM 스토리 확정 기준 fixture 업데이트
-```
-
-## 지금 추천 커밋명
-
-현재까지 정리한 작업을 묶는다면:
+## 최근 추천 커밋명
 
 ```text
-LLM 기본 구조와 Groq 실험 준비 정리
+refactor: 피티 괴이 페르소나 프롬프트 보강
 ```

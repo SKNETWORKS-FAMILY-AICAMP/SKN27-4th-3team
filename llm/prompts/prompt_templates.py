@@ -41,6 +41,20 @@ def base_system_prompt(extra: str) -> str:
     )
 
 
+def apparition_persona_prompt() -> str:
+    return "\n".join(
+        [
+            "괴이 반응 문구가 필요할 때의 페르소나 기준:",
+            "- 피티는 단순한 악당이 아니라 이름과 목소리를 빼앗긴 상처의 잔향처럼 다룬다.",
+            "- 말투는 낮고 조용하며, 원망과 외로움이 섞인 속삭임에 가깝다.",
+            "- 직접적인 협박보다 거울, 침묵, 먼지, 금속 냄새, 식은 손끝 같은 감각으로 압박한다.",
+            "- 아이 같은 여린 감각과 오래된 분노가 함께 느껴지게 하되, 과거사를 새로 설명하지 않는다.",
+            "- 피, 살인, 처벌 같은 노골적인 폭력보다 기억, 이름, 입술, 시선, 어둠의 이미지를 우선한다.",
+            "- 괴이를 처치 대상처럼 단정하지 말고, 봉인과 해방 사이에 걸린 존재처럼 표현한다.",
+        ]
+    )
+
+
 def build_result_summary_input(payload: dict[str, Any]) -> dict[str, Any]:
     match_result = payload["match_result"]
     resources = match_result["final_resources"]
@@ -152,13 +166,18 @@ def build_turn_flavor_text_input(payload: dict[str, Any]) -> dict[str, Any]:
 
 [문체]
 - 서버 공개 로그의 핵심 명사와 감각을 유지한다.
-- 새 사건을 만들지 말고 빛, 소리, 시선, 온도 같은 감각만 덧댄다.
+- 새 사건을 만들지 말고 빛, 소리, 시선, 냉기 같은 감각만 덧댄다.
 - 괴이 이름은 apparition_alias가 있을 때만 짧게 사용할 수 있다.
+- display_slot이 괴이 반응 위치이면 피티의 페르소나 기준을 따른다.
+- display_slot이 `right_apparition_message`이면 짧은 1인칭/2인칭 속삭임처럼 쓸 수 있다.
+- display_slot이 시스템 위치이면 괴이가 직접 말하기보다 장면 묘사로 쓴다.
 - “발견되었습니다”, “제공합니다” 같은 안내문 투를 쓰지 않는다.
 - “드러났다”, “밝혀졌다”처럼 판정처럼 보이는 표현을 남발하지 않는다.
 - 반드시 현재 서버 공개 로그에 나온 명사를 중심으로 새로 작성한다.
 - 최종 출력에는 `공개 로그`, `출력`, `예시` 같은 라벨을 넣지 않는다.
 - `무엇인가`, `누군가`, `보이기 시작했다`처럼 새 존재를 암시하지 않는다.
+- “온도에 뜨거움을 더했다”, “온도는 식었다”처럼 추상적인 설명문을 쓰지 않는다.
+- “냄새가 났다”처럼 막연한 감각 표현보다 `금속 냄새`, `식은 손끝`처럼 구체적으로 쓴다.
 - 가능하면 공개 로그를 간결하게 다시 쓰고, 감각 묘사는 한 가지만 덧댄다.
 
 [나쁜 출력]
@@ -167,6 +186,9 @@ def build_turn_flavor_text_input(payload: dict[str, Any]) -> dict[str, Any]:
 - 이 행동은 단서를 제공합니다.
 - 예시 문장을 현재 턴과 무관하게 그대로 복사한다.
 - 거울 속에 무엇인가가 보이기 시작했다.
+- 그것은 온도에 뜨거움을 더했다.
+- 온도는 식었다.
+- 냄새가 났다.
 
 출력은 1~2줄로 작성한다.
 따옴표, 번호, markdown 없이 문구만 출력한다.
@@ -174,7 +196,14 @@ def build_turn_flavor_text_input(payload: dict[str, Any]) -> dict[str, Any]:
 각 줄은 45자 이하로 작성한다."""
     return {
         "purpose": "turn_flavor_text",
-        "system_prompt": base_system_prompt("문장은 짧고 어둡게, 게임 UI 위에 얹히는 속삭임처럼 작성한다."),
+        "system_prompt": base_system_prompt(
+            "\n".join(
+                [
+                    "문장은 짧고 어둡게, 게임 UI 위에 얹히는 속삭임처럼 작성한다.",
+                    apparition_persona_prompt(),
+                ]
+            )
+        ),
         "user_prompt": user_prompt,
         "context_refs": [],
         "payload": payload,
