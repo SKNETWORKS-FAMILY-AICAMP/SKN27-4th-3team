@@ -58,6 +58,14 @@ def test_retrieval_models_define_document_chunk_embedding_and_query_log_structur
     assert "created_at = models.DateTimeField()" in query_log_source
 
 
+def test_retrieval_initial_migration_creates_pgvector_extension_before_vector_field():
+    migration_source = _read(RETRIEVAL_DIR / "migrations" / "0001_initial.py")
+
+    assert "from pgvector.django import VectorExtension" in migration_source
+    assert "VectorExtension()" in migration_source
+    assert migration_source.index("VectorExtension()") < migration_source.index("RetrievalChunk")
+
+
 def test_retrieval_source_allowlist_includes_only_approved_targets():
     from backend.apps.retrieval.services import is_retrieval_source_allowed
 

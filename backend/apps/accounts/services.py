@@ -1,6 +1,6 @@
 import uuid
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import timedelta, timezone as datetime_timezone
 from typing import Any
 
 import jwt
@@ -380,7 +380,7 @@ def _iso_utc(value) -> str | None:
     if value is None:
         return None
 
-    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+    return value.astimezone(datetime_timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 def _safe_security_metadata(metadata: dict[str, Any]) -> dict[str, Any]:

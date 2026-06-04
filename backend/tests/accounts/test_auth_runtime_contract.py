@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime, timezone
+import os
 from pathlib import Path
 
 import jwt
@@ -121,3 +122,16 @@ def test_refresh_runtime_service_source_enforces_transaction_row_lock_and_reuse_
     assert "REFRESH_TOKEN_REUSE_ERROR_CODE" in service_source
     assert "revoke_refresh_token_family" in service_source
     assert "grace" not in service_source.lower()
+
+
+def test_auth_service_iso_utc_formats_aware_datetime_without_django_timezone_utc():
+    import django
+
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.config.settings")
+    django.setup()
+
+    from backend.apps.accounts.services import _iso_utc
+
+    value = datetime(2026, 6, 4, 3, 0, 0, tzinfo=timezone.utc)
+
+    assert _iso_utc(value) == "2026-06-04T03:00:00Z"
