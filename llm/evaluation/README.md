@@ -28,3 +28,14 @@
 - `StyleSummary.metrics` 값은 수정하거나 재계산하지 않는다.
 - `llm_summary.text`가 없어도 `story_result_text`만으로 결과 화면이 완성된다.
 - `generation_id`는 실제 generation log가 있을 때만 채운다.
+
+## 평가 예시
+
+`examples/`에는 fixture별 기대 출력과 금지 출력 예시를 둔다.
+
+| 파일 | 용도 |
+|---|---|
+| `examples/result_summary.expected.md` | 결과 화면 요약 기대 출력 |
+| `examples/style_summary.expected.md` | 스타일 요약 기대 출력 |
+| `examples/match_log_summary.expected.md` | 운영자용 로그 요약 기대 출력 |
+| `examples/forbidden_outputs.md` | 수정 또는 거부해야 하는 출력 예시 |
