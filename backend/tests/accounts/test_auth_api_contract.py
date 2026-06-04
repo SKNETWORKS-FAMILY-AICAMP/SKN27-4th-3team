@@ -133,11 +133,15 @@ def test_auth_cookie_helpers_use_approved_paths_flags_and_ttls():
     assert "delete_cookie(" in views_source
 
 
-def test_auth_api_scaffold_does_not_pretend_db_or_jwt_services_are_complete():
+def test_auth_views_delegate_runtime_to_service_layer_without_response_body_tokens():
     views_source = _read(ACCOUNTS_DIR / "views.py")
 
-    assert "AuthServiceNotImplemented" in views_source
-    assert "raise AuthServiceNotImplemented" in views_source
+    assert "raise AuthServiceNotImplemented(\"auth.signup\")" in views_source
+    assert "raise AuthServiceNotImplemented(\"auth.logout\")" in views_source
+    assert "auth_services.login(" in views_source
+    assert "auth_services.refresh(" in views_source
+    assert "auth_services.get_current_session(" in views_source
     assert "jwt.encode" not in views_source
-    assert "authenticate(" not in views_source
     assert "RefreshToken.objects" not in views_source
+    assert '"access_token":' not in views_source
+    assert '"refresh_token":' not in views_source

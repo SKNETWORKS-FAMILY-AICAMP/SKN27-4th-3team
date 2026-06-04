@@ -21,6 +21,9 @@ Updated: 2026-06-04
 - PvP 모드는 없다. 기존 PvP-ready 구조 보존과 확정 후속 PvP 전제는 폐기됐고, 기준 문서는 `docs/09_Approved_Contracts/19_PvP_미사용_및_구조_정리_계약.md`의 PvP 미사용 계약이다.
 - `meta.request_id` 정책은 A안으로 확정했다. 서버가 매 요청마다 `req_<uuid4_hex>`를 생성하고, 1차 MVP에서는 외부 `X-Request-ID`를 무시하며, 응답 header에는 `X-Request-ID`를 내려준다.
 - 실제 service가 아직 구현되지 않은 공식 endpoint는 A안으로 확정했다. HTTP 501 + `SERVICE_NOT_IMPLEMENTED` 실패 envelope를 반환하고, mock success data는 만들지 않는다.
+- Auth runtime 정책은 A안으로 확정했다. JWT는 `HS256`으로 `DJANGO_SECRET_KEY` 기반 Django `settings.SECRET_KEY`를 사용해 발급하고, access claim은 `token_type=access`, `sub`, `iat`, `exp`, refresh claim은 `token_type=refresh`, `sub`, `jti`, `family_id`, `iat`, `exp`만 사용한다.
+- Refresh rotation은 `transaction.atomic()` + 제출 refresh token row `select_for_update()`로 처리한다. `active` token은 `rotated`로 전환하고 같은 `family_id`의 새 refresh token을 발급하며, `rotated`/`revoked`/`reused` token 제출은 reuse로 감지해 family 전체를 revoke한다. grace window는 없다.
+- SecurityEvent actor/metadata 정책은 A안으로 확정했다. `user_id`는 nullable 값 필드, `request_id`는 nullable server request id, `metadata`는 기본 `{}` JSON object이며 raw token/token hash/password/cookie/CSRF token 원문은 저장하지 않는다. actor FK는 사용하지 않는다.
 - README는 Obsidian 문서 기준으로 현재 사용 기술, 계약만 있는 기술, 후순위/미사용 기술을 분리한다.
 - ERD에 들어갈 RDB 테이블 구성은 문서와 Django model scaffold 수준에서 존재하지만, 별도 시각적 ERD 산출물은 아직 없다.
 
@@ -78,9 +81,10 @@ Updated: 2026-06-04
 - `backend/apps/accounts/models.py`
   - `AbstractBaseUser + PermissionsMixin` 기반 `accounts.User` custom user model. 로그인 식별자는 email. nickname/전적/스타일 표시 필드는 없다. 승인 문서에 테이블명이 없으므로 `db_table`은 지정하지 않는다.
   - `RefreshToken`은 승인 문서의 최소 저장 필드인 `user_id`, `jti`, `family_id`, `token_hash`, `status`, `issued_at`, `expires_at`, `rotated_at`, `revoked_at`, `reused_at`, `replaced_by_jti`를 가진다. 원문 refresh token 필드는 없다.
-  - `SecurityEvent`는 현재 확정된 event type, created time만 가진다. actor/user_id와 metadata schema는 승인 문서 확정 전 구현하지 않는다.
+  - `SecurityEvent`는 A안 Auth runtime 정책에 따라 event type, nullable `user_id`, nullable `request_id`, `metadata`, created time을 가진다. actor FK와 raw secret성 metadata는 사용하지 않는다.
 - `backend/apps/accounts/tokens.py`
   - refresh token status/reuse status, `REFRESH_TOKEN_REUSED`, 문서 문구 기반 security event type catalog, `jti`/`family_id` lifecycle별 UUIDv4 생성 helper, 서버 secret 기반 HMAC-SHA256 hash helper.
+  - A안 Auth runtime 기준 JWT 발급 helper는 access/refresh token claim allowlist와 `HS256` signing policy를 따른다.
 - `backend/apps/accounts/serializers.py`
   - official schema 기준 Auth request/response serializer 스캐폴딩. access/refresh token을 response body field로 두지 않는다.
 - `backend/apps/accounts/views.py`
@@ -327,6 +331,26 @@ Updated: 2026-06-04
 - Migration dry-run check
   - `.\.venv\Scripts\python.exe backend\manage.py makemigrations accounts profiles matches story ai_profile retrieval --dry-run --check`
   - Result: no model changes detected; local `pilot` PostgreSQL authentication warning remains.
+- Auth runtime A안 RED
+  - `.\.venv\Scripts\python.exe -m pytest backend\tests\accounts\test_auth_runtime_contract.py backend\tests\accounts\test_refresh_token_contract.py backend\tests\accounts\test_auth_api_contract.py backend\tests\api\test_api_runtime_envelope_contract.py -v`
+  - Result before implementation: 5 failed, 14 passed. Missing JWT helper, `accounts/services.py`, A안 `SecurityEvent` fields, and Auth view service delegation.
+- Auth runtime A안 GREEN
+  - same command
+  - Result after implementation: 19 passed.
+- 2026-06-04, `D:\dev\Project\SKN27-4th-3team`
+  - `.\.venv\Scripts\python.exe -m pytest backend\tests -v`
+  - Result: 107 passed.
+- Django runtime check after Auth runtime A안
+  - `.\.venv\Scripts\python.exe backend\manage.py check`
+  - Result: `System check identified no issues (0 silenced).`
+- Accounts migration dry-run check after Auth runtime A안
+  - `.\.venv\Scripts\python.exe backend\manage.py makemigrations accounts --dry-run --check`
+  - Result: `No changes detected in app 'accounts'`; local `pilot` PostgreSQL authentication warning remains.
+- Official API schema parse check after Auth runtime A안
+  - `.\.venv\Scripts\python.exe -c "import json; json.load(open(r'api-spec\pilot-mvp-api.official.json', encoding='utf-8')); print('api-spec/pilot-mvp-api.official.json valid')"`
+  - Result: valid.
+  - `.\.venv\Scripts\python.exe -c "import json; json.load(open(r'api-spec\pilot-mvp-api.official.jsonc', encoding='utf-8')); print('api-spec/pilot-mvp-api.official.jsonc valid JSON')"`
+  - Result: valid JSON.
 
 ## Known Gaps And Risks
 
@@ -342,7 +366,7 @@ Updated: 2026-06-04
 - PvP 관련 기존 문서 표현은 핵심 source-of-truth에서 정리했고, `backend/apps/realtime/` placeholder도 제거했다. 발표용/generated 문서에 남은 PvP 표현은 폐기 기록으로만 취급하며, 구현 기준은 승인 계약 19번의 PvP 미사용 결정이다.
 - 실제 CORS 응답 처리는 아직 dependency/middleware가 없으므로, 프론트 origin 요구가 확정되는 API 연결 단계에서 다시 검증해야 한다.
 - request id 생성/전파는 `backend.apps.common.request_ids.RequestIdMiddleware`로 settings에 연결했다. API envelope helper는 `backend.apps.common.runtime`을 통해 DRF `Response`와 `SERVICE_NOT_IMPLEMENTED` exception handler에 연결했다.
-- Auth API view는 official schema와 보안 금지선을 고정하는 스캐폴딩이다. 실제 signup/login/logout/refresh/me service, JWT 발급, cookie response runtime은 아직 구현하지 않았다.
+- Auth API view는 official schema와 보안 금지선을 따른다. `login`, `refresh`, `me`는 A안 JWT/cookie runtime service로 연결했고, `signup`, `logout`은 아직 501 envelope로 유지한다.
 - official API schema가 변경되면 `backend/apps/common/errors.py`의 error code catalog도 함께 갱신해야 한다.
 - `API_ERROR_MESSAGES`는 official schema와 테스트로 동기화하지만, schema에서 자동 생성하는 파이프라인은 아직 없다.
 - Accounts/Profile 모델 검증은 정적 소스 계약 테스트와 Django migration check를 통과했다. DB runtime 검증은 아직 필요하다.
@@ -351,9 +375,13 @@ Updated: 2026-06-04
 - 신규 profile 전적 기본값을 `0`으로 고정해야 한다면 먼저 Obsidian 승인 문서에 확정값을 추가해야 한다.
 - Refresh token 저장 구조와 Security Event 모델은 정적 소스 계약, 순수 helper 테스트, Django migration check를 통과했다. DB runtime 검증은 아직 필요하다.
 - `RefreshToken`은 문서에 명시된 token 소유자 `user_id` 저장 필드를 가진다. 실제 FK, `CASCADE`/`PROTECT`/`SET_NULL` 정책이 필요하면 먼저 Obsidian 승인 문서에 확정해야 한다.
-- 실제 refresh API service, JWT 발급, family revoke, DB transaction + row lock은 아직 구현하지 않았다.
-- security event의 비인증 상황(CSRF 실패, 로그인 실패 반복)에서 actor/user_id를 어떻게 처리할지, metadata schema를 둘지 여부는 승인 문서에 구체화되어 있지 않다. 확정 전에는 해당 필드를 구현하지 않는다.
+- 실제 JWT 발급과 refresh API service는 A안 기준으로 구현했다. refresh rotation은 `transaction.atomic()` + `select_for_update()`를 사용한다. 실제 DB migration 적용과 PostgreSQL runtime 검증은 아직 남아 있다.
+- security event의 비인증 상황(CSRF 실패, 로그인 실패 반복)은 A안에 따라 `user_id = null`로 저장한다. metadata는 `{}` 기본 JSON object이며 raw token/token hash/password/cookie/CSRF token 원문 저장은 금지한다.
 - Auth login response serializer는 official schema의 nested `session` 구조에 맞췄다. Cookie name `pilot_access`, `pilot_refresh`는 아직 승인 문서 확정값을 찾지 못했으므로 임의 변경하지 않았다.
+- `auth.logout`은 refresh token family 식별 방식이 미확정이라 501로 유지한다. refresh cookie path가 `/api/v1/auth/refresh`라서 `/api/v1/auth/logout` 요청에 refresh cookie가 자동 전송되지 않고, A안 access token claim에는 `family_id`가 없다.
+- `auth.signup`은 신규 profile public record 초기값/생성 정책이 별도 확정되지 않아 501로 유지한다.
+- Auth `login`, `refresh`, `me` service는 구현됐지만 실제 PostgreSQL migration 적용과 DB runtime flow 검증은 아직 수행하지 못했다.
+- Auth response의 `profile.style_summary.metrics`는 snapshot이 없으면 0.0 metrics를 반환한다. 이 값은 AI Profile empty metrics 계산과 맞지만, Auth response default 표시 정책으로 별도 승인된 것은 아니므로 UI/서비스 연동 전 재확인이 필요하다.
 - Match storage Task 6은 `matches`, `match_participants`, `turns`, `action_submissions`, `turn_results` 모델 골격과 participant/json snapshot 검증 helper까지 구현했다.
 - Match storage 모델은 삭제 정책을 임의 결정하지 않기 위해 `ForeignKey(on_delete=...)`를 쓰지 않고 문서의 `*_id` 필드로 구성했다. 실제 FK 정책이 필요하면 승인 문서 확정 후 변경해야 한다.
 - `jsonschema`는 `requirements.txt`에 고정되어 있지만 현재 로컬 Python 환경에는 설치되어 있지 않아 `validate_json_snapshot_payload()` runtime 검증은 아직 수행하지 못한다.
@@ -381,7 +409,7 @@ Updated: 2026-06-04
 ## Recommended Next Actions
 
 1. Task 13 `API response envelope runtime boundary`는 확정된 A안 request_id 정책과 A안 501 service-not-implemented 정책을 따른다.
-2. Auth runtime 구현을 재개하기 전에 JWT 발급 service, refresh rotation DB transaction, SecurityEvent actor/metadata 정책을 문서 기준으로 확정한다.
+2. Auth runtime 구현은 확정된 A안 JWT 발급 service, refresh rotation DB transaction, SecurityEvent actor/metadata 정책을 기준으로 진행한다.
 3. Dockerfile 배포 준비는 승인 계약 24번의 Gate A 문서 정렬 이후 Gate B 이미지 빌드 검증으로 진행한다.
 4. Dockerfile 이미지 빌드 검증을 수행하려면 승인 후 `docker build -f ops/docker/backend.Dockerfile -t skn27-backend:local .` 또는 `docker compose -f ops/docker/docker-compose.yml build api`를 실행한다.
 5. DB runtime 검증을 수행하려면 `ops/docker/docker-compose.yml` 기준으로 PostgreSQL `pgvector` 컨테이너를 기동한 뒤 `backend/manage.py migrate`를 실행한다.

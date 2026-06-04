@@ -129,19 +129,30 @@ def test_refresh_token_hash_uses_server_secret_hmac_sha256_only():
         hash_refresh_token(raw_token, "")
 
 
-def test_security_event_model_keeps_only_approved_log_fields_until_actor_contract_exists():
+def test_security_event_model_uses_approved_nullable_actor_and_metadata_policy():
     source = _read(ACCOUNTS_DIR / "models.py")
     security_event_source = _class_source(source, "SecurityEvent")
 
     assert "class SecurityEvent(models.Model):" in security_event_source
     assert "event_type = models.TextField(" in security_event_source
+    assert "user_id = models.PositiveBigIntegerField(null=True, blank=True)" in security_event_source
+    assert "request_id = models.TextField(null=True, blank=True)" in security_event_source
+    assert "metadata = models.JSONField(default=dict)" in security_event_source
     assert "created_at = models.DateTimeField(auto_now_add=True)" in security_event_source
-    assert "metadata = models.JSONField()" not in security_event_source
-    assert "user_id = models.PositiveBigIntegerField()" not in security_event_source
     assert "actor" not in security_event_source
     assert "models.ForeignKey(" not in security_event_source
     assert "on_delete=models.CASCADE" not in security_event_source
     assert "db_table" not in source
+
+    forbidden_secret_fields = (
+        "raw_token",
+        "token_hash",
+        "password",
+        "cookie",
+        "csrf_token",
+    )
+    for field_name in forbidden_secret_fields:
+        assert field_name not in security_event_source
 
     from backend.apps.accounts import tokens
 

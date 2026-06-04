@@ -40,6 +40,24 @@ updated: "2026-06-04"
 | local/dev Secure cookie | `Secure=false` 허용 |
 | production Secure cookie | `Secure=true` 필수 |
 
+## JWT 발급 Runtime
+
+1차 MVP Auth runtime은 A안으로 확정한다.
+
+| 항목 | 확정값 |
+|---|---|
+| JWT signing secret | `DJANGO_SECRET_KEY`로 주입되는 Django `settings.SECRET_KEY` |
+| JWT algorithm | `HS256` |
+| access token claim | `token_type=access`, `sub=user_id`, `iat`, `exp` |
+| refresh token claim | `token_type=refresh`, `sub=user_id`, `jti`, `family_id`, `iat`, `exp` |
+| token body 노출 | 금지. access/refresh token은 response body에 포함하지 않는다. |
+
+`sub`는 user id를 문자열로 직렬화한다.
+
+access token에는 email, nickname, staff/superuser, permission, profile, style 지표를 넣지 않는다.
+
+refresh token에는 원문 token 값, token hash, password, cookie 값을 넣지 않는다.
+
 ## Cookie Path
 
 | cookie | path |
@@ -63,6 +81,12 @@ logout은 refresh cookie path까지 명시해서 cookie를 제거한다.
 | reuse error code | `REFRESH_TOKEN_REUSED` |
 | 동시성 제어 | DB transaction + row lock |
 | grace window | 없음 |
+
+refresh rotation service는 `transaction.atomic()` 안에서 제출된 refresh token row를 `select_for_update()`로 잠근다.
+
+제출된 refresh token이 `active`이면 기존 token은 `rotated`가 되고 같은 `family_id`의 새 refresh token을 발급한다.
+
+제출된 refresh token이 `rotated`, `revoked`, `reused`이면 reuse로 판단하고 해당 `family_id` 전체를 revoke한다. grace window는 두지 않는다.
 
 ## Refresh Token 저장 필드
 
@@ -123,6 +147,22 @@ CORS origin도 명시 allowlist만 허용한다.
 - 권한 없는 match 접근 시도
 - participant가 아닌 사용자의 행동 제출 시도
 
+### Security Event 저장 정책
+
+1차 MVP Auth runtime은 A안으로 아래 필드를 사용한다.
+
+| 필드 | 확정값 |
+|---|---|
+| `event_type` | 승인된 security event type |
+| `user_id` | nullable user id. 비인증/unknown actor는 `null` |
+| `request_id` | nullable server-generated request id |
+| `metadata` | JSON object, 기본값 `{}` |
+| `created_at` | 생성 시각 |
+
+`metadata`에는 raw token, token hash, password, cookie 값, CSRF token 원문을 저장하지 않는다.
+
+`SecurityEvent`는 actor FK를 사용하지 않는다. user 삭제 생명주기와 event 보존 정책이 별도 확정되지 않았으므로 `user_id` 값만 저장한다.
+
 ## Match 보안 제약
 
 AI 스토리 match에도 아래 기준을 적용한다.
@@ -157,7 +197,17 @@ Django Security 문서는 CSRF 보호를 적절히 사용해야 하며, 임의 �
 
 ## 아직 별도 결정할 항목
 
-프론트엔드 구현과 LLM generation 구현을 제외한 백엔드/API 구현 전 남은 오너 결정은 없다.
+logout에서 current refresh token family를 식별하는 방식은 추가 결정이 필요하다.
+
+현재 refresh token cookie path는 `/api/v1/auth/refresh`이므로 브라우저는 `/api/v1/auth/logout` 요청에 refresh token cookie를 자동 전송하지 않는다.
+
+A안 access token claim에는 `family_id`가 없으므로 logout 요청만으로 refresh token family를 식별할 수 없다.
+
+따라서 1차 구현에서는 `auth.logout` service를 501로 유지하고, 아래 중 하나를 별도 확정한 뒤 family revoke runtime을 구현한다.
+
+- logout endpoint에도 refresh token cookie가 전송되도록 cookie path를 조정한다.
+- access token에 family 식별 claim을 추가한다.
+- 서버 측 session/family mapping을 별도 저장한다.
 
 브라우저 종료/네트워크 끊김과 시간초과 판정 기준은 [[09_Approved_Contracts/21_AI_스토리_시간초과_판정_계약]]에서 확정됐다.
 

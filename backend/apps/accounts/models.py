@@ -41,4 +41,7 @@ class RefreshToken(models.Model):
 
 class SecurityEvent(models.Model):
     event_type = models.TextField(choices=SECURITY_EVENT_TYPE_CHOICES)
+    user_id = models.PositiveBigIntegerField(null=True, blank=True)
+    request_id = models.TextField(null=True, blank=True)
+    metadata = models.JSONField(default=dict)
     created_at = models.DateTimeField(auto_now_add=True)

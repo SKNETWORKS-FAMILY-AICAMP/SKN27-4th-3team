@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import exception_handler as drf_exception_handler
 
 from backend.apps.common.errors import make_api_error
-from backend.apps.common.exceptions import ServiceNotImplementedError
+from backend.apps.common.exceptions import ApiErrorResponseException, ServiceNotImplementedError
 from backend.apps.common.request_ids import get_request_id
 from backend.apps.common.responses import error_envelope, success_envelope
 
@@ -40,6 +40,14 @@ def api_error_response(
 
 
 def api_exception_handler(exc: Exception, context: dict[str, Any]) -> Response | None:
+    if isinstance(exc, ApiErrorResponseException):
+        return api_error_response(
+            context.get("request"),
+            exc.code,
+            status_code=exc.status_code,
+            details=exc.details,
+        )
+
     if isinstance(exc, ServiceNotImplementedError):
         return api_error_response(
             context.get("request"),

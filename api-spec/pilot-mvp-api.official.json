@@ -5,7 +5,7 @@
     "schema_status": "approved",
     "schema_version": "2026-06-02.mvp.v1",
     "created": "2026-06-02",
-    "updated": "2026-06-02",
+    "updated": "2026-06-04",
     "source_documents": [
       "docs/09_Approved_Contracts/05_API_명세_관리_기준.md",
       "docs/09_Approved_Contracts/06_API_응답_형태_기준.md",
@@ -50,11 +50,23 @@
       "refresh_token_delivery": "HttpOnly cookie",
       "access_token_type": "JWT",
       "access_token_ttl_minutes": 15,
+      "jwt_algorithm": "HS256",
+      "jwt_signing_secret": "Django settings.SECRET_KEY from DJANGO_SECRET_KEY",
+      "access_token_claims": [
+        "token_type",
+        "sub",
+        "iat",
+        "exp"
+      ],
       "refresh_token_type": "JWT",
       "refresh_token_ttl_days": 14,
       "refresh_token_claims": [
+        "token_type",
+        "sub",
         "jti",
-        "family_id"
+        "family_id",
+        "iat",
+        "exp"
       ],
       "refresh_token_family_id": "UUIDv4 generated on successful login",
       "refresh_token_jti": "UUIDv4 generated for each refresh token",
@@ -74,6 +86,19 @@
         ],
         "grace_window": "none",
         "concurrency": "DB transaction with row lock"
+      },
+      "security_event_storage": {
+        "fields": [
+          "event_type",
+          "user_id",
+          "request_id",
+          "metadata",
+          "created_at"
+        ],
+        "user_id": "nullable; unauthenticated or unknown actor is null",
+        "request_id": "nullable server-generated request id",
+        "metadata": "JSON object with default {}; raw token, token hash, password, cookie, and CSRF token values forbidden",
+        "actor_foreign_key": "forbidden until user deletion/event retention lifecycle is approved"
       },
       "token_storage_forbidden": [
         "localStorage",
@@ -1041,5 +1066,12 @@
     "LLM_SUMMARY_UNAVAILABLE": "LLM 요약을 사용할 수 없어 정적 문장을 표시해야 한다.",
     "SERVICE_NOT_IMPLEMENTED": "Service is not implemented yet."
   },
-  "remaining_decisions": []
+  "remaining_decisions": [
+    {
+      "id": "auth.logout.refresh_family_identification",
+      "status": "needs-owner-decision",
+      "reason": "refresh cookie path is /api/v1/auth/refresh, so browsers do not send the refresh token to /api/v1/auth/logout; access token claims do not include family_id under Auth runtime option A",
+      "current_runtime": "auth.logout remains SERVICE_NOT_IMPLEMENTED until the family identification policy is approved"
+    }
+  ]
 }

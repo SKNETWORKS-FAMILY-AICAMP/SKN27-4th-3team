@@ -5,6 +5,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
+from backend.apps.accounts import services as auth_services
 from backend.apps.accounts.serializers import (
     CsrfResponseSerializer,
     EmptyRequestSerializer,
@@ -17,6 +18,7 @@ from backend.apps.accounts.serializers import (
     SignupResponseSerializer,
 )
 from backend.apps.common.exceptions import ServiceNotImplementedError
+from backend.apps.common.request_ids import get_request_id
 from backend.apps.common.runtime import api_success_response
 
 
@@ -84,11 +86,33 @@ class LoginView(AuthCookieMixin, APIView):
     response_serializer_class = LoginResponseSerializer
 
     def post(self, request):
+        serializer = self.request_serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        login_result = auth_services.login(
+            email=serializer.validated_data["email"],
+            password=serializer.validated_data["password"],
+            request_id=get_request_id(request),
+        )
         rotate_token(request)
-        raise AuthServiceNotImplemented("auth.login")
+        response = api_success_response(
+            request,
+            {
+                "user": login_result.user,
+                "profile": login_result.profile,
+                "session": {
+                    "authenticated": True,
+                    "access_expires_in_seconds": login_result.access_expires_in_seconds,
+                },
+            },
+        )
+        self.set_access_cookie(response, login_result.access_token)
+        self.set_refresh_cookie(response, login_result.refresh_token)
+        return response
 
 
 class LogoutView(AuthCookieMixin, APIView):
+    permission_classes = [AllowAny]
     request_serializer_class = EmptyRequestSerializer
     response_serializer_class = LogoutResponseSerializer
 
@@ -97,15 +121,40 @@ class LogoutView(AuthCookieMixin, APIView):
 
 
 class RefreshView(AuthCookieMixin, APIView):
+    permission_classes = [AllowAny]
     request_serializer_class = EmptyRequestSerializer
     response_serializer_class = RefreshResponseSerializer
 
     def post(self, request):
-        raise AuthServiceNotImplemented("auth.refresh")
+        refresh_result = auth_services.refresh(
+            raw_refresh_token=request.COOKIES.get(settings.REFRESH_TOKEN_COOKIE_NAME),
+            request_id=get_request_id(request),
+        )
+        response = api_success_response(
+            request,
+            {
+                "refreshed": True,
+                "access_expires_in_seconds": refresh_result.access_expires_in_seconds,
+            },
+        )
+        self.set_access_cookie(response, refresh_result.access_token)
+        self.set_refresh_cookie(response, refresh_result.refresh_token)
+        return response
 
 
 class MeView(APIView):
+    permission_classes = [AllowAny]
     response_serializer_class = MeResponseSerializer
 
     def get(self, request):
-        raise AuthServiceNotImplemented("auth.me")
+        session = auth_services.get_current_session(
+            raw_access_token=request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME),
+        )
+        return api_success_response(
+            request,
+            {
+                "authenticated": session.authenticated,
+                "user": session.user,
+                "profile": session.profile,
+            },
+        )
