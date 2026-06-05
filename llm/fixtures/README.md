@@ -93,3 +93,11 @@ fixture는 서버가 이미 확정한 결과를 흉내 낸 테스트 입력이�
 1. 데모 스토리 후보 fixture는 파일명에 `demo` 또는 `nameless`를 붙여 구분한다.
 2. `effect_code`를 계속 사용할지, 백엔드의 `effect_codes` 기준으로 바꿀지 결정한다.
 3. 백엔드 serializer 구현이 나오면 official fixture를 실제 응답 shape와 다시 비교한다.
+
+## 테스트 명령
+
+fixture와 guardrail 계약은 아래 명령으로 확인한다.
+
+```powershell
+python -m unittest discover -s llm\tests -v
+```

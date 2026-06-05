@@ -99,6 +99,7 @@ PDF `game_scenario_the_nameless_curse.pdf`를 바탕으로 `무명(無名)의 �
 | `llm/generation/scripts/test_groq_generation.py` | fixture 기반 prompt 조립과 Groq 호출 실험 CLI |
 | `llm/generation/groq_setup_checklist.md` | Groq 실제 연결 전 체크리스트 |
 | `llm/evaluation/guardrail_checklist.md` | LLM 금지선 검사 기준 |
+| `llm/tests/` | guardrail과 official fixture dry-run 계약 테스트 |
 | `ops/env/llm.env.example` | Groq 기준 환경 변수 예시 |
 
 ## Purpose
