@@ -54,6 +54,19 @@ class GuardrailContractTest(unittest.TestCase):
 
         self.assertNotIn("unsupported_story_fact", violations)
 
+    # result_reason enum을 잘못 번역한 표현은 운영 로그 요약에서 막는다.
+    def test_match_log_summary_rejects_bad_enum_translation(self) -> None:
+        generation_input = _generation_input("match_log_summary.sample.json")
+        text = (
+            "1턴에 다락방 일기장에서 벽 속에 묻힌 아이의 기록이 발견됐다.\n"
+            "5턴에 무명실의 흔적이 거울 표면에 떠올랐다.\n"
+            "9턴에 피티의 이름이 불렸고, 종료 사유는 인감 성공이었다."
+        )
+
+        violations = validate_output(generation_input, text)
+
+        self.assertIn("unsupported_story_fact", violations)
+
     # 스타일 요약이 플레이어 성격 낙인이나 행동 판정을 하지 못하게 막는다.
     def test_style_summary_rejects_personality_judgment(self) -> None:
         generation_input = _generation_input("style_summary.sample.json")

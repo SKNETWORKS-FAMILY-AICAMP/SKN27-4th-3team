@@ -43,9 +43,17 @@ PERSONALITY_JUDGMENT_WORDS = {
     "미친",
 }
 NEXT_ACTION_WORDS = {"다음 행동", "다음 턴 괴이", "괴이는 다음"}
-ACTION_JUDGMENT_WORDS = {"성공했다", "실패했다", "성공", "실패", "획득했다", "얻었다", "제공했다"}
+ACTION_JUDGMENT_WORDS = {
+    "성공했다",
+    "실패했다",
+    "행동 성공",
+    "행동 실패",
+    "획득했다",
+    "얻었다",
+    "제공했다",
+}
 UNSUPPORTED_CLUE_WORDS = {"진짜 단서", "거짓 단서", "단서 획득", "단서를 얻", "단서를 제공"}
-UNSUPPORTED_TRUTH_WORDS = {"비밀", "진실", "드러났다", "밝혀졌다", "원인"}
+UNSUPPORTED_TRUTH_WORDS = {"비밀", "진실", "드러났다", "밝혀졌다", "원인", "인감 성공", "인감"}
 
 TEXT_LIMITS = {
     "result_summary": {"min_chars": 80, "max_chars": 240, "min_sentences": 2, "max_sentences": 4},

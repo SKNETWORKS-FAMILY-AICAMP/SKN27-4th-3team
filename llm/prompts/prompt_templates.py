@@ -257,6 +257,8 @@ def build_match_log_summary_input(payload: dict[str, Any]) -> dict[str, Any]:
 - 서버 판정을 바꾸지 않는다.
 - 로그에 없는 행동이나 원인을 만들지 않는다.
 - 로그에 없는 인물명, 장소명, 단서명을 추가하지 않는다.
+- result, result_reason enum을 임의로 한국어 번역하지 않는다.
+- `seal_success`를 설명해야 하면 입력 공개 로그의 표현을 쓰거나 `seal_success` 그대로 쓴다.
 - 보상, 랭킹, 매칭 판단을 하지 않는다.
 - 운영 제안이나 개선안을 쓰지 않는다.
 
