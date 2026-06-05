@@ -60,7 +60,7 @@ LLM_TEMPERATURE=0.4
 
 `LLM_MODEL_ID`는 Groq 공식 콘솔 또는 문서에서 사용 가능한 모델을 확인한 뒤 입력한다.
 
-현재 로컬 실험에서는 `llama-3.1-8b-instant`로 실제 호출을 확인했다.
+현재 로컬 실험에서는 `llama-3.3-70b-versatile`로 실제 호출을 확인했다.
 
 모델은 팀 상황과 Groq 사용 가능 목록에 따라 변경할 수 있다.
 
@@ -121,10 +121,14 @@ PDF `game_scenario_the_nameless_curse.pdf`를 바탕으로 `무명(無名)의 �
 
 ## Fixture 상태
 
-현재 fixture는 official API schema 필드명을 유지하되, LLM 실험용 사건 샘플은 `무명(無名)의 저주`와 괴이 후보 `피티` 기준으로 맞춰져 있다.
+현재 fixture는 official API 기준 샘플과 데모 스토리 후보 샘플을 구분해서 관리한다.
+
+official API 기준 샘플은 `거울 속의 손님`과 official enum 값을 기준으로 하고, 데모 스토리 후보 샘플은 `무명(無名)의 저주`와 괴이 후보 `피티` 기준으로 맞춰져 있다.
 
 ```text
+llm/fixtures/result_summary.official.sample.json
 llm/fixtures/result_summary.sample.json
+llm/fixtures/turn_flavor_text.official.sample.json
 llm/fixtures/turn_flavor_text.sample.json
 llm/fixtures/style_summary.sample.json
 llm/fixtures/match_log_summary.sample.json
@@ -132,11 +136,14 @@ llm/fixtures/match_log_summary.sample.json
 
 검증 결과:
 
-- JSON 4개 모두 파싱 정상
+- JSON fixture 11개 모두 파싱 정상
 - `result_summary`, `turn_flavor_text`, `style_summary`, `match_log_summary` dry-run prompt 조립 정상
+- official fixture 기반 `result_summary`, `turn_flavor_text` dry-run prompt 조립 정상
 - `LLM_DISABLED=true` 또는 API key/model id 누락 시 fallback 구조로 처리됨
 - `--frontend-output` 옵션으로 프론트 전달용 `enabled`, `text`, `display_slot`, `fallback_used`, `metadata` 구조 출력 가능
 - `turn_flavor_text`는 행동별 fixture를 추가했고, 실제 Groq 호출 기준 프론트용 출력 스키마 검증을 완료함
+- 프론트 브랜치 `feature-frontend-game-screen` 기준으로 `right_apparition_message`를 LLM 우선 적용 슬롯으로 반영함
+- `turn_flavor_text` 길이 기준을 프론트 화면에 맞춰 10-60자, 1-2줄, 줄당 40자 이하로 조정함
 - `generate_llm_ui_text(purpose, payload)` 함수로 백엔드에서 adapter를 직접 호출할 수 있음
 - `turn_flavor_text` 괴이 반응 문구는 PDF 서사 참고에 맞춰 피티 페르소나 기준을 추가함
 - 피티는 단순 악역이 아니라 이름과 목소리를 빼앗긴 상처의 잔향처럼 표현하도록 조정함
@@ -176,6 +183,8 @@ LLM 출력에서 아래가 나오면 실패 처리한다.
 - `turn_flavor_text`에서 공개 로그에 없는 비밀, 진실, 파괴, 소유, 원인 관계를 덧붙이는 표현
 - `turn_flavor_text`에서 `공개 로그`, `출력:`, `예시` 같은 라벨을 그대로 출력하는 경우
 - `turn_flavor_text`에서 `무엇인가`, `누군가`, `보이기 시작`, `온도에`, `냄새가 났다`처럼 모호하거나 추상적인 표현
+- `match_log_summary`에서 `seal_success` 같은 enum을 `인감 성공`처럼 잘못 번역하는 경우
+- 프론트 표시 기준을 넘는 `turn_flavor_text` 길이 또는 줄 길이
 
 실패 시 출력은 아래 기준을 따른다.
 
@@ -198,7 +207,7 @@ LLM 출력에서 아래가 나오면 실패 처리한다.
 
 ## 내일 이어서 할 일
 
-### 1. 프론트 팀원과 display_slot 확정
+### 1. 프론트 화면 기준 반영 상태
 
 공유 문서:
 
@@ -206,13 +215,15 @@ LLM 출력에서 아래가 나오면 실패 처리한다.
 llm/docs/frontend_handoff.md
 ```
 
-확인할 것:
+확인한 것:
 
-- 실제 사용할 `display_slot` 값 목록
-- `turn_flavor_text` 10-60자, 1-2줄, 줄당 40자 기준이 UI에 맞는지
-- `\n` 줄바꿈을 그대로 렌더링할지
-- `enabled=false`일 때 LLM 영역을 숨길지, `publicLog.text`를 같은 위치에 보여줄지
-- LLM 응답이 턴 결과와 같이 내려올지, 늦게 따로 도착할지
+- 프론트 브랜치 `origin/feature-frontend-game-screen`에서 실제 게임 화면을 확인했다.
+- `turn_flavor_text` 우선 적용 위치는 `right_apparition_message`다.
+- 왼쪽 로그 슬롯은 `left_protagonist_message`, 중앙 로그 슬롯은 `center_system_message`다.
+- `\n` 줄바꿈은 그대로 렌더링된다.
+- LLM 실패 시 같은 위치에 서버 공식 로그를 표시한다.
+- LLM 전용 로딩 UI는 필요 없고, 턴 결과 응답에 같이 오면 사용한다.
+- 결과 화면 프로토타입은 `result_summary`, `style_summary`를 표시할 수 있다.
 
 ### 2. 백엔드 실제 payload와 adapter 연결
 
@@ -239,12 +250,27 @@ llm = generate_llm_ui_text("turn_flavor_text", turn_payload)
 - 시스템 위치와 괴이 반응 위치 문체 분리
 - 막연한 감각 표현과 예시 라벨 출력 guardrail 보강
 
-내일 확인할 것:
+추가 확인할 것:
 
 - 실제 프론트 화면에서 괴이 반응 문구가 너무 길거나 겹치지 않는지
 - `right_apparition_message`에서 피티 목소리가 충분히 살아나는지
 - `left_protagonist_message`, `center_system_message`에서 괴이 직접 발화가 과하지 않은지
 - Groq 호출 결과가 guardrail 실패로 자주 떨어지는 케이스가 있는지
+
+## 검증 명령
+
+```powershell
+python -m unittest discover -s llm\tests -v
+python llm\generation\scripts\test_groq_generation.py --purpose turn_flavor_text --fixture llm\fixtures\turn_flavor_text.official.sample.json --frontend-output
+python llm\generation\scripts\test_groq_generation.py --purpose result_summary --fixture llm\fixtures\result_summary.official.sample.json --dry-run
+```
+
+최근 검증 결과:
+
+- LLM 테스트 8개 통과
+- fixture JSON 11개 파싱 정상
+- Groq 실제 `turn_flavor_text` 호출 성공
+- 실제 출력 예시: `차갑게 번진 손자국\n식은 손끝이 닿았다`
 
 ### 4. 스토리 확정 후 fixture 업데이트
 
@@ -255,9 +281,3 @@ llm = generate_llm_ui_text("turn_flavor_text", turn_payload)
 - prompt 문서
 - guardrail 고유명사 기준
 - 프론트 결과/턴 화면 공식 문장
-
-## 최근 추천 커밋명
-
-```text
-refactor: 피티 괴이 페르소나 프롬프트 보강
-```
