@@ -3,47 +3,53 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>무명의 저주 종료 기록</title>
+  <title>거울 속의 손님 - 결과</title>
   <link rel="stylesheet" href="ending.css">
   <script src="ending.js" defer></script>
 </head>
 <body>
-  <!--
-    LLM EDIT GUIDE
-    - This is the temporary post-game screen for the static prototype.
-    - In Django, move this file into a template and pass outcome data from the view.
-    - Keep the screen quiet: the result should feel like an in-world case record.
-  -->
-  <main class="ending-frame" data-ending-frame>
-    <section class="ending-card" aria-labelledby="ending-title">
-      <p class="ending-kicker" data-ending-kicker>무명의 저주 종료 기록</p>
-      <h1 id="ending-title" data-ending-title>기록을 정리하는 중</h1>
-      <p class="ending-summary" data-ending-summary>
-        의식장의 검은 초가 낮게 흔들리고, 마지막 기록은 천천히 덮인다.
-      </p>
+  <main class="result-page" data-result-page>
+    <section class="result-card" aria-labelledby="result-title">
+      <p class="result-kicker" data-result-kicker>사건 종료 기록</p>
+      <h1 id="result-title" data-result-title>결과 확인</h1>
+      <p class="result-summary" data-result-summary></p>
 
-      <dl class="ending-stats" aria-label="마지막 상태">
+      <dl class="result-stats" aria-label="최종 상태">
         <div>
-          <dt>턴</dt>
-          <dd data-ending-turn>--</dd>
+          <dt>승패</dt>
+          <dd data-result-outcome>--</dd>
         </div>
         <div>
-          <dt>진명</dt>
-          <dd data-ending-truth>--</dd>
+          <dt>턴</dt>
+          <dd data-result-turn>--</dd>
         </div>
         <div>
           <dt>이성</dt>
-          <dd data-ending-sanity>--</dd>
+          <dd data-result-sanity>--</dd>
         </div>
         <div>
-          <dt>저주</dt>
-          <dd data-ending-curse>--</dd>
+          <dt>저주 흔적</dt>
+          <dd data-result-curse>--</dd>
+        </div>
+        <div>
+          <dt>진명 조각</dt>
+          <dd data-result-truth>--</dd>
         </div>
       </dl>
 
-      <div class="ending-actions">
-        <a class="ending-button primary" href="game-background.html">다시 의식장으로</a>
-        <a class="ending-button" href="game-background.html?fresh=1">처음부터 다시</a>
+      <section class="result-section" aria-labelledby="public-log-title">
+        <h2 id="public-log-title">공개 로그</h2>
+        <p data-result-log>기록된 공개 로그가 없습니다.</p>
+      </section>
+
+      <section class="result-section" aria-labelledby="style-title">
+        <h2 id="style-title">플레이 스타일 요약</h2>
+        <p data-result-style>정적 요약을 표시합니다.</p>
+      </section>
+
+      <div class="result-actions">
+        <a class="result-button primary" href="game-background.html?fresh=1">처음부터 다시</a>
+        <a class="result-button" href="game-background.html">의식장으로</a>
       </div>
     </section>
   </main>

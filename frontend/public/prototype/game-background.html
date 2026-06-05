@@ -9,6 +9,8 @@
   <link rel="preload" as="image" href="assets/table-extracted.png" fetchpriority="high">
   <link rel="preload" as="image" href="assets/ghost-mirror-presence.png">
   <link rel="preload" as="image" href="assets/ghost-jumpscare-face.png">
+  <link rel="preload" as="image" href="assets/clear.png">
+  <link rel="preload" as="image" href="assets/game over.png">
   <link rel="preload" as="image" href="assets/hud-lantern.png">
   <link rel="preload" as="image" href="assets/action-card-silence.png">
   <link rel="preload" as="image" href="assets/action-card-contract.png">
@@ -63,6 +65,9 @@
         <div class="status-token curse-token" tabindex="0" data-current="0" data-max="5" data-tooltip="저주 흔적: 검은 실이 손목과 기억을 조여 오는 정도." aria-label="저주 흔적 5 중 0">
           <div class="status-icon curse-icon" aria-hidden="true">
             <span class="curse-mark"></span>
+          </div>
+          <div class="curse-stack" aria-hidden="true">
+            <i></i><i></i><i></i><i></i><i></i>
           </div>
           <div class="status-copy">
             <strong>0/5</strong>
@@ -132,6 +137,7 @@
       </div>
 
       <div class="ritual-effect" data-ritual-effect aria-hidden="true"></div>
+      <div class="guard-ward" data-guard-ward aria-hidden="true"></div>
 
       <div class="hands-layer">
         <div class="hand left">
@@ -218,6 +224,10 @@
 
     <section class="defeat-jumpscare" data-defeat-jumpscare hidden aria-hidden="true">
       <div class="defeat-jumpscare-figure" data-jumpscare-figure></div>
+    </section>
+
+    <section class="result-scene" data-result-scene hidden aria-hidden="true">
+      <img data-result-image src="assets/clear.png" alt="" width="1332" height="768" decoding="async">
     </section>
 
     <section class="clue-journal" data-clue-journal aria-label="기록서">

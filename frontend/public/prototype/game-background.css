@@ -3506,6 +3506,98 @@ body {
   display: none;
 }
 
+.curse-token {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  justify-items: stretch;
+  column-gap: clamp(7px, 0.7vw, 10px);
+  width: min(29vw, 382px);
+  max-width: 100%;
+  min-height: clamp(17px, 1.65vw, 23px);
+  margin-top: clamp(1px, 0.22vw, 3px);
+  padding: 0;
+  color: rgba(206, 194, 186, 0.8);
+  opacity: 0.92;
+}
+
+.curse-token .status-icon {
+  display: block;
+  width: clamp(14px, 1.35vw, 19px);
+  height: clamp(14px, 1.35vw, 19px);
+  opacity: 0.72;
+  filter:
+    drop-shadow(0 2px 3px rgba(0, 0, 0, 0.9))
+    drop-shadow(0 0 5px rgba(95, 14, 18, 0.28));
+}
+
+.curse-token .curse-mark {
+  width: 92%;
+  border-color: rgba(160, 48, 46, 0.24);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(14, 7, 7, 0.95) 0 21%, transparent 22%),
+    conic-gradient(from 22deg, transparent 0 13%, rgba(68, 12, 15, 0.88) 13% 16%, transparent 16% 30%, rgba(26, 9, 10, 0.86) 30% 33%, transparent 33% 47%, rgba(77, 12, 16, 0.88) 47% 51%, transparent 51% 67%, rgba(26, 9, 10, 0.86) 67% 70%, transparent 70% 100%),
+    radial-gradient(circle, transparent 0 48%, rgba(36, 9, 11, 0.92) 49% 58%, transparent 59%);
+}
+
+.curse-token .status-copy {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: clamp(36px, 3.8vw, 48px);
+  text-align: right;
+}
+
+.curse-token .status-copy::before {
+  content: "저주";
+  margin-right: clamp(5px, 0.45vw, 7px);
+  color: rgba(178, 142, 134, 0.72);
+  font-family: "Times New Roman", "Malgun Gothic", serif;
+  font-size: clamp(10px, 0.92vw, 14px);
+  font-weight: 700;
+}
+
+.curse-token .status-copy strong {
+  color: rgba(204, 172, 164, 0.82);
+  font-family: "Times New Roman", "Malgun Gothic", serif;
+  font-size: clamp(10px, 0.92vw, 14px);
+  font-weight: 700;
+}
+
+.curse-stack {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: center;
+  gap: clamp(4px, 0.42vw, 6px);
+  min-width: 0;
+}
+
+.curse-stack i {
+  display: block;
+  height: clamp(3px, 0.32vw, 5px);
+  transform: skewX(-23deg);
+  background: rgba(26, 20, 20, 0.62);
+  border-top: 1px solid rgba(150, 120, 112, 0.12);
+  box-shadow:
+    inset 0 0 4px rgba(0, 0, 0, 0.88),
+    0 0 3px rgba(0, 0, 0, 0.5);
+  opacity: 0.54;
+}
+
+.curse-token[data-current="1"] .curse-stack i:nth-child(-n+1),
+.curse-token[data-current="2"] .curse-stack i:nth-child(-n+2),
+.curse-token[data-current="3"] .curse-stack i:nth-child(-n+3),
+.curse-token[data-current="4"] .curse-stack i:nth-child(-n+4),
+.curse-token[data-current="5"] .curse-stack i:nth-child(-n+5) {
+  background:
+    linear-gradient(90deg, rgba(42, 8, 10, 0.9), rgba(142, 28, 33, 0.7), rgba(52, 10, 12, 0.92));
+  border-top-color: rgba(218, 105, 96, 0.24);
+  box-shadow:
+    inset 0 0 4px rgba(0, 0, 0, 0.82),
+    0 0 7px rgba(110, 10, 18, 0.34);
+  opacity: 0.9;
+}
+
 .lantern-row {
   display: grid;
   grid-template-columns: repeat(5, clamp(34px, 4vw, 58px));
@@ -3773,6 +3865,7 @@ body {
 
 .soulfire-token .status-copy,
 .sanity-token .status-copy,
+.curse-token,
 .sanity-gauge-track {
   width: min(22.5vw, 300px);
 }
@@ -3961,26 +4054,26 @@ body {
 
 .defeat-jumpscare {
   background:
-    radial-gradient(ellipse at center, rgba(40, 40, 42, 0.12) 0 20%, rgba(0, 0, 0, 0.5) 52%, rgba(0, 0, 0, 0.94) 100%);
+    radial-gradient(ellipse at center, rgba(82, 82, 86, 0.18) 0 20%, rgba(0, 0, 0, 0.42) 50%, rgba(0, 0, 0, 0.92) 100%);
 }
 
 .defeat-jumpscare-figure {
-  width: min(31vw, 330px);
+  width: min(39vw, 430px);
   aspect-ratio: 1;
   border-radius: 50%;
   overflow: hidden;
   background:
-    radial-gradient(ellipse at 50% 38%, transparent 0 38%, rgba(0, 0, 0, 0.38) 66%, rgba(0, 0, 0, 0.82) 100%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.62)),
-    url("assets/ghost-jumpscare-face.png") center 28% / 118% auto no-repeat;
+    radial-gradient(ellipse at 50% 40%, transparent 0 44%, rgba(0, 0, 0, 0.26) 68%, rgba(0, 0, 0, 0.78) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.46)),
+    url("assets/ghost-jumpscare-face.png") center 24% / 132% auto no-repeat;
   box-shadow:
-    inset 0 0 60px rgba(0, 0, 0, 0.92),
+    inset 0 0 52px rgba(0, 0, 0, 0.82),
     inset 0 0 0 2px rgba(210, 210, 200, 0.05),
     0 0 44px rgba(0, 0, 0, 0.9);
   filter:
     grayscale(1)
-    contrast(1.24)
-    brightness(0.64);
+    contrast(1.36)
+    brightness(0.86);
   transform: scale(0.12) translateY(20%);
 }
 
@@ -3990,12 +4083,12 @@ body {
     transform: scale(0.16) translateY(22%);
   }
   44% {
-    opacity: 0.92;
-    transform: scale(0.72) translateY(4%);
+    opacity: 0.98;
+    transform: scale(0.82) translateY(3%);
   }
   100% {
     opacity: 1;
-    transform: scale(2.55) translateY(-1%);
+    transform: scale(2.85) translateY(-2%);
   }
 }
 
@@ -4401,6 +4494,39 @@ body {
   font-size: clamp(10px, 0.9vw, 13px);
 }
 
+.journal-icon {
+  width: 92%;
+  aspect-ratio: 488 / 646;
+  border: 0;
+  border-radius: 3px 5px 7px 3px;
+  background: url("assets/journal-book-icon.png") center / contain no-repeat;
+  box-shadow:
+    0 8px 13px rgba(0, 0, 0, 0.68),
+    0 0 12px rgba(96, 58, 24, 0.18);
+  filter:
+    saturate(0.82)
+    contrast(1.08)
+    brightness(0.74)
+    drop-shadow(0 0 6px rgba(0, 0, 0, 0.7));
+}
+
+.journal-icon::before,
+.journal-icon::after {
+  display: none;
+}
+
+.journal-tab:hover .journal-icon,
+.journal-tab:focus-visible .journal-icon {
+  box-shadow:
+    0 9px 14px rgba(0, 0, 0, 0.72),
+    0 0 15px rgba(146, 101, 50, 0.28);
+  filter:
+    saturate(0.86)
+    contrast(1.12)
+    brightness(0.86)
+    drop-shadow(0 0 8px rgba(0, 0, 0, 0.72));
+}
+
 .spirit-shadow.has-image,
 .game-frame[data-damage="1"] .spirit-shadow.has-image,
 .game-frame[data-damage="2"] .spirit-shadow.has-image,
@@ -4499,6 +4625,11 @@ body {
 
 .spirit-log-stack .dialogue-log-entry p {
   color: rgba(174, 0, 12, 0.88);
+}
+
+.spirit-log-stack .dialogue-log-entry[data-log-mode="llm"] p {
+  color: rgba(188, 22, 30, 0.78);
+  font-style: italic;
 }
 
 .dialogue-log-entry[data-log-mode="corrupted"]::before {
@@ -4677,5 +4808,299 @@ body {
   100% {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Result scene transition: game fades out first, then the final art fades in. */
+.game-frame.is-ending > :not(.result-scene) {
+  animation: gameSceneFadeOut 900ms ease forwards;
+  pointer-events: none;
+}
+
+.game-frame.is-ending-clear > :not(.result-scene) {
+  animation: clearSceneRelease 9000ms ease-in-out forwards;
+}
+
+.game-frame.is-ending-lose > :not(.result-scene) {
+  animation: gameSceneFadeOut 900ms ease forwards;
+}
+
+.game-frame.is-sanity-collapse .spirit-shadow.has-image {
+  animation: sanitySpiritVanish 900ms ease forwards;
+}
+
+.result-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #030304;
+  opacity: 0;
+  pointer-events: auto;
+}
+
+.result-scene::before,
+.result-scene::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.result-scene::before {
+  background:
+    radial-gradient(ellipse at 55% 44%, rgba(255, 239, 174, 0.82), transparent 23%),
+    radial-gradient(ellipse at 52% 50%, rgba(255, 199, 92, 0.5), transparent 44%),
+    linear-gradient(180deg, rgba(255, 236, 180, 0.18), rgba(255, 255, 255, 0.02) 45%, transparent);
+  filter: blur(4px);
+}
+
+.result-scene::after {
+  background:
+    repeating-radial-gradient(circle at 52% 46%, rgba(255, 236, 184, 0.18) 0 1px, transparent 1px 18px),
+    radial-gradient(ellipse at 50% 50%, transparent 0 45%, rgba(255, 228, 170, 0.18) 46%, transparent 64%);
+  mix-blend-mode: screen;
+}
+
+.result-scene[hidden] {
+  display: none;
+}
+
+.result-scene.is-active {
+  animation: resultBackdropIn 260ms ease forwards 760ms;
+}
+
+.result-scene[data-outcome="clear"] {
+  background:
+    radial-gradient(ellipse at 52% 45%, rgba(255, 247, 214, 0.82), transparent 54%),
+    linear-gradient(180deg, rgba(255, 244, 212, 0.92), rgba(238, 214, 154, 0.72) 42%, rgba(32, 24, 14, 0.92));
+}
+
+.result-scene[data-outcome="clear"].is-active {
+  animation: clearBackdropIn 9000ms ease-in-out forwards;
+}
+
+.result-scene[data-outcome="clear"].is-active::before {
+  display: none;
+}
+
+.result-scene[data-outcome="clear"].is-active::after {
+  display: none;
+}
+
+.result-scene[data-outcome="game-over"].is-active {
+  animation: resultBackdropIn 260ms ease forwards 760ms;
+}
+
+.result-scene img {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transform: scale(1.018);
+  filter: contrast(1.03) saturate(0.95) brightness(0.96);
+}
+
+.result-scene[data-outcome="clear"] img {
+  object-position: center center;
+  filter: contrast(1.02) saturate(1.03) brightness(1.03);
+}
+
+.result-scene[data-outcome="game-over"] img {
+  object-position: center center;
+  filter: contrast(1.06) saturate(0.88) brightness(0.9);
+}
+
+.result-scene.is-active img {
+  animation: resultImageFadeIn 1500ms ease forwards 940ms;
+}
+
+.result-scene[data-outcome="clear"].is-active img {
+  animation: clearImageFadeIn 8600ms ease-in-out forwards 400ms;
+}
+
+@keyframes gameSceneFadeOut {
+  to {
+    opacity: 0;
+    filter: brightness(0);
+  }
+}
+
+@keyframes clearSceneRelease {
+  0% {
+    opacity: 1;
+    filter: brightness(1) saturate(1) blur(0);
+  }
+
+  18% {
+    opacity: 1;
+    filter: brightness(1.45) saturate(1) blur(0);
+  }
+
+  36% {
+    opacity: 1;
+    filter: brightness(2.2) saturate(0.98) blur(0.1px);
+  }
+
+  54% {
+    opacity: 0.92;
+    filter: brightness(3.15) saturate(0.94) blur(0.4px);
+  }
+
+  72% {
+    opacity: 0.68;
+    filter: brightness(2.35) saturate(0.96) blur(0.9px);
+  }
+
+  88% {
+    opacity: 0.28;
+    filter: brightness(1.55) saturate(0.98) blur(1.5px);
+  }
+
+  100% {
+    opacity: 0;
+    filter: brightness(1.05) saturate(1) blur(2px);
+  }
+}
+
+@keyframes resultBackdropIn {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes clearBackdropIn {
+  0% {
+    opacity: 1;
+    filter: brightness(3.2);
+  }
+
+  22% {
+    opacity: 1;
+    filter: brightness(3.05);
+  }
+
+  46% {
+    opacity: 1;
+    filter: brightness(2.35);
+  }
+
+  72% {
+    opacity: 1;
+    filter: brightness(1.45);
+  }
+
+  100% {
+    opacity: 1;
+    filter: brightness(1);
+  }
+}
+
+@keyframes clearLightBloom {
+  0% {
+    opacity: 0;
+    transform: scale(0.78);
+  }
+
+  38% {
+    opacity: 0.72;
+    transform: scale(1.02);
+  }
+
+  68% {
+    opacity: 0.96;
+    transform: scale(1.16);
+  }
+
+  100% {
+    opacity: 0.24;
+    transform: scale(1.34);
+  }
+}
+
+@keyframes clearDustRise {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+
+  44% {
+    opacity: 0.46;
+  }
+
+  100% {
+    opacity: 0.2;
+    transform: translateY(-26px) scale(1.06);
+  }
+}
+
+@keyframes resultImageFadeIn {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes clearImageFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(1.028);
+    filter: contrast(1.02) saturate(1.03) brightness(3);
+  }
+
+  26% {
+    opacity: 0.28;
+    filter: contrast(1.02) saturate(1.03) brightness(2.45);
+  }
+
+  52% {
+    opacity: 0.62;
+    filter: contrast(1.02) saturate(1.03) brightness(1.75);
+  }
+
+  78% {
+    opacity: 0.9;
+    filter: contrast(1.02) saturate(1.03) brightness(1.2);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: contrast(1.02) saturate(1.03) brightness(1.03);
+  }
+}
+
+@keyframes sanitySpiritVanish {
+  0% {
+    opacity: 1;
+    filter:
+      grayscale(1)
+      contrast(1.08)
+      brightness(1.22)
+      blur(0);
+  }
+
+  55% {
+    opacity: 0.24;
+    filter:
+      grayscale(1)
+      contrast(1.2)
+      brightness(0.76)
+      blur(2px);
+  }
+
+  100% {
+    opacity: 0;
+    filter:
+      grayscale(1)
+      contrast(1.1)
+      brightness(0.28)
+      blur(5px);
   }
 }

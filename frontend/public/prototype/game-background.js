@@ -15,14 +15,28 @@ const GAME_RULES = {
   maxCurseTrace: 5,
   maxFalseClues: 3,
   startingSanity: 12,
-  startingSoulfire: 5,
+  startingSoulfire: 3,
   startingCurse: 0,
+  turnStartSoulfireRecovery: 2,
   sealRequiredTrueNamePieces: 3
 };
 
-const ENDING_SCREEN = {
-  href: "ending.html",
-  delayMs: 3600
+const RESULT_SCENE = {
+  clearImage: "assets/clear.png",
+  gameOverImage: "assets/game over.png",
+  clearDelayMs: 0,
+  gameOverDelayMs: 2700
+};
+
+const LLM_UI_LIMITS = {
+  maxChars: 90,
+  maxLines: 2
+};
+
+const LLM_DISPLAY_SLOTS = {
+  protagonist: "left_system_message",
+  spirit: "right_apparition_message",
+  system: "center_system_message"
 };
 
 const ACTION_CARDS = {
@@ -278,6 +292,7 @@ const dom = {
   actionCard: document.querySelector("[data-action-card]"),
   ritualTools: [...document.querySelectorAll(".ritual-tool[data-action]")],
   ritualEffect: document.querySelector("[data-ritual-effect]"),
+  guardWard: document.querySelector("[data-guard-ward]"),
   sealInvocation: document.querySelector(".seal-invocation"),
   sealReason: document.querySelector("[data-seal-reason]"),
   sealInterference: document.querySelector("[data-seal-interference]"),
@@ -319,6 +334,8 @@ const dom = {
   timeoutPolicy: document.querySelector("[data-timeout-policy-note]"),
   turnRecords: document.querySelector("[data-turn-records]"),
   defeatJumpscare: document.querySelector("[data-defeat-jumpscare]"),
+  resultScene: document.querySelector("[data-result-scene]"),
+  resultImage: document.querySelector("[data-result-image]"),
   journalBook: document.querySelector(".journal-book"),
   journalSections: [...document.querySelectorAll(".journal-section")],
   sealProgressDots: [...document.querySelectorAll(".seal-progress span")]
@@ -358,6 +375,7 @@ const state = {
   logAwaitingAdvance: false,
   turnEndAwaitingAdvance: false,
   dialogueArchive: [],
+  llmUiTexts: [],
   clockPausedByJournal: false,
   clockWasRunningBeforeHidden: false,
   clockRenderCache: {
@@ -366,6 +384,9 @@ const state = {
     expired: false,
     tooltip: ""
   },
+  resultShown: false,
+  resultAwaitingAdvance: false,
+  pendingEnding: null,
   isSubmitting: false,
   remainingSeconds: GAME_RULES.timerSeconds,
   timerId: 0,
@@ -378,6 +399,72 @@ function clamp(value, min, max) {
 
 function formatTwoDigits(value) {
   return String(value).padStart(2, "0");
+}
+
+function normalizeLlmText(text) {
+  return String(text || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, LLM_UI_LIMITS.maxLines)
+    .map((line) => line.length > LLM_UI_LIMITS.maxChars
+      ? `${line.slice(0, LLM_UI_LIMITS.maxChars - 1)}...`
+      : line)
+    .join("\n");
+}
+
+function normalizeLlmUiText(entry) {
+  if (!entry || typeof entry !== "object") return null;
+  return {
+    enabled: Boolean(entry.enabled),
+    purpose: entry.purpose || "",
+    text: entry.text == null ? null : normalizeLlmText(entry.text),
+    display_slot: entry.display_slot || null,
+    fallback_used: Boolean(entry.fallback_used),
+    generation_id: entry.generation_id || null,
+    context_refs: Array.isArray(entry.context_refs) ? entry.context_refs : [],
+    metadata: {
+      status: entry.metadata?.status || (entry.enabled ? "succeeded" : "skipped"),
+      provider: entry.metadata?.provider,
+      model_id: entry.metadata?.model_id ?? null,
+      latency_ms: entry.metadata?.latency_ms,
+      error_code: entry.metadata?.error_code,
+      error_reason: entry.metadata?.error_reason,
+      reason: entry.metadata?.reason
+    }
+  };
+}
+
+function applyLlmUiTexts(entries) {
+  state.llmUiTexts = Array.isArray(entries)
+    ? entries.map(normalizeLlmUiText).filter(Boolean)
+    : [];
+}
+
+function getLlmUiText(purpose, displaySlot) {
+  return state.llmUiTexts.find((entry) => (
+    entry.enabled
+    && entry.text
+    && entry.purpose === purpose
+    && (!displaySlot || entry.display_slot === displaySlot)
+  )) || null;
+}
+
+function resolveLlmDisplayText(purpose, displaySlot, fallbackText) {
+  const llm = getLlmUiText(purpose, displaySlot);
+  return {
+    text: llm?.text || fallbackText,
+    source: llm ? "llm" : "fallback",
+    fallbackUsed: !llm
+  };
+}
+
+function recoverSoulfireForNextTurn() {
+  state.soulfire = clamp(
+    state.soulfire + GAME_RULES.turnStartSoulfireRecovery,
+    0,
+    GAME_RULES.maxSoulfire
+  );
 }
 
 function setTurnState(text) {
@@ -889,6 +976,12 @@ function waitForAdvance() {
 }
 
 function advanceLogSequence() {
+  if (state.resultAwaitingAdvance && state.pendingEnding) {
+    const { outcome, reason } = state.pendingEnding;
+    state.resultAwaitingAdvance = false;
+    openEndingScreen(outcome, reason);
+    return true;
+  }
   if (state.advanceResolver) {
     const resolve = state.advanceResolver;
     state.advanceResolver = null;
@@ -906,10 +999,15 @@ function advanceLogSequence() {
 
 function showEnemyVoice(enemy) {
   if (!dom.enemyVoice || !dom.enemyAction || !dom.enemyText) return;
+  const display = resolveLlmDisplayText(
+    "turn_flavor_text",
+    LLM_DISPLAY_SLOTS.spirit,
+    enemy.line
+  );
   dom.enemyAction.textContent = enemy.action;
-  dom.enemyText.textContent = enemy.line;
+  dom.enemyText.textContent = display.text;
   state.logAwaitingAdvance = true;
-  pushDialogueLog("spirit", "???", enemy.line, "spirit");
+  pushDialogueLog("spirit", "???", display.text, display.source === "llm" ? "llm" : "spirit");
   dom.enemyVoice.hidden = true;
 }
 
@@ -941,19 +1039,59 @@ function scheduleDefeatJumpscare(delayMs = 1200) {
   window.setTimeout(triggerDefeatJumpscare, delayMs);
 }
 
+function showResultScene(outcome, reason = "unknown") {
+  if (!dom.resultScene || !dom.resultImage || state.resultShown) return;
+  state.resultShown = true;
+  state.resultAwaitingAdvance = true;
+  state.pendingEnding = { outcome, reason };
+  state.phase = "ended";
+  stopClock();
+  hideActionCard();
+  hidePlayerLog();
+  hideEnemyVoice();
+  hideTurnEndCue();
+  setDialogueArchiveOpen(false);
+  clearDialogueLogs();
+
+  const isWin = outcome === "win";
+  dom.resultImage.src = isWin ? RESULT_SCENE.clearImage : RESULT_SCENE.gameOverImage;
+  dom.resultImage.alt = isWin ? "Clear" : "Game Over";
+  dom.resultScene.dataset.outcome = isWin ? "clear" : "game-over";
+  dom.resultScene.hidden = false;
+  dom.resultScene.setAttribute("aria-hidden", "false");
+  dom.resultScene.classList.remove("is-active");
+  dom.frame?.classList.remove("is-ending-clear", "is-ending-lose");
+  dom.frame?.classList.add("is-ending", isWin ? "is-ending-clear" : "is-ending-lose");
+  void dom.resultScene.offsetWidth;
+  dom.resultScene.classList.add("is-active");
+}
+
 function openEndingScreen(outcome, reason) {
-  const target = new URL(ENDING_SCREEN.href, window.location.href);
+  const target = new URL("ending.html", window.location.href);
+  const resultSummary = resolveLlmDisplayText("result_summary", null, "");
+  const styleSummary = resolveLlmDisplayText("style_summary", null, "");
   target.searchParams.set("outcome", outcome);
   target.searchParams.set("reason", reason);
   target.searchParams.set("turn", String(Math.min(state.turn, GAME_RULES.maxTurn)));
   target.searchParams.set("truth", `${state.trueNamePieces}/${GAME_RULES.sealRequiredTrueNamePieces}`);
   target.searchParams.set("sanity", `${state.sanity}/${GAME_RULES.maxSanity}`);
   target.searchParams.set("curse", `${state.curse}/${GAME_RULES.maxCurseTrace}`);
+  target.searchParams.set("log", state.turnRecords.slice(-4).join(" | "));
+  if (resultSummary.text) {
+    target.searchParams.set("result_summary", resultSummary.text);
+    target.searchParams.set("result_summary_fallback", String(resultSummary.fallbackUsed));
+  }
+  if (styleSummary.text) {
+    target.searchParams.set("style_summary", styleSummary.text);
+    target.searchParams.set("style_summary_fallback", String(styleSummary.fallbackUsed));
+  }
   window.location.href = target.toString();
 }
 
 function scheduleEndingScreen(outcome, reason) {
-  window.setTimeout(() => openEndingScreen(outcome, reason), ENDING_SCREEN.delayMs);
+  const waitsForJumpscare = outcome === "lose" && reason === "sanity";
+  const delayMs = waitsForJumpscare ? 4200 : RESULT_SCENE.clearDelayMs;
+  window.setTimeout(() => showResultScene(outcome, reason), delayMs);
 }
 
 function getEndingScreenState(result) {
@@ -1460,15 +1598,14 @@ function formatTurnBriefing(result) {
 function endGameIfNeeded(result) {
   if (result?.seal?.success) {
     setTurnState("\uBD09\uC778 \uC131\uACF5");
-    showPlayerLog("[\uC2B9\uB9AC]\n" + OFFICIAL_ENDING_TEXT.win, { allowCorruption: false, channel: "system" });
     stopClock();
     return true;
   }
 
   if (state.sanity <= 0) {
     setTurnState("\uC774\uC131 \uBD95\uAD34");
-    showPlayerLog("[\uD328\uBC30]\n" + OFFICIAL_ENDING_TEXT.loseSanity, { allowCorruption: false, channel: "system" });
-    scheduleDefeatJumpscare();
+    dom.frame?.classList.add("is-sanity-collapse");
+    scheduleDefeatJumpscare(3000);
     stopClock();
     return true;
   }
@@ -1478,15 +1615,12 @@ function endGameIfNeeded(result) {
 
   if (curseDefeat) {
     setTurnState("\uC800\uC8FC \uC7A0\uC2DD");
-    showPlayerLog("[\uD328\uBC30]\n" + OFFICIAL_ENDING_TEXT.loseCurse, { allowCorruption: false, channel: "system" });
-    scheduleDefeatJumpscare();
     stopClock();
     return true;
   }
 
   if (state.turn > GAME_RULES.maxTurn) {
     setTurnState("12\uD134 \uC885\uB8CC");
-    showPlayerLog("[\uD328\uBC30]\n" + OFFICIAL_ENDING_TEXT.loseTurns, { allowCorruption: false, channel: "system" });
     stopClock();
     return true;
   }
@@ -1544,7 +1678,7 @@ async function runTurnSequence(actionKey, options = {}) {
 
   state.playerActionHistory.push(actionKey);
   state.turn += 1;
-  state.soulfire = clamp(state.soulfire + 2, 0, GAME_RULES.maxSoulfire);
+  recoverSoulfireForNextTurn();
   state.phase = "ready";
   state.isSubmitting = false;
   renderAll();
@@ -1691,14 +1825,14 @@ function bindEvents() {
   });
 
   dom.frame?.addEventListener("click", (event) => {
-    if (!state.advanceResolver && !isLogVisible()) return;
+    if (!state.resultAwaitingAdvance && !state.advanceResolver && !isLogVisible()) return;
     event.preventDefault();
     event.stopPropagation();
     advanceLogSequence();
   }, true);
 
   window.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" && (state.advanceResolver || isLogVisible())) {
+    if (event.key === "Enter" && (state.resultAwaitingAdvance || state.advanceResolver || isLogVisible())) {
       event.preventDefault();
       advanceLogSequence();
     }
@@ -1752,6 +1886,7 @@ function resetDemoGame() {
     logAwaitingAdvance: false,
     turnEndAwaitingAdvance: false,
     dialogueArchive: [],
+    llmUiTexts: [],
     clockPausedByJournal: false,
     clockWasRunningBeforeHidden: false,
     clockRenderCache: {
@@ -1760,6 +1895,9 @@ function resetDemoGame() {
       expired: false,
       tooltip: ""
     },
+    resultShown: false,
+    resultAwaitingAdvance: false,
+    pendingEnding: null,
     isSubmitting: false,
     remainingSeconds: GAME_RULES.timerSeconds,
     advanceResolver: null
@@ -1776,6 +1914,13 @@ function resetDemoGame() {
     dom.defeatJumpscare.hidden = true;
     dom.defeatJumpscare.classList.remove("is-active");
   }
+  if (dom.resultScene) {
+    dom.resultScene.hidden = true;
+    dom.resultScene.classList.remove("is-active");
+    dom.resultScene.setAttribute("aria-hidden", "true");
+    delete dom.resultScene.dataset.outcome;
+  }
+  dom.frame?.classList.remove("is-ending", "is-ending-clear", "is-ending-lose", "is-sanity-collapse");
   renderAll();
   resetClock();
   setTurnState("");
@@ -1809,6 +1954,12 @@ window.gamePrototypeState = {
   },
   setSealInterference(value) {
     state.sealInterferenceLevel = clamp(value, 0, 2);
+  },
+  setLlmUiTexts(entries) {
+    applyLlmUiTexts(entries);
+  },
+  clearLlmUiTexts() {
+    applyLlmUiTexts([]);
   },
   applyJournalRecord,
   applyTurnStateChanges,
