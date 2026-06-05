@@ -53,6 +53,7 @@ class OfficialFixtureContractTest(unittest.TestCase):
         self.assertEqual("dry_run", result["metadata"]["reason"])
         self.assertIn("mirror_surface", result["metadata"]["user_prompt"])
         self.assertIn("거울 표면에 남은 손자국", result["metadata"]["user_prompt"])
+        self.assertIn("right_apparition_message", result["metadata"]["user_prompt"])
 
 
 if __name__ == "__main__":

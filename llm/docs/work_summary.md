@@ -209,7 +209,7 @@ llm/docs/frontend_handoff.md
 확인할 것:
 
 - 실제 사용할 `display_slot` 값 목록
-- `turn_flavor_text` 20-90자, 1-2줄, 줄당 45자 기준이 UI에 맞는지
+- `turn_flavor_text` 10-60자, 1-2줄, 줄당 40자 기준이 UI에 맞는지
 - `\n` 줄바꿈을 그대로 렌더링할지
 - `enabled=false`일 때 LLM 영역을 숨길지, `publicLog.text`를 같은 위치에 보여줄지
 - LLM 응답이 턴 결과와 같이 내려올지, 늦게 따로 도착할지
@@ -243,7 +243,7 @@ llm = generate_llm_ui_text("turn_flavor_text", turn_payload)
 
 - 실제 프론트 화면에서 괴이 반응 문구가 너무 길거나 겹치지 않는지
 - `right_apparition_message`에서 피티 목소리가 충분히 살아나는지
-- `left_system_message`, `center_system_message`에서 괴이 직접 발화가 과하지 않은지
+- `left_protagonist_message`, `center_system_message`에서 괴이 직접 발화가 과하지 않은지
 - Groq 호출 결과가 guardrail 실패로 자주 떨어지는 케이스가 있는지
 
 ### 4. 스토리 확정 후 fixture 업데이트

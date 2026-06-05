@@ -41,6 +41,15 @@ class GuardrailContractTest(unittest.TestCase):
 
         self.assertEqual([], violations)
 
+    # 프론트 화면 상한을 넘는 턴 연출 문구는 표시 전에 막는다.
+    def test_turn_flavor_text_rejects_frontend_length_overflow(self) -> None:
+        generation_input = _generation_input("turn_flavor_text.official.sample.json")
+        text = "거울 표면에 남은 손자국이 차갑게 번지고, 식은 손끝의 기척이 벽면을 따라 아주 길게 이어졌다."
+
+        violations = validate_output(generation_input, text)
+
+        self.assertIn("line_length_violation", violations)
+
     # 입력 로그에 있는 "진실" 표현은 운영자 로그 요약에서 허용한다.
     def test_match_log_summary_allows_truth_word_when_it_exists_in_payload(self) -> None:
         generation_input = _generation_input("match_log_summary.sample.json")

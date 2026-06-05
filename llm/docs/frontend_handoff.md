@@ -128,12 +128,12 @@ const resultText =
 
 | 항목 | 기준 |
 |---|---|
-| 전체 길이 | 20-90자 |
+| 전체 길이 | 10-60자 |
 | 줄 수 | 1-2줄 |
-| 줄당 길이 | 45자 이하 |
+| 줄당 길이 | 40자 이하 |
 | 줄바꿈 | `\n` 포함 가능 |
 
-프론트 UI에서 이 기준이 너무 길거나 짧으면 LLM 쪽 기준을 조정할 수 있다.
+프론트 프로토타입 기준으로 권장 글자 수는 40자 이내이며, 60자를 절대 상한으로 둔다.
 
 ## display_slot 후보
 
@@ -141,7 +141,7 @@ const resultText =
 
 | display_slot | 용도 후보 |
 |---|---|
-| `left_system_message` | 플레이어 쪽 시스템 문구 |
+| `left_protagonist_message` | 플레이어 쪽 주인공 로그 |
 | `right_apparition_message` | 괴이 반응 문구 |
 | `center_system_message` | 중앙 강조 문구 |
 

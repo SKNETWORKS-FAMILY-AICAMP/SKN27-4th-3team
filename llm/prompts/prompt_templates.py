@@ -193,6 +193,7 @@ def build_turn_flavor_text_input(payload: dict[str, Any]) -> dict[str, Any]:
 - 괴이 이름은 apparition_alias가 있을 때만 짧게 사용할 수 있다.
 - display_slot이 괴이 반응 위치이면 피티의 페르소나 기준을 따른다.
 - display_slot이 `right_apparition_message`이면 짧은 1인칭/2인칭 속삭임처럼 쓸 수 있다.
+- 프론트 화면에서는 `right_apparition_message`가 LLM 우선 적용 위치다.
 - display_slot이 시스템 위치이면 괴이가 직접 말하기보다 장면 묘사로 쓴다.
 - “발견되었습니다”, “제공합니다” 같은 안내문 투를 쓰지 않는다.
 - “드러났다”, “밝혀졌다”처럼 판정처럼 보이는 표현을 남발하지 않는다.
@@ -215,8 +216,8 @@ def build_turn_flavor_text_input(payload: dict[str, Any]) -> dict[str, Any]:
 
 출력은 1~2줄로 작성한다.
 따옴표, 번호, markdown 없이 문구만 출력한다.
-전체 20~90자로 작성한다.
-각 줄은 45자 이하로 작성한다."""
+전체 10~60자로 작성한다.
+각 줄은 40자 이하로 작성한다."""
     return {
         "purpose": "turn_flavor_text",
         "system_prompt": base_system_prompt(

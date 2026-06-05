@@ -57,7 +57,7 @@ UNSUPPORTED_TRUTH_WORDS = {"비밀", "진실", "드러났다", "밝혀졌다", "
 
 TEXT_LIMITS = {
     "result_summary": {"min_chars": 80, "max_chars": 240, "min_sentences": 2, "max_sentences": 4},
-    "turn_flavor_text": {"min_chars": 20, "max_chars": 90, "min_lines": 1, "max_lines": 2, "max_line_chars": 45},
+    "turn_flavor_text": {"min_chars": 10, "max_chars": 60, "min_lines": 1, "max_lines": 2, "max_line_chars": 40},
     "style_summary": {"min_chars": 40, "max_chars": 120, "min_sentences": 1, "max_sentences": 2},
     "match_log_summary": {"min_lines": 3, "max_lines": 5, "max_line_chars": 100},
 }

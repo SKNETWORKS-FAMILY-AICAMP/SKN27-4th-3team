@@ -221,7 +221,7 @@ Groq adapter는 내부적으로 아래 형태의 chat completion 요청으로 �
   "enabled": false,
   "purpose": "turn_flavor_text",
   "text": null,
-  "display_slot": "left_system_message",
+  "display_slot": "left_protagonist_message",
   "fallback_used": true,
   "generation_id": null,
   "context_refs": [],
@@ -295,7 +295,7 @@ adapter 또는 후처리 단계에서는 아래 항목을 점검한다.
 | purpose | 길이 제한 | 구조 제한 |
 |---|---|---|
 | `result_summary` | 80-240자 | 2-4문장 |
-| `turn_flavor_text` | 20-90자 | 1-2줄, 줄당 45자 이하 |
+| `turn_flavor_text` | 10-60자 | 1-2줄, 줄당 40자 이하 |
 | `style_summary` | 40-120자 | 1-2문장 |
 | `match_log_summary` | 3-5줄 | 줄당 100자 이하 |
 
