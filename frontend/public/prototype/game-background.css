@@ -1061,6 +1061,14 @@ body {
   font: inherit;
 }
 
+.card-info-target small {
+  display: block;
+  min-height: 2.7em;
+  color: rgba(207, 194, 166, 0.76);
+  font-size: clamp(10px, 0.78vw, 12px);
+  line-height: 1.35;
+}
+
 .card-stats {
   display: flex;
   gap: 12px;
@@ -1115,7 +1123,7 @@ body {
 }
 
 .card-button:disabled {
-  cursor: wait;
+  cursor: not-allowed;
   opacity: 0.48;
 }
 
@@ -3345,6 +3353,54 @@ body {
   animation: ritualFade 720ms ease-out forwards;
 }
 
+.guard-ward {
+  position: absolute;
+  left: 50%;
+  bottom: 13%;
+  z-index: 35;
+  width: min(46vw, 660px);
+  height: min(23vw, 250px);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-50%) scale(0.96);
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at 50% 52%, transparent 0 54%, rgba(226, 221, 190, 0.16) 55%, transparent 58%),
+    radial-gradient(ellipse at 50% 52%, rgba(238, 232, 198, 0.07), transparent 62%);
+  box-shadow:
+    inset 0 0 24px rgba(236, 230, 200, 0.08),
+    0 0 22px rgba(226, 221, 190, 0.1);
+  filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.74));
+}
+
+.guard-ward::before,
+.guard-ward::after {
+  content: "";
+  position: absolute;
+  inset: 10% 8%;
+  border-radius: 50%;
+  border: 1px solid rgba(230, 224, 195, 0.2);
+}
+
+.guard-ward::after {
+  inset: 21% 22%;
+  border-color: rgba(230, 224, 195, 0.12);
+  transform: rotate(-7deg);
+}
+
+.guard-ward.is-held {
+  opacity: 0.42;
+  transform: translateX(-50%) scale(1);
+}
+
+.guard-ward.is-activating {
+  animation: guardWardForm 1100ms ease-out forwards;
+}
+
+.guard-ward.is-breaking {
+  animation: guardWardBreak 920ms ease-out forwards;
+}
+
 @keyframes ritualFade {
   0% { opacity: 0; }
   18% { opacity: 1; }
@@ -3385,6 +3441,45 @@ body {
   0% { opacity: 0; transform: scale(0.68) rotate(-4deg); }
   32% { opacity: 1; }
   100% { opacity: 0; transform: scale(1.18) rotate(3deg); }
+}
+
+@keyframes guardWardForm {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.72);
+    filter: blur(1px) drop-shadow(0 0 8px rgba(0, 0, 0, 0.8));
+  }
+
+  36% {
+    opacity: 0.92;
+    transform: translateX(-50%) scale(1.06);
+    filter: blur(0) drop-shadow(0 0 14px rgba(218, 210, 170, 0.28));
+  }
+
+  100% {
+    opacity: 0.42;
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+@keyframes guardWardBreak {
+  0% {
+    opacity: 0.86;
+    transform: translateX(-50%) scale(1);
+    clip-path: inset(0 0 0 0);
+  }
+
+  45% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.08) skewX(-2deg);
+    clip-path: polygon(0 0, 42% 0, 36% 100%, 0 100%, 0 0, 58% 0, 100% 0, 100% 100%, 63% 100%);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scale(1.2) skewX(3deg);
+    clip-path: polygon(0 0, 22% 0, 12% 100%, 0 100%, 0 0, 78% 0, 100% 0, 100% 100%, 86% 100%);
+  }
 }
 
 @media (max-width: 760px) {
@@ -4009,9 +4104,52 @@ body {
 
 .ritual-tools {
   bottom: 6.9%;
-  width: min(49%, 660px);
+  width: min(62%, 850px);
   height: 19.8%;
   overflow: visible;
+}
+
+.ritual-tool,
+.black-candle,
+.salt-dish,
+.nail-pin,
+.name-slip,
+.mirror-shard,
+.thread-coil {
+  width: 13.2%;
+}
+
+.salt-dish {
+  display: block;
+  left: 17.3%;
+  --card-tilt: -3.8deg;
+  transform: rotate(var(--card-tilt));
+}
+
+.black-candle {
+  left: 0;
+  --card-tilt: -6deg;
+}
+
+.nail-pin {
+  left: 34.6%;
+  --card-tilt: -1.4deg;
+}
+
+.name-slip {
+  left: 51.9%;
+  --card-tilt: 1deg;
+}
+
+.mirror-shard {
+  left: 69.2%;
+  --card-tilt: 3.4deg;
+}
+
+.thread-coil {
+  left: 86.5%;
+  right: auto;
+  --card-tilt: 5.8deg;
 }
 
 .ritual-tool::before {
@@ -4053,42 +4191,32 @@ body {
 }
 
 .defeat-jumpscare {
-  background:
-    radial-gradient(ellipse at center, rgba(82, 82, 86, 0.18) 0 20%, rgba(0, 0, 0, 0.42) 50%, rgba(0, 0, 0, 0.92) 100%);
+  background: transparent;
 }
 
 .defeat-jumpscare-figure {
-  width: min(39vw, 430px);
+  width: min(58vw, 720px);
   aspect-ratio: 1;
-  border-radius: 50%;
-  overflow: hidden;
-  background:
-    radial-gradient(ellipse at 50% 40%, transparent 0 44%, rgba(0, 0, 0, 0.26) 68%, rgba(0, 0, 0, 0.78) 100%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.46)),
-    url("assets/ghost-jumpscare-face.png") center 24% / 132% auto no-repeat;
-  box-shadow:
-    inset 0 0 52px rgba(0, 0, 0, 0.82),
-    inset 0 0 0 2px rgba(210, 210, 200, 0.05),
-    0 0 44px rgba(0, 0, 0, 0.9);
-  filter:
-    grayscale(1)
-    contrast(1.36)
-    brightness(0.86);
-  transform: scale(0.12) translateY(20%);
+  border-radius: 0;
+  overflow: visible;
+  background: url("assets/ghost-jumpscare-face.png") center center / contain no-repeat;
+  box-shadow: none;
+  filter: none;
+  transform: scale(0.16) translateY(10%);
 }
 
 @keyframes testJumpscareApproach {
   0% {
     opacity: 0;
-    transform: scale(0.16) translateY(22%);
+    transform: scale(0.18) translateY(10%);
   }
   44% {
-    opacity: 0.98;
-    transform: scale(0.82) translateY(3%);
+    opacity: 1;
+    transform: scale(0.92) translateY(0);
   }
   100% {
     opacity: 1;
-    transform: scale(2.85) translateY(-2%);
+    transform: scale(1.85) translateY(-2%);
   }
 }
 
@@ -4116,7 +4244,7 @@ body {
 
   .ritual-tools {
     bottom: 7%;
-    width: 60%;
+    width: 74%;
   }
 }
 
@@ -4818,7 +4946,7 @@ body {
 }
 
 .game-frame.is-ending-clear > :not(.result-scene) {
-  animation: clearSceneRelease 9000ms ease-in-out forwards;
+  animation: clearSceneRelease 6000ms ease-in-out forwards;
 }
 
 .game-frame.is-ending-lose > :not(.result-scene) {
@@ -4881,7 +5009,7 @@ body {
 }
 
 .result-scene[data-outcome="clear"].is-active {
-  animation: clearBackdropIn 9000ms ease-in-out forwards;
+  animation: clearBackdropIn 6000ms ease-in-out forwards;
 }
 
 .result-scene[data-outcome="clear"].is-active::before {
@@ -4923,6 +5051,95 @@ body {
 
 .result-scene[data-outcome="clear"].is-active img {
   animation: clearImageFadeIn 8600ms ease-in-out forwards 400ms;
+}
+
+/* Seal card: appears only after three true-name pieces, then releases a wave from the card itself. */
+.seal-invocation {
+  left: 2.2%;
+  right: auto;
+  top: 50%;
+  width: clamp(84px, 8.2vw, 118px);
+  transform: translateY(-50%);
+}
+
+.seal-invocation img {
+  position: relative;
+  z-index: 1;
+  filter:
+    contrast(1.04)
+    brightness(0.96)
+    drop-shadow(0 10px 12px rgba(0, 0, 0, 0.72))
+    drop-shadow(0 0 14px rgba(86, 155, 255, 0.18));
+}
+
+.seal-invocation span,
+.seal-invocation small {
+  display: none;
+}
+
+.seal-invocation.is-casting {
+  pointer-events: none;
+}
+
+.seal-invocation.is-casting img {
+  animation: sealCardPulse 1500ms ease-out forwards;
+}
+
+.seal-invocation.is-casting::before,
+.seal-invocation.is-casting::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 0;
+  width: 64%;
+  aspect-ratio: 1;
+  border: 2px solid rgba(118, 196, 255, 0.72);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0.18);
+  box-shadow:
+    0 0 22px rgba(100, 176, 255, 0.42),
+    inset 0 0 18px rgba(148, 118, 255, 0.22);
+  opacity: 0;
+  animation: sealWaveExpand 1500ms ease-out forwards;
+}
+
+.seal-invocation.is-casting::after {
+  border-color: rgba(165, 118, 255, 0.62);
+  animation-delay: 220ms;
+}
+
+@keyframes sealCardPulse {
+  0% {
+    filter: brightness(1) drop-shadow(0 0 12px rgba(86, 155, 255, 0.24));
+    transform: scale(1);
+  }
+
+  34% {
+    filter: brightness(1.35) drop-shadow(0 0 34px rgba(116, 190, 255, 0.7));
+    transform: scale(1.08);
+  }
+
+  100% {
+    filter: brightness(1.05) drop-shadow(0 0 22px rgba(116, 190, 255, 0.36));
+    transform: scale(1);
+  }
+}
+
+@keyframes sealWaveExpand {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.18);
+  }
+
+  20% {
+    opacity: 0.95;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(5.8);
+  }
 }
 
 @keyframes gameSceneFadeOut {

@@ -9,10 +9,11 @@
   <link rel="preload" as="image" href="assets/table-extracted.png" fetchpriority="high">
   <link rel="preload" as="image" href="assets/ghost-mirror-presence.png">
   <link rel="preload" as="image" href="assets/ghost-jumpscare-face.png">
-  <link rel="preload" as="image" href="assets/clear.png">
-  <link rel="preload" as="image" href="assets/game over.png">
+  <link rel="preload" as="image" href="assets/clear_.png">
+  <link rel="preload" as="image" href="assets/gameover_.png">
   <link rel="preload" as="image" href="assets/hud-lantern.png">
   <link rel="preload" as="image" href="assets/action-card-silence.png">
+  <link rel="preload" as="image" href="assets/action-card-guard.png">
   <link rel="preload" as="image" href="assets/action-card-contract.png">
   <link rel="preload" as="image" href="assets/action-card-curse.png">
   <link rel="preload" as="image" href="assets/action-card-insight.png">
@@ -91,7 +92,7 @@
     </section>
 
     <button type="button" class="seal-invocation" data-action="seal" aria-label="진명 선언 사용">
-      <img src="assets/seal-card.png" alt="" width="256" height="356" decoding="async">
+      <img src="assets/seal-card.png" alt="" width="280" height="500" decoding="async">
       <span>진명</span>
       <small data-seal-reason>진명 3/3 필요</small>
     </button>
@@ -119,8 +120,8 @@
         <div class="ritual-tool black-candle" role="button" tabindex="0" data-action="silence" data-label="검은 날개 / 침묵" aria-label="검은 날개, 침묵 카드">
           <img src="assets/action-card-silence.png" alt="" width="280" height="500" decoding="async">
         </div>
-        <div class="ritual-tool salt-dish" role="button" tabindex="0" data-action="guard" data-label="수호" aria-label="소금 접시">
-          <img src="assets/salt-dish.png" alt="" width="256" height="256" decoding="async">
+        <div class="ritual-tool salt-dish" role="button" tabindex="0" data-action="guard" data-label="방어진을 든 순례자 / 수호" aria-label="방어진을 든 순례자, 수호 카드">
+          <img src="assets/action-card-guard.png" alt="" width="280" height="500" decoding="async">
         </div>
         <div class="ritual-tool nail-pin" role="button" tabindex="0" data-action="curse" data-label="가시 십자가 / 저주" aria-label="가시 십자가, 저주 카드">
           <img src="assets/action-card-curse.png" alt="" width="280" height="500" decoding="async">
@@ -131,7 +132,7 @@
         <div class="ritual-tool mirror-shard" role="button" tabindex="0" data-action="insight" data-label="뿔의 왕 / 간파" aria-label="뿔의 왕, 간파 카드">
           <img src="assets/action-card-insight.png" alt="" width="280" height="500" decoding="async">
         </div>
-        <div class="ritual-tool thread-coil" role="button" tabindex="0" data-action="deceive" data-label="뒤틀린 고목 / 기만" aria-label="뒤틀린 고목, 기만 카드">
+        <div class="ritual-tool thread-coil" role="button" tabindex="0" data-action="deceive" data-label="뒤틀린 고목 / 속임수" aria-label="뒤틀린 고목, 속임수 카드">
           <img src="assets/action-card-deceive.png" alt="" width="280" height="500" decoding="async">
         </div>
       </div>
@@ -199,6 +200,7 @@
           <label class="card-info-target" data-card-info-target-wrap hidden>
             <span>조사 대상</span>
             <select data-card-info-target></select>
+            <small data-card-info-target-note></small>
           </label>
           <dl class="card-stats">
             <div>
@@ -227,7 +229,7 @@
     </section>
 
     <section class="result-scene" data-result-scene hidden aria-hidden="true">
-      <img data-result-image src="assets/clear.png" alt="" width="1332" height="768" decoding="async">
+      <img data-result-image src="assets/clear_.png" alt="" width="1332" height="768" decoding="async">
     </section>
 
     <section class="clue-journal" data-clue-journal aria-label="기록서">
@@ -260,7 +262,7 @@
 
           <div class="journal-page left-page">
             <section class="journal-section case-note">
-              <h2>사건 파일: 무명(無名)의 저주</h2>
+              <h2>사건 파일</h2>
               <p>이안은 피 묻은 곰 인형과 낯선 미소로 아침을 맞았다. 다락방 일기장은 오래 닫힌 방, 금이 간 거울, 그리고 비어 있는 기록을 가리킨다.</p>
             </section>
 
@@ -320,7 +322,7 @@
             </section>
 
             <section class="journal-section">
-              <h2>거짓으로 밝혀진 단서</h2>
+              <h2>거짓 단서</h2>
               <ul class="revealed-false-list" data-false-clues>
                 <li>아직 없다.</li>
               </ul>

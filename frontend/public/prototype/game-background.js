@@ -22,8 +22,8 @@ const GAME_RULES = {
 };
 
 const RESULT_SCENE = {
-  clearImage: "assets/clear.png",
-  gameOverImage: "assets/game over.png",
+  clearImage: "assets/clear_.png",
+  gameOverImage: "assets/gameover_.png",
   clearDelayMs: 0,
   gameOverDelayMs: 2700
 };
@@ -53,14 +53,14 @@ const ACTION_CARDS = {
   },
   guard: {
     title: "수호",
-    kicker: "소금 접시",
+    kicker: "방어진을 든 순례자",
     cost: 1,
     type: "방어",
-    symbol: "소금",
-    image: "assets/salt-dish.png",
+    symbol: "방어진",
+    image: "assets/action-card-guard.png",
     desc: "저주 피해를 줄이고 보호막을 얻는다.",
-    playerLine: "여기서 멈춰. 이 몸은 네 것이 아니야.",
-    briefing: "소금의 선이 탁자 위에 번진다. 은도금 거울 가장자리에서 서늘한 균열이 잠시 멈춘다."
+    playerLine: "방어진을 세운다. 여기서 더는 빼앗기지 않는다.",
+    briefing: "두 손 사이에 낡은 방어진이 떠오른다. 빛은 약하지만, 저주의 길목을 잠시 막아낸다."
   },
   curse: {
     title: "저주",
@@ -129,6 +129,21 @@ const ENEMY_ACTIONS = [
 ];
 
 const CARD_VISUAL_COPY = {
+  guard: {
+    card: {
+      title: "수호",
+      kicker: "방어진을 든 순례자",
+      symbol: "방어진",
+      image: "assets/action-card-guard.png",
+      playerLine: "방어진을 세운다. 여기서 더는 빼앗기지 않는다.",
+      briefing: "수호의 그림, 두 손 사이에 낡은 방어진이 떠오른다. 빛은 약하지만 저주의 길목을 잠시 막아낸다."
+    },
+    enemy: {
+      label: "수호 / 방어진",
+      action: "괴이 행동: 수호 / 방어진",
+      line: "닫힌 곳은 조용해. 아무것도 쉽게 지나오지 못해."
+    }
+  },
   silence: {
     card: {
       title: "침묵",
@@ -191,16 +206,16 @@ const CARD_VISUAL_COPY = {
   },
   deceive: {
     card: {
-      title: "기만",
+      title: "속임수",
       kicker: "달을 삼킨 나무",
       symbol: "고목",
-      desc: "기만 카드. 뒤틀린 고목의 그림자가 거울의 시선을 흐려, 거짓 문장으로 괴이의 판단을 흔든다.",
-      playerLine: "기만을 펼친다. 뒤틀린 고목이 달을 가린다. 이번에는 네가 잘못된 길을 보게 될 거다.",
-      briefing: "기만의 그림, 뒤틀린 고목이 달빛을 갈라 먹는다. 카드 속 고목의 그림자가 책상 위로 번지자 거울 안쪽의 시선이 엉뚱한 문장을 따라 흔들린다."
+      desc: "속임수 카드. 뒤틀린 고목의 그림자가 거울의 시선을 흐려, 거짓 문장으로 괴이의 판단을 흔든다.",
+      playerLine: "속임수를 펼친다. 뒤틀린 고목이 달을 가린다. 이번에는 네가 잘못된 길을 보게 될 거다.",
+      briefing: "속임수의 그림, 뒤틀린 고목이 달빛을 갈라 먹는다. 카드 속 고목의 그림자가 책상 위로 번지자 거울 안쪽의 시선이 엉뚱한 문장을 따라 흔들린다."
     },
     enemy: {
-      label: "기만 / 뒤틀린 고목",
-      action: "괴이 행동: 기만 / 뒤틀린 고목",
+      label: "속임수 / 뒤틀린 고목",
+      action: "괴이 행동: 속임수 / 뒤틀린 고목",
       line: "나무가 휘어진 게 아니야. 네 기억이 휘어진 거지."
     }
   }
@@ -213,18 +228,88 @@ Object.entries(CARD_VISUAL_COPY).forEach(([key, copy]) => {
 });
 
 const ACTION_RULE_NOTES = {
-  curse: "비용 2. 상대 이성 2 감소.",
-  guard: "비용 1. 저주 피해 2 감소, 보호막 1 획득.",
-  insight: "비용 1. 단서 판별 또는 상대 행동 성향 일부 확인.",
-  deceive: "비용 1. 거짓 단서 생성, 간파 방해.",
-  silence: "비용 0. 정보 공개 차단, 다음 턴 의식력 +1.",
-  contract: "비용 3. 성공 시 진명 조각 또는 비밀 노출도 +1."
+  curse: "비용 2. 상대 이성을 2 깎는다. 수호를 만나면 피해는 0이 되고 상대에게 보호막이 남는다.",
+  guard: "비용 1. 저주를 받아내면 피해를 0으로 만들고 보호막 1을 얻는다. 보호막은 다음 저주 피해 2를 막고 소모된다.",
+  insight: "비용 1. 단서를 판별하거나 괴이의 다음 행동 성향 일부를 확인한다. 속임수와 맞서면 확률 판정을 거친다.",
+  deceive: "비용 1. 거짓 단서를 남겨 간파를 흔든다. 간파에 걸리면 차단될 수 있다.",
+  silence: "비용 0. 정보 공개를 막고 다음 턴 의식력을 1 더 회복한다. 직접 피해를 막지는 못한다.",
+  contract: "비용 3. 성공하면 진명 조각 후보 또는 비밀 노출도 1을 얻는다. 저주나 속임수에 방해받으면 실패할 수 있다."
 };
 
 Object.entries(ACTION_RULE_NOTES).forEach(([key, note]) => {
   if (!ACTION_CARDS[key]) return;
   ACTION_CARDS[key].desc = note;
 });
+
+const COMPATIBILITY_PUBLIC_LOGS = {
+  curse: {
+    curse: "두 저주가 정면으로 부딪혔다. 주사위 결과가 의식의 방향을 갈랐다.",
+    guard: "수호가 저주를 받아냈다. 방어자의 주변에 옅은 막이 남았다.",
+    insight: "간파가 완성되기 전에 저주가 파고들었다. 단서는 흐려졌지만 저주의 흔적은 남았다.",
+    deceive: "거짓 기척 사이로 저주가 스쳤다. 완전히 꿰뚫지는 못했지만 흔적은 남았다.",
+    silence: "침묵은 저주를 막지 못했다. 조용한 의식장에 균열이 번졌다.",
+    contract: "계약이 맺어지기 전에 저주가 끼어들었다. 대가는 허공으로 흩어졌다.",
+    seal: "봉인의 문장이 흔들렸다. 저주가 의식의 틈을 물고 늘어졌다."
+  },
+  guard: {
+    curse: "수호가 저주를 받아냈다. 방어자의 주변에 옅은 막이 남았다.",
+    guard: "두 수호가 빈 의식장을 감쌌지만, 막아낼 저주는 오지 않았다.",
+    insight: "간파는 방어의 흔적만 읽어냈다. 진명은 드러나지 않았다.",
+    deceive: "수호는 잘못된 위협을 향했다. 그 틈에 거짓 단서가 의식장에 섞였다.",
+    silence: "수호는 허공을 지켰고, 침묵은 다음 의식을 준비했다.",
+    contract: "수호는 계약을 완전히 막지 못했다. 그러나 새겨진 이름은 아직 온전하지 않았다.",
+    seal: "수호의 막은 봉인의 문장을 막지 못했다. 의식은 계속 이어졌다."
+  },
+  insight: {
+    curse: "간파가 완성되기 전에 저주가 파고들었다. 단서는 흐려졌지만 저주의 흔적은 남았다.",
+    guard: "간파는 방어의 흔적만 읽어냈다. 진명은 드러나지 않았다.",
+    insight: "서로가 서로를 읽으려 했다. 답은 나오지 않았지만 의심만 짙어졌다.",
+    deceive: "간파가 거짓 기척을 더듬었다. 진실과 속임수 중 하나가 모습을 드러냈다.",
+    silence: "침묵은 답을 내놓지 않았다. 대신 다음 의식의 방향이 조금 좁혀졌다.",
+    contract: "계약의 빈틈이 드러났다. 맺어지지 못한 대가가 계약자에게 되돌아갔다.",
+    seal: "간파가 봉인의 문장을 흔들었다. 의식의 약한 획이 드러났다."
+  },
+  deceive: {
+    curse: "거짓 기척 사이로 저주가 스쳤다. 완전히 꿰뚫지는 못했지만 흔적은 남았다.",
+    guard: "수호는 잘못된 위협을 향했다. 그 틈에 거짓 단서가 의식장에 섞였다.",
+    insight: "간파가 거짓 기척을 더듬었다. 진실과 속임수 중 하나가 모습을 드러냈다.",
+    deceive: "거짓과 거짓이 겹쳤다. 아무 단서도 남지 않았지만 서로를 향한 의심은 짙어졌다.",
+    silence: "속임수는 침묵 속에서 방향을 잃었다. 조용한 쪽만 다음 의식을 준비했다.",
+    contract: "거짓된 조건이 계약을 더럽혔다. 대가는 맺어지지 않았고 흔적만 남았다.",
+    seal: "거짓 단서가 봉인의 문장을 비틀었다. 의식은 잘못된 이름을 붙잡고 무너졌다."
+  },
+  silence: {
+    curse: "침묵은 저주를 막지 못했다. 조용한 의식장에 균열이 번졌다.",
+    guard: "수호는 허공을 지켰고, 침묵은 다음 의식을 준비했다.",
+    insight: "침묵은 답을 내놓지 않았다. 대신 다음 의식의 방향이 조금 좁혀졌다.",
+    deceive: "속임수는 침묵 속에서 방향을 잃었다. 조용한 쪽만 다음 의식을 준비했다.",
+    silence: "아무 말도 오가지 않았다. 그러나 양쪽 모두 다음 의식을 위한 힘을 모았다.",
+    contract: "침묵은 계약을 방해하지 못했다. 말 없는 대가가 의식장에 새겨졌다.",
+    seal: "침묵이 봉인의 마지막 음절을 삼켰다. 그래도 문장은 아직 이어질 수 있었다."
+  },
+  contract: {
+    curse: "계약이 맺어지기 전에 저주가 끼어들었다. 대가는 허공으로 흩어졌다.",
+    guard: "수호는 계약을 완전히 막지 못했다. 그러나 새겨진 이름은 아직 온전하지 않았다.",
+    insight: "계약의 빈틈이 드러났다. 맺어지지 못한 대가가 계약자에게 되돌아갔다.",
+    deceive: "거짓된 조건이 계약을 더럽혔다. 대가는 맺어지지 않았고 흔적만 남았다.",
+    silence: "침묵은 계약을 방해하지 못했다. 말 없는 대가가 의식장에 새겨졌다.",
+    contract: "두 계약이 서로의 대가를 갉아먹었다. 이름은 완성되지 않았고 흔적만 깊어졌다.",
+    seal: "계약의 대가가 봉인보다 먼저 도착했다. 문장은 끊어졌고 계약자에게 흔적이 남았다."
+  },
+  seal: {
+    curse: "저주가 봉인의 문장을 흔들었다. 그러나 이름이 충분하다면 의식은 닫힐 수 있었다.",
+    guard: "수호의 막은 봉인의 문장을 막지 못했다. 의식은 계속 이어졌다.",
+    insight: "간파가 봉인의 약한 획을 건드렸다. 그래도 문장은 아직 완성될 수 있었다.",
+    deceive: "거짓 단서가 봉인의 문장을 비틀었다. 의식은 잘못된 이름을 붙잡고 무너졌다.",
+    silence: "침묵이 봉인의 마지막 음절을 삼켰다. 그래도 문장은 아직 이어질 수 있었다.",
+    contract: "계약의 대가가 봉인보다 먼저 도착했다. 문장은 끊어졌고 계약자에게 흔적이 남았다.",
+    seal: "두 봉인의 문장이 동시에 떠올랐다. 조건을 갖춘 쪽의 의식만 완성된다."
+  }
+};
+
+function getCompatibilityPublicLog(playerAction, enemyAction) {
+  return COMPATIBILITY_PUBLIC_LOGS[playerAction]?.[enemyAction] || "";
+}
 
 const FALSE_CLUE_RULES = [
   {
@@ -246,11 +331,31 @@ const FALSE_CLUE_RULES = [
 ];
 
 const INFO_TARGETS = [
-  { key: "attic_diary", label: "다락방의 낡은 일기장" },
-  { key: "truth_mirror", label: "안방의 은도금 거울" },
-  { key: "stitched_mouth", label: "닫힌 입가의 형상" },
-  { key: "bloodied_teddy", label: "피 묻은 곰 인형" },
-  { key: "ian_reflection", label: "이안의 일그러진 반사" }
+  {
+    key: "attic_diary",
+    label: "다락방의 낡은 일기장",
+    note: "기록 계열 대상. 계약은 진명 조각 후보를 찾고, 간파는 단서의 신뢰도를 확인한다."
+  },
+  {
+    key: "truth_mirror",
+    label: "안방의 은도금 거울",
+    note: "거울 계열 대상. 계약은 이름의 흔적을 더듬고, 간파는 거짓 단서 여부를 가른다."
+  },
+  {
+    key: "stitched_mouth",
+    label: "닫힌 입가의 형상",
+    note: "침묵 계열 대상. 계약은 말하지 못한 이름에 접근하고, 간파는 다음 징후를 좁힌다."
+  },
+  {
+    key: "bloodied_teddy",
+    label: "피 묻은 곰 인형",
+    note: "사건 흔적 대상. 간파는 단서처럼 보이는 흔적이 봉인에 도움이 되는지 판별한다."
+  },
+  {
+    key: "ian_reflection",
+    label: "이안의 일그러진 반사",
+    note: "자기 인식 대상. 반복 조사하면 금기 위반과 거짓 단서 위험이 커진다."
+  }
 ];
 
 const OFFICIAL_ENDING_TEXT = {
@@ -283,6 +388,20 @@ const TRUTH_PIECES = [
 
 function getInfoTargetLabel(key) {
   return INFO_TARGETS.find((target) => target.key === key)?.label || key || "없음";
+}
+
+function getInfoTargetNote(key) {
+  return INFO_TARGETS.find((target) => target.key === key)?.note || "조사 대상을 선택해야 행동을 사용할 수 있다.";
+}
+
+function formatTurnRecordLine(record = {}) {
+  const parts = [`${record.turn || "?"}턴`];
+  if (record.infoTargetKey) parts.push(getInfoTargetLabel(record.infoTargetKey));
+  if (record.tabooViolation) parts.push("금기 흔들림");
+  if (record.journalEntry) parts.push(record.journalEntry);
+  else if (record.changesSummary) parts.push(`변화 ${record.changesSummary}`);
+  if (Array.isArray(record.events) && record.events.length) parts.push(record.events.join(" / "));
+  return parts.join(": ");
 }
 
 const dom = {
@@ -589,8 +708,9 @@ function renderJournal() {
       ? state.turnRecords.slice(-8).map((record) => {
         const target = record.infoTargetKey ? ` <span>${getInfoTargetLabel(record.infoTargetKey)}</span>` : "";
         const taboo = record.tabooViolation ? " <em>금기 흔들림</em>" : "";
-        const events = record.events?.length ? `<small>${record.events.join(" / ")}</small>` : "";
-        return `<li><strong>${record.turn}턴</strong>${target}${taboo}${events}</li>`;
+        const entry = record.journalEntry ? `<p>${record.journalEntry}</p>` : "";
+        const summary = record.practicalSummary ? `<small>${record.practicalSummary}</small>` : "";
+        return `<li><strong>${record.turn}턴</strong>${target}${taboo}${entry}${summary}</li>`;
       }).join("")
       : "<li>아직 기록된 턴이 없다.</li>";
   }
@@ -637,12 +757,30 @@ function renderToolAvailability() {
   });
 }
 
+function renderGuardWard() {
+  if (!dom.guardWard) return;
+  dom.guardWard.classList.toggle("is-held", state.shield > 0);
+}
+
+function pulseGuardWard(mode = "active") {
+  if (!dom.guardWard) return;
+  const className = mode === "break" ? "is-breaking" : "is-activating";
+  dom.guardWard.classList.remove("is-activating", "is-breaking");
+  void dom.guardWard.offsetWidth;
+  dom.guardWard.classList.add(className);
+  window.setTimeout(() => {
+    dom.guardWard?.classList.remove(className);
+    renderGuardWard();
+  }, mode === "break" ? 920 : 1100);
+}
+
 function renderAll() {
   renderHud();
   renderSealState();
   renderJournal();
   renderJournalNavigation();
   renderToolAvailability();
+  renderGuardWard();
 }
 
 function getJournalSectionTitle(section, index) {
@@ -766,6 +904,9 @@ function getActionValidation(actionKey) {
   if (actionKey === "seal" && state.trueNamePieces < GAME_RULES.sealRequiredTrueNamePieces) {
     return { canUse: false, reason: `진명 조각 3/3 필요. 현재 ${state.trueNamePieces}/3.` };
   }
+  if ((actionKey === "insight" || actionKey === "contract") && !state.selectedInfoTargetKey) {
+    return { canUse: false, reason: "조사 대상을 먼저 선택해야 한다." };
+  }
   if (card.cost > state.soulfire) {
     return { canUse: false, reason: `의식력이 부족하다. 필요 ${card.cost}, 현재 ${state.soulfire}.` };
   }
@@ -786,6 +927,16 @@ function playRitualEffect(actionKey, source = "player") {
   dom.ritualEffect._effectTimer = window.setTimeout(() => {
     dom.ritualEffect.className = "ritual-effect";
   }, 900);
+}
+
+function playSealReleaseEffect() {
+  if (!dom.sealInvocation) return;
+  dom.sealInvocation.classList.remove("is-casting");
+  void dom.sealInvocation.offsetWidth;
+  dom.sealInvocation.classList.add("is-casting");
+  window.setTimeout(() => {
+    dom.sealInvocation?.classList.remove("is-casting");
+  }, 1800);
 }
 
 function getCorruptedActionDesc(desc) {
@@ -812,6 +963,7 @@ function openActionCard(actionKey, sourceElement) {
   const cardWarning = dom.actionCard.querySelector("[data-card-warning]");
   const infoTargetWrap = dom.actionCard.querySelector("[data-card-info-target-wrap]");
   const infoTargetSelect = dom.actionCard.querySelector("[data-card-info-target]");
+  const infoTargetNote = dom.actionCard.querySelector("[data-card-info-target-note]");
   const useButton = dom.actionCard.querySelector("[data-card-use]");
   const needsInfoTarget = actionKey === "insight" || actionKey === "contract";
 
@@ -829,27 +981,38 @@ function openActionCard(actionKey, sourceElement) {
     cardArt.style.setProperty("--card-image", `url("${card.image}")`);
     cardArt.classList.toggle("has-image", Boolean(card.image));
   }
-  if (cardWarning) {
-    cardWarning.textContent = validation.reason;
-    cardWarning.hidden = validation.canUse;
-  }
   if (infoTargetWrap && infoTargetSelect) {
     infoTargetWrap.hidden = !needsInfoTarget;
     if (needsInfoTarget) {
-      infoTargetSelect.innerHTML = INFO_TARGETS
+      state.selectedInfoTargetKey = "";
+      const selectedKey = state.selectedInfoTargetKey;
+      infoTargetSelect.innerHTML = `<option value="">조사 대상을 선택</option>` + INFO_TARGETS
         .map((target) => `<option value="${target.key}">${target.label}</option>`)
         .join("");
-      state.selectedInfoTargetKey = state.selectedInfoTargetKey || getInfoTargetKey(actionKey);
-      infoTargetSelect.value = state.selectedInfoTargetKey;
+      infoTargetSelect.value = selectedKey;
+      if (infoTargetNote) infoTargetNote.textContent = getInfoTargetNote(selectedKey);
       infoTargetSelect.onchange = () => {
         state.selectedInfoTargetKey = infoTargetSelect.value;
+        const nextValidation = getActionValidation(actionKey);
+        if (infoTargetNote) infoTargetNote.textContent = getInfoTargetNote(state.selectedInfoTargetKey);
+        if (cardWarning) {
+          cardWarning.textContent = nextValidation.reason;
+          cardWarning.hidden = nextValidation.canUse;
+        }
+        if (useButton) useButton.disabled = !nextValidation.canUse;
       };
     } else {
       state.selectedInfoTargetKey = "";
       infoTargetSelect.onchange = null;
+      if (infoTargetNote) infoTargetNote.textContent = "";
     }
   }
-  if (useButton) useButton.disabled = !validation.canUse;
+  const finalValidation = getActionValidation(actionKey);
+  if (cardWarning) {
+    cardWarning.textContent = finalValidation.reason;
+    cardWarning.hidden = finalValidation.canUse;
+  }
+  if (useButton) useButton.disabled = !finalValidation.canUse;
 
   state.selectedAction = actionKey;
   dom.actionCard.dataset.selectedAction = actionKey;
@@ -860,12 +1023,26 @@ function isLogVisible() {
   return Boolean(state.logAwaitingAdvance || state.turnEndAwaitingAdvance);
 }
 
-function trimLogText(text) {
-  return String(text || "")
+function trimLogText(text, {
+  maxLines = 2,
+  keepLabels = false,
+  prioritizeChanges = false
+} = {}) {
+  const lines = String(text || "")
     .split("\n")
-    .map((line) => line.replace(/^\[[^\]]+\]\s*/, "").trim())
-    .filter(Boolean)
-    .slice(0, 2)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  let selected = lines;
+  if (prioritizeChanges) {
+    const changeLine = lines.find((line) => line.startsWith("[변화]"));
+    const otherLines = lines.filter((line) => line !== changeLine).slice(0, Math.max(1, maxLines - 1));
+    selected = changeLine ? [...otherLines, changeLine] : lines;
+  }
+
+  return selected
+    .slice(0, maxLines)
+    .map((line) => keepLabels ? line : line.replace(/^\[[^\]]+\]\s*/, "").trim())
     .join("\n");
 }
 
@@ -877,7 +1054,12 @@ function pushDialogueLog(side, speaker, text, mode = "clean") {
       : dom.protagonistLogStack;
   if (!stack) return;
 
-  const cleanText = trimLogText(text);
+  const isSystem = side === "system";
+  const cleanText = trimLogText(text, {
+    maxLines: isSystem ? 3 : 2,
+    keepLabels: isSystem,
+    prioritizeChanges: isSystem
+  });
   stack.replaceChildren();
 
   const entry = document.createElement("article");
@@ -972,6 +1154,12 @@ function hidePlayerLog() {
 function waitForAdvance() {
   return new Promise((resolve) => {
     state.advanceResolver = resolve;
+  });
+}
+
+function waitMs(duration) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, duration);
   });
 }
 
@@ -1076,7 +1264,7 @@ function openEndingScreen(outcome, reason) {
   target.searchParams.set("truth", `${state.trueNamePieces}/${GAME_RULES.sealRequiredTrueNamePieces}`);
   target.searchParams.set("sanity", `${state.sanity}/${GAME_RULES.maxSanity}`);
   target.searchParams.set("curse", `${state.curse}/${GAME_RULES.maxCurseTrace}`);
-  target.searchParams.set("log", state.turnRecords.slice(-4).join(" | "));
+  target.searchParams.set("log", state.turnRecords.slice(-4).map(formatTurnRecordLine).join(" | "));
   if (resultSummary.text) {
     target.searchParams.set("result_summary", resultSummary.text);
     target.searchParams.set("result_summary_fallback", String(resultSummary.fallbackUsed));
@@ -1102,7 +1290,7 @@ function getEndingScreenState(result) {
 
   if (state.sanity <= 0) return { outcome: "lose", reason: "sanity" };
   if (curseDefeat) return { outcome: "lose", reason: "curse" };
-  if (state.turn > GAME_RULES.maxTurn) return { outcome: "lose", reason: "turns" };
+  if (state.turn >= GAME_RULES.maxTurn) return { outcome: "lose", reason: "turns" };
   return { outcome: "unfinished", reason: "unknown" };
 }
 
@@ -1153,11 +1341,11 @@ function getInfoTargetKey(playerAction) {
   }
 
   if (playerAction === "insight") {
-    return state.trueNamePieces >= 2 ? "forgotten_room" : "mirror_back";
+    return "";
   }
 
   if (playerAction === "contract") {
-    return state.trueNamePieces >= 2 ? "forgotten_room" : "missing_child_voice";
+    return "";
   }
 
   if (playerAction === "deceive") {
@@ -1212,6 +1400,9 @@ function resolveTableStateChanges(playerAction, enemy, isTimeout) {
   const infoTargetKey = getInfoTargetKey(playerAction);
   const isInfoAction = playerAction === "insight" || playerAction === "contract";
   const tabooViolation = Boolean(infoTargetKey && state.lastInfoTargetKey === infoTargetKey);
+  const partialBefore = state.partialTrueName;
+  const trueNamePiecesBefore = state.trueNamePieceIds.length;
+  const suspicionBefore = state.suspicion;
   let sanityDelta = 0;
   let soulfireDelta = -card.cost + 1;
   let curseDelta = 0;
@@ -1223,6 +1414,8 @@ function resolveTableStateChanges(playerAction, enemy, isTimeout) {
   const revealedFalseClues = [];
   const turnEvents = [];
   const enemyAction = enemy.key;
+  let probabilityCheck = null;
+  let diceCheck = null;
 
   const addFalseClueFromRule = (source, target = infoTargetKey || "mirror_back") => {
     const clue = addSuspectClue(pickFalseClue(target), source);
@@ -1254,8 +1447,16 @@ function resolveTableStateChanges(playerAction, enemy, isTimeout) {
   const resolveInsightDeceiveCheck = () => {
     const successRate = Math.min(80, 50 + state.suspicion * 10);
     const roll = ((state.turn * 37 + state.suspicion * 11) % 100) + 1;
+    const success = roll <= successRate;
+    probabilityCheck = {
+      type: "insight_deceive",
+      suspicionBefore: state.suspicion,
+      successRate,
+      roll,
+      success
+    };
     state.suspicion = 0;
-    if (roll <= successRate) {
+    if (success) {
       const revealed = revealSuspectFalseClue(infoTargetKey);
       if (revealed) revealedFalseClues.push(revealed);
       turnEvents.push("간파가 속임수의 결을 붙잡았다. 거짓 기척 하나가 힘을 잃었다.");
@@ -1285,6 +1486,12 @@ function resolveTableStateChanges(playerAction, enemy, isTimeout) {
       if (enemyAction === "curse") {
         const playerRoll = ((state.turn * 3) % 6) + 1;
         const enemyRoll = ((state.turn * 5 + 1) % 6) + 1;
+        diceCheck = {
+          type: "curse_clash",
+          playerRoll,
+          enemyRoll,
+          winner: playerRoll === enemyRoll ? "tie" : (playerRoll > enemyRoll ? "player" : "enemy")
+        };
         sanityDelta -= 1;
         if (enemyRoll > playerRoll) sanityDelta -= 1;
         turnEvents.push(`두 저주가 정면으로 부딪혔다. 주사위 ${playerRoll}:${enemyRoll}.`);
@@ -1297,6 +1504,17 @@ function resolveTableStateChanges(playerAction, enemy, isTimeout) {
       if (enemyAction === "curse") {
         shieldAfter = 1;
         shieldGranted = true;
+        turnEvents.push("수호가 저주를 받아냈다. 보호막이 다음 저주 피해를 막을 준비를 했다.");
+      } else if (enemyAction === "guard") {
+        turnEvents.push("양측의 수호가 빈 의식판 위에서 사라졌다. 직접 효과는 없었다.");
+      } else if (enemyAction === "insight") {
+        turnEvents.push("괴이가 수호의 흔적만 읽었다. 진명 조각은 드러나지 않았다.");
+      } else if (enemyAction === "silence") {
+        turnEvents.push("수호는 침묵을 막지 못했다. 침묵은 다음 의식을 준비했다.");
+      } else if (enemyAction === "contract") {
+        turnEvents.push("수호는 계약을 완전히 막지 못했다. 불완전한 진명 진척이 남았다.");
+      } else if (enemyAction === "seal") {
+        turnEvents.push("수호는 봉인의 문장을 막지 못했다.");
       }
       if (enemyAction === "deceive" && addFalseClueFromRule("deceive_vs_guard")) {
         turnEvents.push("수호가 잘못된 위협을 향했다. 의심 단서 하나가 남았다.");
@@ -1410,8 +1628,11 @@ function resolveTableStateChanges(playerAction, enemy, isTimeout) {
       delta: tableCurseAfter - state.curse
     },
     shield: shieldAfter,
+    partialTrueNameBefore: partialBefore,
     partialTrueName: partialAfter,
+    trueNamePiecesBefore,
     suspicion: state.suspicion,
+    suspicionBefore,
     trueNamePieceIds,
     trueNamePieces: trueNamePieceIds.length,
     clues,
@@ -1422,6 +1643,8 @@ function resolveTableStateChanges(playerAction, enemy, isTimeout) {
     tabooViolation,
     turnEvents,
     nextEnemyCandidates,
+    probabilityCheck,
+    diceCheck,
     shieldGranted,
     shieldConsumed,
     sealInterference,
@@ -1441,8 +1664,11 @@ function getPatternHint(playerAction) {
   return "거울 안쪽의 것은 이안의 반복된 의식에 반응하기 시작했다. 같은 선택의 틈을 기억한다.";
 }
 
-function createPrototypeTurnResult(playerAction, { timeout = false } = {}) {
-  const enemy = pickPrototypeEnemyAction(playerAction, timeout);
+function createPrototypeTurnResult(playerAction, { timeout = false, enemyActionKey = null } = {}) {
+  const forcedEnemy = enemyActionKey
+    ? ENEMY_ACTIONS.find((entry) => entry.key === enemyActionKey)
+    : null;
+  const enemy = forcedEnemy || pickPrototypeEnemyAction(playerAction, timeout);
   const card = ACTION_CARDS[playerAction];
   const changes = resolveTableStateChanges(playerAction, enemy, timeout);
   let seal = null;
@@ -1458,6 +1684,7 @@ function createPrototypeTurnResult(playerAction, { timeout = false } = {}) {
     playerAction,
     playerLabel: card.title,
     enemy,
+    publicLog: getCompatibilityPublicLog(playerAction, enemy.key),
     briefing: seal
       ? (seal.success ? "세 조각의 기록이 맞물리고, 이안은 마침내 감춰진 이름을 부른다." : "거울 안쪽의 저항이 진명 선언을 찢어 놓았다.")
       : card.briefing,
@@ -1481,7 +1708,7 @@ function resolveTurnResult(playerAction, options = {}) {
   return requestTurnResult(playerAction, options);
 }
 
-function applyTurnStateChanges(changes = {}) {
+function applyTurnStateChanges(changes = {}, result = null) {
   const applied = {};
 
   if (changes.sanity) {
@@ -1524,10 +1751,16 @@ function applyTurnStateChanges(changes = {}) {
     turn: state.turn,
     infoTargetKey: changes.lastInfoTargetKey || "",
     tabooViolation: Boolean(changes.tabooViolation),
+    journalEntry: resolveJournalTurnEntry(result, changes),
+    journalEntrySource: getJournalTurnEntrySource(result, changes),
+    practicalSummary: formatJournalPracticalSummary(result, changes),
+    changesSummary: formatResourceChangesReadable(changes),
     events: changes.turnEvents || []
   });
 
   renderAll();
+  if (changes.shieldConsumed) pulseGuardWard("break");
+  else if (changes.shieldGranted) pulseGuardWard("active");
   return applied;
 }
 
@@ -1582,7 +1815,7 @@ function formatResourceChanges(changes = {}) {
   return lines.length ? lines.join(" / ") : "변화 없음";
 }
 
-function formatTurnBriefing(result) {
+function formatTurnBriefingLegacy(result) {
   const lines = [
     `[행동] 나: ${result.playerLabel} / 괴이: ${result.enemy.label}`,
     `[결과] ${formatResourceChanges(result.stateChanges)}`
@@ -1590,6 +1823,175 @@ function formatTurnBriefing(result) {
 
   if (result.seal) {
     lines.push(`[봉인] 방해 ${result.seal.interference}/2 / ${result.seal.success ? "성공" : "실패"}`);
+  }
+
+  return lines.join("\n");
+}
+
+function formatResourceChangesReadable(changes = {}) {
+  const lines = [];
+  if (changes.sanity?.delta) {
+    lines.push(`이성 ${changes.sanity.before}->${changes.sanity.after}`);
+  }
+  if (changes.soulfire?.delta) {
+    lines.push(`혼불 ${changes.soulfire.before}->${changes.soulfire.after}`);
+  }
+  if (changes.curse?.delta) {
+    lines.push(`저주 ${changes.curse.before}->${changes.curse.after}`);
+  }
+  if (changes.shieldGranted) {
+    lines.push("보호막 +1(다음 턴 종료까지)");
+  } else if (changes.shieldConsumed) {
+    lines.push("보호막 소모");
+  }
+  if (
+    Number.isFinite(changes.partialTrueName)
+    && Number.isFinite(changes.partialTrueNameBefore)
+    && changes.partialTrueName !== changes.partialTrueNameBefore
+  ) {
+    lines.push(`불완전 진명 ${changes.partialTrueNameBefore}->${changes.partialTrueName}/2`);
+  }
+  if (
+    Number.isFinite(changes.trueNamePieces)
+    && Number.isFinite(changes.trueNamePiecesBefore)
+    && changes.trueNamePieces !== changes.trueNamePiecesBefore
+  ) {
+    lines.push(`진명 조각 ${changes.trueNamePiecesBefore}->${changes.trueNamePieces}/3`);
+  }
+  if (Array.isArray(changes.suspectClues) && changes.suspectClues.length) {
+    lines.push(`거짓 단서 +${changes.suspectClues.length}`);
+  }
+  if (Array.isArray(changes.revealedFalseClues) && changes.revealedFalseClues.length) {
+    lines.push(`거짓 단서 제거 ${changes.revealedFalseClues.length}`);
+  }
+  if (
+    Number.isFinite(changes.suspicion)
+    && Number.isFinite(changes.suspicionBefore)
+    && changes.suspicion !== changes.suspicionBefore
+  ) {
+    lines.push(`의심 ${changes.suspicionBefore}->${changes.suspicion}/3`);
+  }
+  if (changes.probabilityCheck?.type === "insight_deceive") {
+    const check = changes.probabilityCheck;
+    lines.push(`간파 판정 ${check.roll}/${check.successRate}% ${check.success ? "성공" : "실패"}`);
+  }
+  if (changes.diceCheck?.type === "curse_clash") {
+    const check = changes.diceCheck;
+    const winner = check.winner === "tie" ? "동률" : (check.winner === "player" ? "이안 우세" : "괴이 우세");
+    lines.push(`저주 주사위 ${check.playerRoll}:${check.enemyRoll} ${winner}`);
+  }
+  return lines.length ? lines.join(" / ") : "변화 없음";
+}
+
+function getActionDisplayName(actionKey, fallback = "알 수 없음") {
+  return ACTION_CARDS[actionKey]?.title || fallback;
+}
+
+function formatJournalPracticalSummary(result = {}, changes = {}) {
+  const playerAction = result?.playerAction || "";
+  const enemyAction = result?.enemy?.key || "";
+  const parts = [
+    `행동: 이안 ${getActionDisplayName(playerAction, result?.playerLabel || "알 수 없음")}, 괴이 ${getActionDisplayName(enemyAction, result?.enemy?.label || "알 수 없음")}`
+  ];
+
+  if (changes.lastInfoTargetKey) {
+    parts.push(`대상: ${getInfoTargetLabel(changes.lastInfoTargetKey)}`);
+  }
+
+  const changeText = formatResourceChangesReadable(changes);
+  if (changeText !== "변화 없음") {
+    parts.push(`변화: ${changeText}`);
+  }
+
+  if (Array.isArray(changes.nextEnemyCandidates) && changes.nextEnemyCandidates.length) {
+    parts.push(`다음 후보: ${changes.nextEnemyCandidates.map((key) => getActionDisplayName(key, key)).join("/")}`);
+  }
+
+  if (changes.sanity?.after <= 4) {
+    parts.push(`위험: 이성 ${changes.sanity.after}/${GAME_RULES.maxSanity}`);
+  }
+
+  if (changes.curse?.after >= 4) {
+    parts.push(`위험: 저주 ${changes.curse.after}/${GAME_RULES.maxCurseTrace}`);
+  }
+
+  if (changes.shieldGranted) {
+    parts.push("수호: 다음 저주 피해 2 차단");
+  } else if (changes.shieldConsumed) {
+    parts.push("수호: 보호막 소모");
+  }
+
+  if (changes.trueNamePieces > changes.trueNamePiecesBefore) {
+    parts.push(`봉인 준비: 진명 ${changes.trueNamePieces}/${GAME_RULES.sealRequiredTrueNamePieces}`);
+  }
+
+  return parts.join(" · ");
+}
+
+function formatDefaultJournalTurnEntry(result = {}, changes = {}) {
+  const playerAction = getActionDisplayName(result?.playerAction, result?.playerLabel || "알 수 없는 행동");
+  const enemyAction = getActionDisplayName(result?.enemy?.key, result?.enemy?.label || "알 수 없는 반응");
+  const target = changes.lastInfoTargetKey ? ` ${getInfoTargetLabel(changes.lastInfoTargetKey)}을 다시 표시해 두었다.` : "";
+  const changeText = formatResourceChangesReadable(changes);
+  const changeSentence = changeText === "변화 없음"
+    ? "겉으로 드러난 변화는 없었지만, 다음 선택을 위해 이 조합을 남긴다."
+    : `${changeText}로 기록한다.`;
+  const hint = Array.isArray(changes.nextEnemyCandidates) && changes.nextEnemyCandidates.length
+    ? ` 다음 괴이의 징후는 ${changes.nextEnemyCandidates.map((key) => getActionDisplayName(key, key)).join(" 또는 ")} 쪽으로 좁혀졌다.`
+    : "";
+
+  return `나는 ${playerAction}을 선택했고, 거울 안쪽은 ${enemyAction}로 응했다.${target} ${changeSentence}${hint}`;
+}
+
+function resolveJournalTurnEntry(result = {}, changes = {}) {
+  const fallback = formatDefaultJournalTurnEntry(result, changes);
+  return resolveLlmDisplayText("journal_turn_entry", null, fallback).text || fallback;
+}
+
+function getJournalTurnEntrySource(result = {}, changes = {}) {
+  const fallback = formatDefaultJournalTurnEntry(result, changes);
+  return resolveLlmDisplayText("journal_turn_entry", null, fallback).source;
+}
+
+function formatTurnBriefingReadable(result, applied) {
+  const sanity = applied?.sanity;
+  const enemyActionName = ACTION_CARDS[result.enemy?.key]?.title || result.enemy?.key || "알 수 없음";
+  if (result.publicLog) {
+    const lines = [
+      `이안: ${result.playerLabel}, ??: ${enemyActionName}`,
+      result.publicLog
+    ];
+    const resourceChanges = formatResourceChangesReadable(result.stateChanges);
+    lines.push(`[변화] ${resourceChanges}`);
+    if (result.seal) {
+      lines.push(`[봉인] 방해 단계 ${result.seal.interference}/2 - ${result.seal.success ? "성공" : "실패"}`);
+    }
+    return lines.join("\n");
+  }
+
+  const lines = [
+    `[공개] 나: ${result.playerLabel} / 괴이: ${result.enemy.label}`,
+    `[판정] ${result.briefing}`,
+    sanity
+      ? `[상태] 이성 ${sanity.before}/${sanity.max} -> ${sanity.after}/${sanity.max} (${sanity.delta > 0 ? "+" : ""}${sanity.delta})`
+      : "[상태] 이성 변화 없음",
+    `[변화] ${formatResourceChangesReadable(result.stateChanges)}`
+  ];
+
+  if (result.seal) {
+    lines.push(`[봉인] 방해 단계 ${result.seal.interference}/2 - ${result.seal.success ? "성공" : "실패"}`);
+  }
+  if (result.stateChanges?.shieldGranted) {
+    lines.push("[수호] 보호막이 형성됐다. 다음 저주 피해 2를 막는다.");
+  }
+  if (result.stateChanges?.shieldConsumed) {
+    lines.push("[수호] 보호막이 저주 피해를 막고 흩어졌다.");
+  }
+  (result.stateChanges?.turnEvents || []).forEach((event) => {
+    lines.push(`[기록] ${event}`);
+  });
+  if (result.patternHint) {
+    lines.push(`[징후] ${result.patternHint}`);
   }
 
   return lines.join("\n");
@@ -1619,7 +2021,7 @@ function endGameIfNeeded(result) {
     return true;
   }
 
-  if (state.turn > GAME_RULES.maxTurn) {
+  if (state.turn >= GAME_RULES.maxTurn) {
     setTurnState("12\uD134 \uC885\uB8CC");
     stopClock();
     return true;
@@ -1637,6 +2039,7 @@ async function runTurnSequence(actionKey, options = {}) {
 
   state.isSubmitting = true;
   state.phase = "waiting";
+
   if (options.timeout) state.timeoutCount += 1;
   if (actionKey === "seal") showSealInterference(state.sealInterferenceLevel);
   else hideSealInterference();
@@ -1644,13 +2047,16 @@ async function runTurnSequence(actionKey, options = {}) {
   setTurnState(options.timeout ? "침묵 처리" : "결과 대기");
   hideActionCard();
   playRitualEffect(actionKey);
+  if (actionKey === "seal") playSealReleaseEffect();
   showPlayerLog(options.timeout ? "시간이 다했다. 검은 초가 먼저 침묵을 선언한다." : card.playerLine, { allowCorruption: !options.timeout });
 
   await waitForAdvance();
   hidePlayerLog();
 
   const result = await resolveTurnResult(actionKey, options);
-  const applied = applyTurnStateChanges(result.stateChanges);
+  if (Array.isArray(result.llm_ui_texts)) applyLlmUiTexts(result.llm_ui_texts);
+  if (Array.isArray(result.llmUiTexts)) applyLlmUiTexts(result.llmUiTexts);
+  const applied = applyTurnStateChanges(result.stateChanges, result);
   state.lastEnemyAction = result.enemy.key;
   playRitualEffect(result.enemy.key, "enemy");
   showEnemyVoice(result.enemy);
@@ -1659,7 +2065,7 @@ async function runTurnSequence(actionKey, options = {}) {
   hideEnemyVoice();
   hideSealInterference();
 
-  showPlayerLog(formatTurnBriefing(result, applied), { allowCorruption: false, channel: "system" });
+  showPlayerLog(formatTurnBriefingReadable(result, applied), { allowCorruption: false, channel: "system" });
   await waitForAdvance();
   hidePlayerLog();
 
@@ -1926,6 +2332,42 @@ function resetDemoGame() {
   setTurnState("");
 }
 
+function testEnding(kind) {
+  resetDemoGame();
+  const key = String(kind || "").toLowerCase();
+
+  if (key === "clear" || key === "win" || key === "seal") {
+    window.gamePrototypeState.setTrueNamePieces(3);
+    return runTurnSequence("seal", { enemyActionKey: "guard" });
+  }
+
+  if (key === "seal-fail" || key === "sealfail") {
+    window.gamePrototypeState.setTrueNamePieces(3);
+    return runTurnSequence("seal", { enemyActionKey: "deceive" });
+  }
+
+  if (key === "sanity" || key === "jumpscare") {
+    window.gamePrototypeState.setSanity(2);
+    return runTurnSequence("silence", { enemyActionKey: "curse" });
+  }
+
+  if (key === "curse") {
+    state.curse = 4;
+    state.selectedInfoTargetKey = "truth_mirror";
+    renderAll();
+    return runTurnSequence("contract", { enemyActionKey: "deceive", ignoreValidation: true });
+  }
+
+  if (key === "turns" || key === "timeout" || key === "turn") {
+    state.turn = GAME_RULES.maxTurn;
+    renderAll();
+    return runTurnSequence("silence", { enemyActionKey: "guard" });
+  }
+
+  console.warn("Unknown ending test. Use clear, seal-fail, sanity, curse, or turns.");
+  return null;
+}
+
 window.gamePrototypeState = {
   state,
   resetDemoGame,
@@ -1961,6 +2403,18 @@ window.gamePrototypeState = {
   clearLlmUiTexts() {
     applyLlmUiTexts([]);
   },
+  setCurse(value) {
+    state.curse = clamp(value, 0, GAME_RULES.maxCurseTrace);
+    renderAll();
+  },
+  setTurn(value) {
+    state.turn = clamp(value, 1, GAME_RULES.maxTurn);
+    renderAll();
+  },
+  setInfoTarget(key) {
+    state.selectedInfoTargetKey = key || "";
+  },
+  testEnding,
   applyJournalRecord,
   applyTurnStateChanges,
   runTurnSequence
