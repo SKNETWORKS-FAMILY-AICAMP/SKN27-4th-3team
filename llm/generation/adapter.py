@@ -32,8 +32,20 @@ DEMO_REFERENCE_NAMES = {"이안", "피티", "피치", "엘리자베스", "무명
 NEGATIVE_RESULT_WORDS = {"패배", "패배했다", "실패했다", "실패로 끝", "실종", "무너졌다", "빼앗겼"}
 POSITIVE_RESULT_WORDS = {"승리", "승리했다", "성공했다", "해방되었다", "봉인했다", "완성되었다"}
 OPS_FORBIDDEN_WORDS = {"보상", "랭킹", "제재", "매칭", "룰 변경", "운영 조치"}
-PERSONALITY_JUDGMENT_WORDS = {"비겁", "잔혹", "악하다", "나약", "정신병", "미친"}
+PERSONALITY_JUDGMENT_WORDS = {
+    "비겁",
+    "비겁했",
+    "잔혹",
+    "악하다",
+    "악했",
+    "나약",
+    "정신병",
+    "미친",
+}
 NEXT_ACTION_WORDS = {"다음 행동", "다음 턴 괴이", "괴이는 다음"}
+ACTION_JUDGMENT_WORDS = {"성공했다", "실패했다", "성공", "실패", "획득했다", "얻었다", "제공했다"}
+UNSUPPORTED_CLUE_WORDS = {"진짜 단서", "거짓 단서", "단서 획득", "단서를 얻", "단서를 제공"}
+UNSUPPORTED_TRUTH_WORDS = {"비밀", "진실", "드러났다", "밝혀졌다", "원인"}
 
 TEXT_LIMITS = {
     "result_summary": {"min_chars": 80, "max_chars": 240, "min_sentences": 2, "max_sentences": 4},
@@ -283,6 +295,8 @@ def validate_output(generation_input: dict[str, Any], text: str) -> list[str]:
         violations.append("personality_judgment")
     if any(word in text for word in NEXT_ACTION_WORDS):
         violations.append("next_action_prediction")
+    if purpose in {"turn_flavor_text", "match_log_summary", "style_summary"}:
+        violations.extend(validate_non_judgmental_text(text))
 
     if purpose == "result_summary":
         match_result = payload["match_result"]
@@ -344,6 +358,16 @@ def validate_output(generation_input: dict[str, Any], text: str) -> list[str]:
             violations.append("unsupported_story_fact")
 
     return sorted(set(violations))
+
+
+# 판정자가 아닌 purpose에서 행동 판정이나 단서 진위를 암시하는 표현을 걸러낸다.
+def validate_non_judgmental_text(text: str) -> list[str]:
+    violations: list[str] = []
+    if any(word in text for word in ACTION_JUDGMENT_WORDS):
+        violations.append("unsupported_action_judgment")
+    if any(word in text for word in UNSUPPORTED_CLUE_WORDS | UNSUPPORTED_TRUTH_WORDS):
+        violations.append("unsupported_story_fact")
+    return violations
 
 
 def count_sentences(text: str) -> int:

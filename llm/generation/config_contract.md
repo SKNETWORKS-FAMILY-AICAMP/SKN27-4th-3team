@@ -41,6 +41,7 @@ LLM_BASE_URL=https://api.groq.com/openai/v1
 LLM_TIMEOUT_SECONDS=30
 LLM_MAX_OUTPUT_TOKENS=400
 LLM_TEMPERATURE=0.4
+LLM_DISABLED=false
 ```
 
 ## Python 로딩 기준

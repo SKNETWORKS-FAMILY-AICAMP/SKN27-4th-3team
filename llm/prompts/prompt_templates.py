@@ -14,6 +14,21 @@ def join_story_result_text(value: Any) -> str:
     return str(value or "")
 
 
+# 결과 요약이 입력에 없는 사건을 만들지 않도록 공개 로그를 짧은 근거 목록으로 변환한다.
+def format_result_turn_logs(turn_logs: list[dict[str, Any]]) -> str:
+    if not turn_logs:
+        return "제공된 턴 공개 로그 없음"
+
+    lines = []
+    for index, item in enumerate(turn_logs, start=1):
+        turn_number = item.get("turn_number", item.get("turn", index))
+        text = item.get("text", item.get("message", item.get("public_log", "")))
+        log_key = item.get("log_key")
+        suffix = f" ({log_key})" if log_key else ""
+        lines.append(f"- {turn_number}턴: {text}{suffix}")
+    return "\n".join(lines)
+
+
 def build_generation_input(payload: dict[str, Any]) -> dict[str, Any]:
     purpose = payload["purpose"]
     if purpose == "result_summary":
@@ -35,6 +50,7 @@ def base_system_prompt(extra: str) -> str:
             "승패, 수치 변화, 진명 조각 획득, 거짓 단서 판정은 새로 판단하지 않는다.",
             "공식 설정이나 룰을 추가하지 않고, 입력에 없는 사실을 만들지 않는다.",
             "데모 스토리 참고 문서는 분위기 참고용이며 입력에 없는 인물명, 사건명, 과거사를 생성하지 않는다.",
+            "출력 문장에 사용할 수 있는 고유명사는 입력에 직접 등장한 것만 사용한다.",
             "출력은 요청된 문구만 작성하고 해설, 사과, 선택지, 제목을 붙이지 않는다.",
             extra,
         ]
@@ -59,6 +75,7 @@ def build_result_summary_input(payload: dict[str, Any]) -> dict[str, Any]:
     match_result = payload["match_result"]
     resources = match_result["final_resources"]
     story_result_text = join_story_result_text(match_result.get("story_result_text"))
+    turn_logs_text = format_result_turn_logs(match_result.get("turn_logs", []))
     user_prompt = f"""아래 서버 결과를 바탕으로 결과 화면용 서사 요약을 작성해줘.
 
 [사건]
@@ -76,10 +93,14 @@ def build_result_summary_input(payload: dict[str, Any]) -> dict[str, Any]:
 [정적 fallback 문장]
 {story_result_text}
 
+[서버 공개 로그 근거]
+{turn_logs_text}
+
 [금지]
 - 승패를 바꾸지 않는다.
 - 수치와 단서 상태를 새로 판단하지 않는다.
 - 공식 설정을 추가하지 않는다.
+- 공개 로그 근거에 없는 행동, 장소, 인물, 원인을 추가하지 않는다.
 - fallback 문장의 결말과 반대되는 분위기를 만들지 않는다.
 
 문체 기준:
@@ -116,6 +137,7 @@ def build_style_summary_input(payload: dict[str, Any]) -> dict[str, Any]:
 - 지표를 새로 계산하지 않는다.
 - 플레이어의 실제 성격을 단정하지 않는다.
 - 승패 원인을 LLM이 판정하지 않는다.
+- 입력 지표에 없는 행동명이나 사건명을 새로 만들지 않는다.
 - 비난, 조롱, 낙인 표현을 쓰지 않는다.
 
 문체 기준:
@@ -158,6 +180,7 @@ def build_turn_flavor_text_input(payload: dict[str, Any]) -> dict[str, Any]:
 - 서버 공개 로그의 의미를 바꾸지 않는다.
 - 행동 성공/실패를 새로 판단하지 않는다.
 - 단서 획득 여부나 진위를 새로 말하지 않는다.
+- 공개 로그에 없는 고유명사, 장소명, 대상명을 추가하지 않는다.
 - 다음 괴이 행동을 예고하지 않는다.
 - 안내문처럼 설명하지 않는다.
 - 질문형이나 추측형으로 쓰지 않는다.
@@ -233,6 +256,7 @@ def build_match_log_summary_input(payload: dict[str, Any]) -> dict[str, Any]:
 [금지]
 - 서버 판정을 바꾸지 않는다.
 - 로그에 없는 행동이나 원인을 만들지 않는다.
+- 로그에 없는 인물명, 장소명, 단서명을 추가하지 않는다.
 - 보상, 랭킹, 매칭 판단을 하지 않는다.
 - 운영 제안이나 개선안을 쓰지 않는다.
 
