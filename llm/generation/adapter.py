@@ -296,7 +296,7 @@ def validate_output(generation_input: dict[str, Any], text: str) -> list[str]:
     if any(word in text for word in NEXT_ACTION_WORDS):
         violations.append("next_action_prediction")
     if purpose in {"turn_flavor_text", "match_log_summary", "style_summary"}:
-        violations.extend(validate_non_judgmental_text(text))
+        violations.extend(validate_non_judgmental_text(text, payload))
 
     if purpose == "result_summary":
         match_result = payload["match_result"]
@@ -360,12 +360,13 @@ def validate_output(generation_input: dict[str, Any], text: str) -> list[str]:
     return sorted(set(violations))
 
 
-# 판정자가 아닌 purpose에서 행동 판정이나 단서 진위를 암시하는 표현을 걸러낸다.
-def validate_non_judgmental_text(text: str) -> list[str]:
+# 판정자가 아닌 purpose에서 입력에 없는 행동 판정이나 단서 진위 표현을 걸러낸다.
+def validate_non_judgmental_text(text: str, payload: dict[str, Any]) -> list[str]:
     violations: list[str] = []
+    payload_text = json.dumps(payload, ensure_ascii=False)
     if any(word in text for word in ACTION_JUDGMENT_WORDS):
         violations.append("unsupported_action_judgment")
-    if any(word in text for word in UNSUPPORTED_CLUE_WORDS | UNSUPPORTED_TRUTH_WORDS):
+    if any(word in text and word not in payload_text for word in UNSUPPORTED_CLUE_WORDS | UNSUPPORTED_TRUTH_WORDS):
         violations.append("unsupported_story_fact")
     return violations
 

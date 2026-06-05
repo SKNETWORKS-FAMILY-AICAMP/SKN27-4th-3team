@@ -39,6 +39,8 @@ type LlmUiText = {
 
 공식 턴 로그를 대체하지 않고, 화면 연출 후보로만 사용한다.
 
+official API 기준 fallback은 `TurnResult.public_log.text`다.
+
 ```ts
 const displayText =
   llm?.enabled && llm.text
@@ -95,6 +97,31 @@ const displayText =
 
 실패 시 프론트는 새 문장을 만들지 않고 서버의 `publicLog.text`를 사용한다.
 
+## official API 기준 표시 위치
+
+결과 화면은 official API의 `MatchResult.llm_summary`를 사용한다.
+
+```ts
+const resultText =
+  result.llm_summary.enabled && result.llm_summary.text
+    ? [result.llm_summary.text]
+    : result.story_result_text;
+```
+
+`turn_flavor_text`는 official API의 `TurnResult` 내부 위치가 아직 확정되지 않았다.
+
+현재 후보:
+
+| 후보 | 프론트 처리 |
+|---|---|
+| `turn_result.llm_text` | `turn_result.llm_text.enabled` 확인 후 표시 |
+| 응답의 별도 `llm` 필드 | `data.llm.enabled` 확인 후 표시 |
+| 별도 LLM 요청 | 로딩 상태와 실패 fallback을 프론트에서 관리 |
+
+현재 LLM 문서의 `LlmUiText` 타입은 별도 `llm` 필드 후보에 가깝다.
+
+확정 전까지 프론트는 `public_log.text`만으로도 턴 화면이 완성되도록 구현한다.
+
 ## 현재 LLM 문구 길이 기준
 
 `turn_flavor_text` 기준:
@@ -128,6 +155,8 @@ const displayText =
 4. `llm.enabled=false`일 때 LLM 영역을 숨길지, `publicLog.text`를 같은 위치에 보여줄지
 5. LLM 응답이 턴 결과와 같이 내려올지, 늦게 따로 도착할지
 6. 로딩 UI가 필요한지
+7. 결과 화면에서 `llm_summary.text`를 `story_result_text` 위에 표시할지, 별도 보조 영역에 표시할지
+8. `turn_flavor_text`를 `TurnResult` 안에 둘지, 응답의 별도 `llm` 필드로 둘지
 7. 개발 중 `fallback_used`, `metadata.error_reason`을 화면에서 확인할 필요가 있는지
 
 ## LLM 팀에 전달해주면 좋은 것
