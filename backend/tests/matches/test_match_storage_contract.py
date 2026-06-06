@@ -65,6 +65,7 @@ def test_match_models_define_approved_tables_and_fields_without_unapproved_forei
         "ActionSubmission",
         "TurnResult",
         "MatchStartRequest",
+        "DuelDialogue",
     ):
         assert f"class {class_name}(models.Model):" in source
 
@@ -77,6 +78,7 @@ def test_match_models_define_approved_tables_and_fields_without_unapproved_forei
     assert "db_table = \"action_submissions\"" in source
     assert "db_table = \"turn_results\"" in source
     assert "db_table = \"match_start_requests\"" in source
+    assert "db_table = \"duel_dialogues\"" in source
     assert "models.ForeignKey" not in source
     assert "on_delete=" not in source
 
@@ -128,6 +130,7 @@ def test_match_models_define_approved_tables_and_fields_without_unapproved_forei
     assert "match_id = models.PositiveBigIntegerField()" in turn_source
     assert "turn_number = models.PositiveIntegerField()" in turn_source
     assert "status = models.TextField(choices=TURN_STATUS_CHOICES)" in turn_source
+    assert "started_at = models.DateTimeField()" in turn_source
     assert "deadline_at = models.DateTimeField()" in turn_source
     assert "resolved_at = models.DateTimeField(null=True, blank=True)" in turn_source
 
@@ -152,6 +155,15 @@ def test_match_models_define_approved_tables_and_fields_without_unapproved_forei
     assert "case_id = models.TextField()" in start_request_source
     assert "match_id = models.PositiveBigIntegerField()" in start_request_source
     assert "created_at = models.DateTimeField(auto_now_add=True)" in start_request_source
+
+    duel_dialogue_source = _class_source(source, "DuelDialogue")
+    assert "match_id = models.PositiveBigIntegerField()" in duel_dialogue_source
+    assert "user_id = models.PositiveBigIntegerField()" in duel_dialogue_source
+    assert "client_nonce = models.UUIDField()" in duel_dialogue_source
+    assert "player_message = models.TextField()" in duel_dialogue_source
+    assert "apparition_message = models.TextField(null=True, blank=True)" in duel_dialogue_source
+    assert "generation_id = models.PositiveBigIntegerField(null=True, blank=True)" in duel_dialogue_source
+    assert "created_at = models.DateTimeField(auto_now_add=True)" in duel_dialogue_source
 
 
 def test_action_submission_nonce_is_unique_in_participant_and_turn_scope_only():

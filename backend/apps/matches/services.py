@@ -1,12 +1,13 @@
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
-from datetime import timedelta
+from datetime import timedelta, timezone as datetime_timezone
 from typing import Any
 from uuid import UUID
 
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
+from backend.apps.ai_profile import services as ai_profile_services
 from backend.apps.accounts import services as auth_services
 from backend.apps.common.exceptions import ApiErrorResponseException
 from backend.apps.game_rules.matchups import (
@@ -54,6 +55,7 @@ from backend.apps.matches.resolution import (
 )
 from backend.apps.matches.models import (
     ActionSubmission,
+    DuelDialogue,
     Match,
     MatchFalseClueOwnership,
     MatchParticipant,
@@ -77,13 +79,18 @@ from backend.apps.story.constants import (
 __all__ = (
     "MATCH_STORAGE_JSON_PAYLOAD_SCHEMA",
     "MatchDetailResult",
+    "DuelDialogueResult",
     "MatchResultResult",
+    "TurnLlmTextResult",
     "TurnSubmitResult",
     "apply_deterministic_false_clue_detection",
     "TurnResolution",
     "get_match_detail",
     "get_match_result",
+    "create_duel_dialogue",
+    "generate_turn_llm_text",
     "parse_public_match_id",
+    "parse_public_turn_id",
     "resolve_ai_story_turn",
     "submit_match_turn",
     "validate_json_snapshot_payload",
@@ -97,8 +104,11 @@ HTTP_403_FORBIDDEN = 403
 HTTP_404_NOT_FOUND = 404
 HTTP_409_CONFLICT = 409
 MATCH_PUBLIC_ID_PREFIX = "match_"
+TURN_PUBLIC_ID_PREFIX = "turn_"
 TURN_RESULT_SCHEMA_VERSION = "turn_result.v1"
 NEXT_TURN_SECONDS = 25
+DUEL_DIALOGUE_LIMIT_PER_MATCH = 8
+DEFAULT_TURN_LLM_DISPLAY_SLOT = "right_apparition_message"
 INFORMATION_ACTION_CODES = frozenset({"insight", "contract", "seal"})
 TRUE_NAME_REVEAL_ACTION_CODES = frozenset({"insight", "contract"})
 SEAL_ACTION_CODE = "seal"
@@ -150,6 +160,16 @@ class MatchDetailResult:
 @dataclass(frozen=True)
 class MatchResultResult:
     result: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class TurnLlmTextResult:
+    llm_text: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class DuelDialogueResult:
+    dialogue: dict[str, Any]
 
 
 @dataclass(frozen=True)
@@ -238,26 +258,128 @@ def get_match_result(
         last_turn=last_turn,
     )
 
-    return MatchResultResult(
-        result={
-            "match_id": _public_id(prefix="match", value=match.id),
-            "result": _match_result(match=match, human_participant=human_participant),
-            "result_reason": result_reason,
-            "case": {
-                "case_id": MIRROR_GUEST_CASE_ID,
-                "title": MIRROR_GUEST_TITLE,
-            },
-            "final_resources": _final_resource_payload(human_participant),
-            "turn_logs": _get_match_turn_logs(match_id=match_id),
-            "story_result_text": list(
-                APPROVED_MIRROR_GUEST_RESULT_TEXT_BY_REASON.get(
-                    result_reason,
-                    APPROVED_MIRROR_GUEST_RESULT_TEXT_BY_REASON[RESULT_REASON_UNRESOLVED],
-                )
-            ),
-            "style_summary": _style_summary_payload(session=session),
-            "llm_summary": llm_services.build_disabled_llm_summary(),
-        }
+    result_payload = {
+        "match_id": _public_id(prefix="match", value=match.id),
+        "result": _match_result(match=match, human_participant=human_participant),
+        "result_reason": result_reason,
+        "case": {
+            "case_id": MIRROR_GUEST_CASE_ID,
+            "title": MIRROR_GUEST_TITLE,
+        },
+        "final_resources": _final_resource_payload(human_participant),
+        "turn_logs": _get_match_turn_logs(match_id=match_id),
+        "story_result_text": list(
+            APPROVED_MIRROR_GUEST_RESULT_TEXT_BY_REASON.get(
+                result_reason,
+                APPROVED_MIRROR_GUEST_RESULT_TEXT_BY_REASON[RESULT_REASON_UNRESOLVED],
+            )
+        ),
+        "style_summary": _style_summary_payload(session=session),
+    }
+    llm_summary = llm_services.generate_result_summary(
+        match_result={**result_payload, "llm_summary": llm_services.build_disabled_llm_summary()},
+        match_id=match.id,
+        user_id=user_id,
+    )
+    result_payload["llm_summary"] = llm_summary
+
+    return MatchResultResult(result=result_payload)
+
+
+def generate_turn_llm_text(
+    *,
+    raw_access_token: str | None,
+    public_match_id: str,
+    public_turn_id: str,
+    display_slot: str | None,
+) -> TurnLlmTextResult:
+    session = auth_services.get_current_session(raw_access_token=raw_access_token)
+    user_id = _session_user_id(session=session)
+    match_id = parse_public_match_id(public_match_id)
+    turn_id = parse_public_turn_id(public_turn_id)
+
+    _get_match(match_id=match_id)
+    _assert_match_access(user_id=user_id, match_id=match_id)
+    turn = _get_turn(turn_id=turn_id)
+    if turn.match_id != match_id:
+        raise _match_not_found()
+
+    turn_result = _get_turn_result_payload(turn_id=turn.id)
+    llm_text = llm_services.generate_turn_flavor_text(
+        turn_result=turn_result,
+        match_id=match_id,
+        turn_id=turn.id,
+        user_id=user_id,
+        display_slot=display_slot or DEFAULT_TURN_LLM_DISPLAY_SLOT,
+        apparition_alias=MIRROR_GUEST_TITLE,
+    )
+    return TurnLlmTextResult(llm_text=llm_text)
+
+
+def create_duel_dialogue(
+    *,
+    raw_access_token: str | None,
+    public_match_id: str,
+    message: str,
+    client_nonce: UUID,
+) -> DuelDialogueResult:
+    session = auth_services.get_current_session(raw_access_token=raw_access_token)
+    user_id = _session_user_id(session=session)
+    match_id = parse_public_match_id(public_match_id)
+    match = _get_match(match_id=match_id)
+    _assert_match_access(user_id=user_id, match_id=match_id)
+
+    existing_dialogue = (
+        DuelDialogue.objects.filter(
+            match_id=match_id,
+            user_id=user_id,
+            client_nonce=client_nonce,
+        )
+        .order_by("id")
+        .first()
+    )
+    if existing_dialogue is not None:
+        return DuelDialogueResult(dialogue=_duel_dialogue_payload(existing_dialogue))
+
+    if _duel_dialogue_count(match_id=match_id, user_id=user_id) >= DUEL_DIALOGUE_LIMIT_PER_MATCH:
+        raise ApiErrorResponseException(
+            "DUEL_DIALOGUE_LIMIT_EXCEEDED",
+            status_code=HTTP_409_CONFLICT,
+        )
+
+    llm_text = llm_services.generate_final_duel_dialogue(
+        match_payload=_duel_match_payload(
+            match=match,
+            match_id=match_id,
+            user_id=user_id,
+        ),
+        player_message=message,
+        match_id=match_id,
+        user_id=user_id,
+    )
+    generation_id = _parse_public_llm_generation_id(llm_text.get("generation_id"))
+    try:
+        dialogue = DuelDialogue.objects.create(
+            match_id=match_id,
+            user_id=user_id,
+            client_nonce=client_nonce,
+            player_message=message,
+            apparition_message=llm_text["text"] if llm_text["enabled"] else None,
+            generation_id=generation_id,
+        )
+    except IntegrityError:
+        existing_dialogue = DuelDialogue.objects.get(
+            match_id=match_id,
+            user_id=user_id,
+            client_nonce=client_nonce,
+        )
+        return DuelDialogueResult(dialogue=_duel_dialogue_payload(existing_dialogue))
+
+    return DuelDialogueResult(
+        dialogue=_duel_dialogue_payload(
+            dialogue,
+            llm_text=llm_text,
+        )
     )
 
 
@@ -403,6 +525,44 @@ def submit_match_turn(
             schema_version=TURN_RESULT_SCHEMA_VERSION,
         )
 
+        acquired_clue_id, clue_truth_state = _first_clue_event(effect_result.clue_delta)
+        ai_profile_event = ai_profile_services.build_action_event_from_turn_resolution(
+            resolution=resolution,
+            user_id=str(user_id),
+            mode=match.mode,
+            match_id=str(match.id),
+            stage_id=1,
+            info_target_key=info_target_key,
+            decision_duration_ms=_decision_duration_ms(
+                started_at=turn.started_at,
+                submitted_at=now,
+            ),
+            sanity_before=player_state_before.sanity,
+            ritual_power_before=player_state_before.ritual_power,
+            curse_marks_before=player_state_before.curse_marks,
+            result_code=_result_code_from_resolution(resolution),
+            acquired_clue_id=acquired_clue_id,
+            clue_truth_state=clue_truth_state,
+        )
+        ai_profile_services.persist_turn_action_event(ai_profile_event)
+        ai_profile_events = ai_profile_services.list_action_events_for_match(
+            user_id=user_id,
+            match_id=match.id,
+        )
+        ai_profile_services.persist_style_snapshot(
+            snapshot=ai_profile_services.calculate_style_snapshot(
+                user_id=str(user_id),
+                events=ai_profile_events,
+            )
+        )
+        if match.status == MATCH_STATUS_RESOLVED:
+            ai_profile_services.persist_final_style_snapshot(
+                snapshot=ai_profile_services.recalculate_final_style_snapshot(
+                    user_id=str(user_id),
+                    events=ai_profile_events,
+                )
+            )
+
         from backend.apps.story.services import format_match_state
 
         return TurnSubmitResult(
@@ -500,6 +660,113 @@ def _public_log_payload(raw_log: Any) -> dict[str, Any] | None:
     }
 
 
+def _get_turn_result_payload(*, turn_id: int) -> dict[str, Any]:
+    turn_result = TurnResult.objects.filter(turn_id=turn_id).order_by("-id").first()
+    if turn_result is None:
+        raise _match_not_found()
+
+    payload = turn_result.result_json.get("turn_result")
+    if not isinstance(payload, Mapping):
+        raise _match_not_found()
+
+    return dict(payload)
+
+
+def _duel_match_payload(
+    *,
+    match: Match,
+    match_id: int,
+    user_id: int,
+) -> dict[str, Any]:
+    human_participant = _get_participant(
+        match_id=match_id,
+        participant_type=PARTICIPANT_TYPE_HUMAN,
+    )
+    current_turn = _get_current_turn(match_id=match_id)
+    recent_public_logs = _get_match_turn_logs(match_id=match_id)[-3:]
+    return {
+        "case": {
+            "case_id": MIRROR_GUEST_CASE_ID,
+            "title": MIRROR_GUEST_TITLE,
+        },
+        "match": {
+            "match_id": _public_id(prefix="match", value=match.id),
+            "turn_number": current_turn.turn_number,
+            "result": _match_result_for_duel(match=match, human_participant=human_participant),
+        },
+        "apparition_alias": MIRROR_GUEST_TITLE,
+        "public_context": {
+            "true_name_fragments": human_participant.true_name_fragments,
+            "curse_marks": human_participant.curse_marks,
+            "sanity": human_participant.sanity,
+            "recent_public_logs": recent_public_logs,
+        },
+    }
+
+
+def _match_result_for_duel(*, match: Match, human_participant: MatchParticipant) -> str:
+    if match.status != MATCH_STATUS_RESOLVED:
+        return RESULT_REASON_UNRESOLVED
+
+    return _match_result(match=match, human_participant=human_participant)
+
+
+def _duel_dialogue_payload(
+    dialogue: DuelDialogue,
+    *,
+    llm_text: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return {
+        "dialogue_id": _public_id(prefix="duel_dialogue", value=dialogue.id),
+        "match_id": _public_id(prefix="match", value=dialogue.match_id),
+        "player_message": dialogue.player_message,
+        "apparition_message": dialogue.apparition_message,
+        "llm_text": llm_text or _stored_duel_llm_text(dialogue),
+        "created_at": _iso_utc(dialogue.created_at),
+    }
+
+
+def _stored_duel_llm_text(dialogue: DuelDialogue) -> dict[str, Any]:
+    enabled = dialogue.apparition_message is not None
+    generation_id = (
+        _public_id(prefix="llm_generation", value=dialogue.generation_id)
+        if enabled and dialogue.generation_id is not None
+        else None
+    )
+    return {
+        "enabled": enabled,
+        "purpose": llm_services.PURPOSE_FINAL_DUEL_DIALOGUE,
+        "text": dialogue.apparition_message,
+        "display_slot": llm_services.DISPLAY_SLOT_DUEL_DIALOGUE,
+        "fallback_used": not enabled,
+        "generation_id": generation_id,
+        "context_refs": [],
+        "metadata": {},
+    }
+
+
+def _duel_dialogue_count(*, match_id: int, user_id: int) -> int:
+    return DuelDialogue.objects.filter(match_id=match_id, user_id=user_id).count()
+
+
+def _parse_public_llm_generation_id(public_generation_id: Any) -> int | None:
+    if public_generation_id is None:
+        return None
+    if not isinstance(public_generation_id, str):
+        return None
+    prefix = "llm_generation_"
+    if not public_generation_id.startswith(prefix):
+        return None
+
+    raw_id = public_generation_id.removeprefix(prefix)
+    try:
+        value = int(raw_id)
+    except ValueError:
+        return None
+
+    return value if value > 0 else None
+
+
 def _style_summary_payload(*, session: auth_services.SessionResult) -> dict[str, Any]:
     style_summary = session.profile.get("style_summary")
     if isinstance(style_summary, Mapping):
@@ -514,20 +781,11 @@ def _style_summary_payload(*, session: auth_services.SessionResult) -> dict[str,
 
 
 def parse_public_match_id(public_match_id: str) -> int:
-    if not isinstance(public_match_id, str):
-        raise _match_not_found()
-    if not public_match_id.startswith(MATCH_PUBLIC_ID_PREFIX):
-        raise _match_not_found()
+    return _parse_public_id(public_match_id, prefix=MATCH_PUBLIC_ID_PREFIX)
 
-    raw_id = public_match_id.removeprefix(MATCH_PUBLIC_ID_PREFIX)
-    try:
-        match_id = int(raw_id)
-    except ValueError as exc:
-        raise _match_not_found() from exc
 
-    if match_id <= 0:
-        raise _match_not_found()
-    return match_id
+def parse_public_turn_id(public_turn_id: str) -> int:
+    return _parse_public_id(public_turn_id, prefix=TURN_PUBLIC_ID_PREFIX)
 
 
 def validate_participant_identity(
@@ -1080,6 +1338,35 @@ def _state_delta(*, before: ResourceState, after: ResourceState) -> dict[str, An
     return result
 
 
+def _first_clue_event(clue_delta: Mapping[str, Any]) -> tuple[str | None, str | None]:
+    for bucket_name in ("added", "revealed"):
+        raw_items = clue_delta.get(bucket_name, ())
+        if not isinstance(raw_items, list):
+            continue
+        for raw_item in raw_items:
+            if not isinstance(raw_item, Mapping):
+                continue
+            clue_id = raw_item.get("clue_id")
+            truth_state = raw_item.get("truth_state")
+            return (
+                str(clue_id) if clue_id is not None else None,
+                str(truth_state) if truth_state is not None else None,
+            )
+
+    return None, None
+
+
+def _decision_duration_ms(*, started_at, submitted_at) -> int:
+    elapsed_seconds = max(0.0, (submitted_at - started_at).total_seconds())
+    return int(elapsed_seconds * 1000)
+
+
+def _result_code_from_resolution(resolution: TurnResolution) -> str:
+    if not resolution.effect_codes:
+        return "no_effect"
+    return resolution.effect_codes[0]
+
+
 def _finish_match_or_create_next_turn(
     *,
     match: Match,
@@ -1106,6 +1393,7 @@ def _finish_match_or_create_next_turn(
         match_id=match.id,
         turn_number=turn.turn_number + 1,
         status=TURN_STATUS_AWAITING_PLAYER,
+        started_at=now,
         deadline_at=now + timedelta(seconds=NEXT_TURN_SECONDS),
     )
 
@@ -1163,6 +1451,23 @@ def _public_id(*, prefix: str, value: int) -> str:
     return f"{prefix}_{value}"
 
 
+def _parse_public_id(public_id: str, *, prefix: str) -> int:
+    if not isinstance(public_id, str):
+        raise _match_not_found()
+    if not public_id.startswith(prefix):
+        raise _match_not_found()
+
+    raw_id = public_id.removeprefix(prefix)
+    try:
+        value = int(raw_id)
+    except ValueError as exc:
+        raise _match_not_found() from exc
+
+    if value <= 0:
+        raise _match_not_found()
+    return value
+
+
 def _get_match(*, match_id: int) -> Match:
     try:
         return Match.objects.get(id=match_id)
@@ -1189,6 +1494,13 @@ def _get_current_turn(*, match_id: int) -> Turn:
     if turn is None:
         raise _match_not_found()
     return turn
+
+
+def _get_turn(*, turn_id: int) -> Turn:
+    try:
+        return Turn.objects.get(id=turn_id)
+    except Turn.DoesNotExist as exc:
+        raise _match_not_found() from exc
 
 
 def _get_participant(*, match_id: int, participant_type: str) -> MatchParticipant:
@@ -1220,6 +1532,12 @@ def _session_user_id(*, session: auth_services.SessionResult) -> int:
             status_code=HTTP_401_UNAUTHORIZED,
         )
     return user_id
+
+
+def _iso_utc(value) -> str | None:
+    if value is None:
+        return None
+    return value.astimezone(datetime_timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 def _match_not_found() -> ApiErrorResponseException:

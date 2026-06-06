@@ -15,6 +15,12 @@ CONCRETE_PATHS = {
     "/api/v1/story/cases/{case_id}/matches": "/api/v1/story/cases/mirror_guest/matches",
     "/api/v1/matches/{match_id}": "/api/v1/matches/match_1",
     "/api/v1/matches/{match_id}/turns": "/api/v1/matches/match_1/turns",
+    "/api/v1/matches/{match_id}/turns/{turn_id}/llm-text": (
+        "/api/v1/matches/match_1/turns/turn_1/llm-text"
+    ),
+    "/api/v1/matches/{match_id}/duel/dialogues": (
+        "/api/v1/matches/match_1/duel/dialogues"
+    ),
     "/api/v1/matches/{match_id}/result": "/api/v1/matches/match_1/result",
 }
 
@@ -30,6 +36,10 @@ EXPECTED_VIEW_CLASSES = {
     ("POST", "/api/v1/story/cases/{case_id}/matches"): "StoryCaseMatchStartView",
     ("GET", "/api/v1/matches/{match_id}"): "MatchDetailView",
     ("POST", "/api/v1/matches/{match_id}/turns"): "TurnSubmitView",
+    ("POST", "/api/v1/matches/{match_id}/turns/{turn_id}/llm-text"): (
+        "TurnLlmTextView"
+    ),
+    ("POST", "/api/v1/matches/{match_id}/duel/dialogues"): "DuelDialogueView",
     ("GET", "/api/v1/matches/{match_id}/result"): "MatchResultView",
     ("GET", "/api/v1/profile/me"): "ProfileMeView",
 }

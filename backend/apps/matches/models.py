@@ -83,6 +83,7 @@ class Turn(models.Model):
     match_id = models.PositiveBigIntegerField()
     turn_number = models.PositiveIntegerField()
     status = models.TextField(choices=TURN_STATUS_CHOICES)
+    started_at = models.DateTimeField()
     deadline_at = models.DateTimeField()
     resolved_at = models.DateTimeField(null=True, blank=True)
 
@@ -132,5 +133,24 @@ class MatchStartRequest(models.Model):
             models.UniqueConstraint(
                 fields=("user_id", "client_request_id"),
                 name="match_start_request_user_client_request_unique",
+            )
+        ]
+
+
+class DuelDialogue(models.Model):
+    match_id = models.PositiveBigIntegerField()
+    user_id = models.PositiveBigIntegerField()
+    client_nonce = models.UUIDField()
+    player_message = models.TextField()
+    apparition_message = models.TextField(null=True, blank=True)
+    generation_id = models.PositiveBigIntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "duel_dialogues"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("match_id", "user_id", "client_nonce"),
+                name="duel_dialogue_match_user_client_nonce_unique",
             )
         ]

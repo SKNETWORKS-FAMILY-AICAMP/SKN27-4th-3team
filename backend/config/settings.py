@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "backend.apps.story.apps.StoryConfig",
     "backend.apps.ai_profile.apps.AIProfileConfig",
     "backend.apps.retrieval.apps.RetrievalConfig",
+    "backend.apps.llm.apps.LlmConfig",
 ]
 
 MIDDLEWARE = [
@@ -123,7 +124,7 @@ CSRF_FAILURE_VIEW = "backend.apps.common.csrf.csrf_failure"
 ACCESS_TOKEN_COOKIE_NAME = "pilot_access"
 REFRESH_TOKEN_COOKIE_NAME = "pilot_refresh"
 ACCESS_TOKEN_COOKIE_PATH = API_PREFIX
-REFRESH_TOKEN_COOKIE_PATH = f"{API_PREFIX}/auth/refresh"
+REFRESH_TOKEN_COOKIE_PATH = f"{API_PREFIX}/auth"
 ACCESS_TOKEN_TTL_SECONDS = 15 * 60
 REFRESH_TOKEN_TTL_SECONDS = 14 * 24 * 60 * 60
 CSRF_HEADER_NAME = "HTTP_X_CSRFTOKEN"

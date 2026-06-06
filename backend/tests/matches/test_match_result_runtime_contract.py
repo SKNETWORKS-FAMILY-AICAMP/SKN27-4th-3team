@@ -226,6 +226,11 @@ def test_match_result_service_builds_official_payload_from_resolved_match(monkey
         lambda *, match_id: turn_logs,
         raising=False,
     )
+    monkeypatch.setattr(
+        match_services.llm_services,
+        "generate_result_summary",
+        lambda **_kwargs: {"enabled": False, "text": None, "generation_id": None},
+    )
 
     result = match_services.get_match_result(
         raw_access_token="access-token",
@@ -282,7 +287,7 @@ def test_match_result_service_rejects_unresolved_match(monkeypatch):
     assert error.value.status_code == 409
 
 
-def test_match_result_llm_boundary_uses_disabled_fallback_without_provider_generation():
+def test_match_result_llm_boundary_generates_summary_after_server_result_payload():
     from pathlib import Path
 
     root_dir = Path(__file__).resolve().parents[3]
@@ -298,9 +303,10 @@ def test_match_result_llm_boundary_uses_disabled_fallback_without_provider_gener
         maxsplit=1,
     )[0]
 
-    assert "def build_disabled_llm_summary(" in llm_services_source
-    assert "llm_services.build_disabled_llm_summary()" in result_source
-    assert "llm.generation" not in llm_services_source
-    assert "generate_llm" not in llm_services_source
-    assert "openai" not in llm_services_source.lower()
-    assert "groq" not in llm_services_source.lower()
+    assert "def generate_result_summary(" in llm_services_source
+    assert "llm_services.generate_result_summary(" in result_source
+    assert "llm_summary = llm_services.generate_result_summary(" in result_source
+    assert "result_payload[\"llm_summary\"] = llm_summary" in result_source
+    assert result_source.index("\"story_result_text\"") < result_source.index(
+        "llm_services.generate_result_summary("
+    )

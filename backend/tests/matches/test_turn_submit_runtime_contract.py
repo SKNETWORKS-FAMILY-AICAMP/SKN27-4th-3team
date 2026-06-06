@@ -278,7 +278,7 @@ def test_turn_submit_decision_constraints_are_encoded_in_source():
         encoding="utf-8"
     )
     turn_submit_source = services_source.split("def submit_match_turn(", maxsplit=1)[1].split(
-        "\n\ndef parse_public_match_id",
+        "\n\ndef _match_result(",
         maxsplit=1,
     )[0]
 

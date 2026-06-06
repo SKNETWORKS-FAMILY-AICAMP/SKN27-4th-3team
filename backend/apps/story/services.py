@@ -243,6 +243,7 @@ def _start_story_case_match_in_transaction(
         match_id=match.id,
         turn_number=1,
         status=TURN_STATUS_AWAITING_PLAYER,
+        started_at=now,
         deadline_at=now + timedelta(seconds=DEFAULT_TURN_SECONDS),
     )
     MatchStartRequest.objects.create(

@@ -108,7 +108,7 @@
       "same_site": "Lax",
       "cookie_paths": {
         "access": "/api/v1",
-        "refresh": "/api/v1/auth/refresh"
+        "refresh": "/api/v1/auth"
       },
       "secure_cookie": {
         "local_dev": false,
@@ -976,6 +976,106 @@
       "schema_status": "approved"
     },
     {
+      "id": "matches.turns.llm_text",
+      "method": "POST",
+      "path": "/api/v1/matches/{match_id}/turns/{turn_id}/llm-text",
+      "auth_required": true,
+      "csrf_required": true,
+      "purpose": "턴 연출 LLM 문구 생성",
+      "success_status": 200,
+      "request": {
+        "path_params": {
+          "match_id": "string",
+          "turn_id": "string"
+        },
+        "query": {},
+        "body": {
+          "display_slot": "string|null"
+        }
+      },
+      "response": {
+        "data": {
+          "llm_text": {
+            "enabled": "boolean",
+            "purpose": "turn_flavor_text",
+            "text": "string|null",
+            "display_slot": "string|null",
+            "fallback_used": "boolean",
+            "generation_id": "string|null",
+            "context_refs": "array",
+            "metadata": "object"
+          }
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "AUTH_REQUIRED",
+        "SESSION_EXPIRED",
+        "CSRF_TOKEN_MISSING",
+        "CSRF_TOKEN_INVALID",
+        "MATCH_NOT_FOUND",
+        "MATCH_ACCESS_DENIED",
+        "VALIDATION_ERROR"
+      ],
+      "schema_status": "approved"
+    },
+    {
+      "id": "matches.duel.dialogues.create",
+      "method": "POST",
+      "path": "/api/v1/matches/{match_id}/duel/dialogues",
+      "auth_required": true,
+      "csrf_required": true,
+      "purpose": "결전 대화 LLM 문구 생성",
+      "success_status": 200,
+      "request": {
+        "path_params": {
+          "match_id": "string"
+        },
+        "query": {},
+        "body": {
+          "message": "string:minLength=1,maxLength=300",
+          "client_nonce": "string:uuid"
+        }
+      },
+      "response": {
+        "data": {
+          "dialogue": {
+            "dialogue_id": "string",
+            "match_id": "string",
+            "player_message": "string",
+            "apparition_message": "string|null",
+            "llm_text": {
+              "enabled": "boolean",
+              "purpose": "final_duel_dialogue",
+              "text": "string|null",
+              "display_slot": "duel_dialogue",
+              "fallback_used": "boolean",
+              "generation_id": "string|null",
+              "context_refs": "array",
+              "metadata": "object"
+            },
+            "created_at": "string:iso-8601-utc"
+          }
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "AUTH_REQUIRED",
+        "SESSION_EXPIRED",
+        "CSRF_TOKEN_MISSING",
+        "CSRF_TOKEN_INVALID",
+        "MATCH_NOT_FOUND",
+        "MATCH_ACCESS_DENIED",
+        "DUEL_DIALOGUE_LIMIT_EXCEEDED",
+        "VALIDATION_ERROR"
+      ],
+      "schema_status": "approved"
+    },
+    {
       "id": "matches.result",
       "method": "GET",
       "path": "/api/v1/matches/{match_id}/result",
@@ -1064,14 +1164,15 @@
     "IDEMPOTENCY_CONFLICT": "동일 idempotency key가 다른 요청 내용으로 재사용되었다.",
     "RATE_LIMITED": "요청 제한에 걸렸다.",
     "LLM_SUMMARY_UNAVAILABLE": "LLM 요약을 사용할 수 없어 정적 문장을 표시해야 한다.",
+    "DUEL_DIALOGUE_LIMIT_EXCEEDED": "결전 대화 생성 제한을 초과했다.",
     "SERVICE_NOT_IMPLEMENTED": "Service is not implemented yet."
   },
   "remaining_decisions": [
     {
       "id": "auth.logout.refresh_family_identification",
       "status": "needs-owner-decision",
-      "reason": "refresh cookie path is /api/v1/auth/refresh, so browsers do not send the refresh token to /api/v1/auth/logout; access token claims do not include family_id under Auth runtime option A",
-      "current_runtime": "auth.logout remains SERVICE_NOT_IMPLEMENTED until the family identification policy is approved"
+      "reason": "refresh cookie now reaches /api/v1/auth/logout, but logout still needs the approved refresh family revoke flow, failure policy, and security event details before implementation",
+      "current_runtime": "auth.logout remains SERVICE_NOT_IMPLEMENTED until the logout revoke policy is approved"
     }
   ]
 }

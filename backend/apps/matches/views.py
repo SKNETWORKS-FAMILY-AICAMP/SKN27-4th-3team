@@ -9,8 +9,12 @@ from backend.apps.common.exceptions import ApiErrorResponseException, ServiceNot
 from backend.apps.common.runtime import api_success_response
 from backend.apps.matches import services as match_services
 from backend.apps.matches.serializers import (
+    DuelDialogueRequestSerializer,
+    DuelDialogueResponseSerializer,
     MatchDetailResponseSerializer,
     MatchResultResponseSerializer,
+    TurnLlmTextRequestSerializer,
+    TurnLlmTextResponseSerializer,
     TurnSubmitRequestSerializer,
     TurnSubmitResponseSerializer,
 )
@@ -61,6 +65,57 @@ class TurnSubmitView(APIView):
                 "match": submit_result.match,
             },
         )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class TurnLlmTextView(APIView):
+    permission_classes = [AllowAny]
+    request_serializer_class = TurnLlmTextRequestSerializer
+    response_serializer_class = TurnLlmTextResponseSerializer
+
+    def post(self, request, match_id: str, turn_id: str):
+        serializer = self.request_serializer_class(data=request.data)
+        if not serializer.is_valid():
+            raise ApiErrorResponseException(
+                "VALIDATION_ERROR",
+                status_code=status.HTTP_400_BAD_REQUEST,
+                details=serializer.errors,
+            )
+
+        llm_result = match_services.generate_turn_llm_text(
+            raw_access_token=request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME),
+            public_match_id=match_id,
+            public_turn_id=turn_id,
+            display_slot=serializer.validated_data.get(
+                "display_slot",
+                "right_apparition_message",
+            ),
+        )
+        return api_success_response(request, {"llm_text": llm_result.llm_text})
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class DuelDialogueView(APIView):
+    permission_classes = [AllowAny]
+    request_serializer_class = DuelDialogueRequestSerializer
+    response_serializer_class = DuelDialogueResponseSerializer
+
+    def post(self, request, match_id: str):
+        serializer = self.request_serializer_class(data=request.data)
+        if not serializer.is_valid():
+            raise ApiErrorResponseException(
+                "VALIDATION_ERROR",
+                status_code=status.HTTP_400_BAD_REQUEST,
+                details=serializer.errors,
+            )
+
+        dialogue_result = match_services.create_duel_dialogue(
+            raw_access_token=request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME),
+            public_match_id=match_id,
+            message=serializer.validated_data["message"],
+            client_nonce=serializer.validated_data["client_nonce"],
+        )
+        return api_success_response(request, {"dialogue": dialogue_result.dialogue})
 
 
 class MatchResultView(APIView):

@@ -25,10 +25,10 @@ EXPECTED_PROJECT_APPS = {
     "backend.apps.story.apps.StoryConfig",
     "backend.apps.ai_profile.apps.AIProfileConfig",
     "backend.apps.retrieval.apps.RetrievalConfig",
+    "backend.apps.llm.apps.LlmConfig",
 }
 
 FORBIDDEN_APP_FRAGMENTS = (
-    "backend.apps.llm",
     "backend.apps.realtime",
     "backend.apps.knowledge",
     "channels",
@@ -99,7 +99,7 @@ def test_settings_keep_approved_api_auth_and_cookie_contracts():
     assert settings.API_PREFIX == "/api/v1"
     assert settings.AUTH_USER_MODEL == "accounts.User"
     assert settings.ACCESS_TOKEN_COOKIE_PATH == "/api/v1"
-    assert settings.REFRESH_TOKEN_COOKIE_PATH == "/api/v1/auth/refresh"
+    assert settings.REFRESH_TOKEN_COOKIE_PATH == "/api/v1/auth"
     assert settings.ACCESS_TOKEN_TTL_SECONDS == 15 * 60
     assert settings.REFRESH_TOKEN_TTL_SECONDS == 14 * 24 * 60 * 60
     assert settings.CSRF_COOKIE_SAMESITE == "Lax"

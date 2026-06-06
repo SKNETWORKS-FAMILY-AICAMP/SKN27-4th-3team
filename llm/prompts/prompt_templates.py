@@ -5,7 +5,13 @@ from __future__ import annotations
 from typing import Any
 
 
-SUPPORTED_PURPOSES = {"result_summary", "turn_flavor_text", "style_summary", "match_log_summary"}
+SUPPORTED_PURPOSES = {
+    "result_summary",
+    "turn_flavor_text",
+    "final_duel_dialogue",
+    "style_summary",
+    "match_log_summary",
+}
 
 
 def join_story_result_text(value: Any) -> str:
@@ -35,6 +41,8 @@ def build_generation_input(payload: dict[str, Any]) -> dict[str, Any]:
         return build_result_summary_input(payload)
     if purpose == "turn_flavor_text":
         return build_turn_flavor_text_input(payload)
+    if purpose == "final_duel_dialogue":
+        return build_final_duel_dialogue_input(payload)
     if purpose == "style_summary":
         return build_style_summary_input(payload)
     if purpose == "match_log_summary":
@@ -224,6 +232,69 @@ def build_turn_flavor_text_input(payload: dict[str, Any]) -> dict[str, Any]:
             "\n".join(
                 [
                     "문장은 짧고 어둡게, 게임 UI 위에 얹히는 속삭임처럼 작성한다.",
+                    apparition_persona_prompt(),
+                ]
+            )
+        ),
+        "user_prompt": user_prompt,
+        "context_refs": [],
+        "payload": payload,
+    }
+
+
+def build_final_duel_dialogue_input(payload: dict[str, Any]) -> dict[str, Any]:
+    case = payload.get("case", {})
+    match = payload.get("match", {})
+    public_context = payload.get("public_context", {})
+    recent_logs = format_result_turn_logs(public_context.get("recent_public_logs", []))
+    player_message = str(payload.get("player_message") or "")
+    apparition_alias = payload.get("apparition_alias")
+
+    user_prompt = f"""아래 공개 상태와 플레이어 입력을 바탕으로 결전 대화의 괴이 응답 한 번을 작성해줘.
+
+[사건]
+- case_id: {case.get("case_id")}
+- title: {case.get("title")}
+
+[match]
+- match_id: {match.get("match_id")}
+- turn_number: {match.get("turn_number")}
+- result: {match.get("result")}
+
+[공개 상태]
+- apparition_alias: {apparition_alias}
+- true_name_fragments: {public_context.get("true_name_fragments")}
+- curse_marks: {public_context.get("curse_marks")}
+- sanity: {public_context.get("sanity")}
+
+[최근 공개 로그]
+{recent_logs}
+
+[플레이어 입력]
+{player_message}
+
+[금지]
+- 승패, 종료 사유, 행동 성공/실패를 새로 판정하지 않는다.
+- 자원 수치, 진명 조각, 거짓 단서, 보상, 퀘스트를 변경하거나 약속하지 않는다.
+- 공개 상태와 최근 공개 로그에 없는 새 사실, 새 인물, 새 장소, 새 원인을 만들지 않는다.
+- 플레이어에게 다음 행동을 지시하거나 정답을 알려주지 않는다.
+- 직접적인 신체 훼손 묘사나 과한 gore 표현을 쓰지 않는다.
+
+[문체]
+- 피티는 거울 속의 손님이다.
+- 짧고 조용한 심리 공포 톤을 유지한다.
+- 이름, 기억, 입술, 유리, 금속 냄새, 시선 같은 감각 이미지를 우선한다.
+- 플레이어 이름은 입력에 있을 때만 사용한다.
+- 출력은 괴이의 응답 문장만 작성한다.
+
+출력은 1~3문장, 40~300자로 작성한다."""
+
+    return {
+        "purpose": "final_duel_dialogue",
+        "system_prompt": base_system_prompt(
+            "\n".join(
+                [
+                    "결전 대화는 게임 상태를 바꾸지 않는 연출 응답이다.",
                     apparition_persona_prompt(),
                 ]
             )
