@@ -1,7 +1,8 @@
 from django.conf import settings
 from django.middleware.csrf import get_token, rotate_token
 from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
+from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
@@ -17,7 +18,7 @@ from backend.apps.accounts.serializers import (
     SignupRequestSerializer,
     SignupResponseSerializer,
 )
-from backend.apps.common.exceptions import ServiceNotImplementedError
+from backend.apps.common.exceptions import ApiErrorResponseException, ServiceNotImplementedError
 from backend.apps.common.request_ids import get_request_id
 from backend.apps.common.runtime import api_success_response
 
@@ -71,15 +72,34 @@ class CsrfTokenView(APIView):
         return api_success_response(request, {"csrf_token": get_token(request)})
 
 
+@method_decorator(csrf_protect, name="dispatch")
 class SignupView(APIView):
     permission_classes = [AllowAny]
     request_serializer_class = SignupRequestSerializer
     response_serializer_class = SignupResponseSerializer
 
     def post(self, request):
-        raise AuthServiceNotImplemented("auth.signup")
+        serializer = self.request_serializer_class(data=request.data)
+        if not serializer.is_valid():
+            raise ApiErrorResponseException(
+                "VALIDATION_ERROR",
+                status_code=status.HTTP_400_BAD_REQUEST,
+                details=serializer.errors,
+            )
+
+        signup_result = auth_services.signup(
+            email=serializer.validated_data["email"],
+            nickname=serializer.validated_data["nickname"],
+            password=serializer.validated_data["password"],
+        )
+        return api_success_response(
+            request,
+            {"user": signup_result.user},
+            status_code=status.HTTP_201_CREATED,
+        )
 
 
+@method_decorator(csrf_protect, name="dispatch")
 class LoginView(AuthCookieMixin, APIView):
     permission_classes = [AllowAny]
     request_serializer_class = LoginRequestSerializer
@@ -111,6 +131,7 @@ class LoginView(AuthCookieMixin, APIView):
         return response
 
 
+@method_decorator(csrf_protect, name="dispatch")
 class LogoutView(AuthCookieMixin, APIView):
     permission_classes = [AllowAny]
     request_serializer_class = EmptyRequestSerializer
@@ -120,6 +141,7 @@ class LogoutView(AuthCookieMixin, APIView):
         raise AuthServiceNotImplemented("auth.logout")
 
 
+@method_decorator(csrf_protect, name="dispatch")
 class RefreshView(AuthCookieMixin, APIView):
     permission_classes = [AllowAny]
     request_serializer_class = EmptyRequestSerializer

@@ -135,8 +135,12 @@ def test_auth_cookie_helpers_use_approved_paths_flags_and_ttls():
 
 def test_auth_views_delegate_runtime_to_service_layer_without_response_body_tokens():
     views_source = _read(ACCOUNTS_DIR / "views.py")
+    signup_source = views_source.split("class SignupView", maxsplit=1)[1].split(
+        "\n\nclass LoginView",
+        maxsplit=1,
+    )[0]
 
-    assert "raise AuthServiceNotImplemented(\"auth.signup\")" in views_source
+    assert "auth_services.signup(" in signup_source
     assert "raise AuthServiceNotImplemented(\"auth.logout\")" in views_source
     assert "auth_services.login(" in views_source
     assert "auth_services.refresh(" in views_source

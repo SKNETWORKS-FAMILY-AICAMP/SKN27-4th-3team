@@ -1,0 +1,33 @@
+{
+  "purpose": "turn_flavor_text",
+  "apparition_alias": null,
+  "turn_result": {
+    "turn_id": "official-sample-turn-003",
+    "turn_number": 3,
+    "player_action": {
+      "code": "insight",
+      "display_name": "간파",
+      "info_target_key": "mirror_surface",
+      "timeout_applied": false
+    },
+    "opponent_action": {
+      "code": "silence",
+      "display_name": "침묵",
+      "info_target_key": null,
+      "timeout_applied": false
+    },
+    "match_outcome": "unresolved",
+    "public_log": {
+      "turn_number": 3,
+      "text": "거울 표면에 남은 손자국이 차갑게 번졌다.",
+      "log_key": "mirror_surface_trace"
+    },
+    "state_delta": {},
+    "clue_delta": {
+      "added": [],
+      "removed_clue_ids": [],
+      "revealed": []
+    }
+  },
+  "display_slot": "right_apparition_message"
+}

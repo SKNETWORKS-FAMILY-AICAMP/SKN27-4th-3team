@@ -281,7 +281,7 @@ def test_story_match_start_service_checks_idempotency_before_case_allowlist():
     )
 
 
-def test_story_match_start_view_no_longer_returns_501_and_pending_match_endpoints_stay_501():
+def test_story_match_start_match_detail_and_turn_submit_no_longer_return_501():
     match_start_response = _client_with_access_cookie().post(
         "/api/v1/story/cases/mirror_guest/matches",
         _valid_payload("not-a-uuid"),
@@ -292,7 +292,7 @@ def test_story_match_start_view_no_longer_returns_501_and_pending_match_endpoint
     assert match_start_response.status_code != 501
 
     client = APIClient()
-    assert client.get("/api/v1/matches/match_1", HTTP_HOST="localhost").status_code == 501
+    assert client.get("/api/v1/matches/match_1", HTTP_HOST="localhost").status_code != 501
     assert (
         client.post(
             "/api/v1/matches/match_1/turns",
@@ -300,9 +300,9 @@ def test_story_match_start_view_no_longer_returns_501_and_pending_match_endpoint
             format="json",
             HTTP_HOST="localhost",
         ).status_code
-        == 501
+        != 501
     )
     assert (
         client.get("/api/v1/matches/match_1/result", HTTP_HOST="localhost").status_code
-        == 501
+        != 501
     )

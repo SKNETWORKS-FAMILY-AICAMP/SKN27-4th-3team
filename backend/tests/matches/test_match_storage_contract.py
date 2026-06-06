@@ -59,6 +59,8 @@ def test_match_models_define_approved_tables_and_fields_without_unapproved_forei
     for class_name in (
         "Match",
         "MatchParticipant",
+        "MatchTrueNameFragmentOwnership",
+        "MatchFalseClueOwnership",
         "Turn",
         "ActionSubmission",
         "TurnResult",
@@ -69,6 +71,8 @@ def test_match_models_define_approved_tables_and_fields_without_unapproved_forei
     assert "('pvp', 'pvp')" not in migration_source
     assert "db_table = \"matches\"" in source
     assert "db_table = \"match_participants\"" in source
+    assert "db_table = \"match_true_name_fragments\"" in source
+    assert "db_table = \"match_false_clues\"" in source
     assert "db_table = \"turns\"" in source
     assert "db_table = \"action_submissions\"" in source
     assert "db_table = \"turn_results\"" in source
@@ -96,6 +100,29 @@ def test_match_models_define_approved_tables_and_fields_without_unapproved_forei
     assert "ritual_power = models.PositiveIntegerField()" in participant_source
     assert "curse_marks = models.PositiveIntegerField()" in participant_source
     assert "secret_exposure = models.PositiveIntegerField()" in participant_source
+    assert "true_name_fragments = models.PositiveIntegerField()" in participant_source
+    assert "incomplete_true_name_fragments = models.PositiveIntegerField()" in participant_source
+    assert "false_clues = models.PositiveIntegerField()" in participant_source
+    assert "suspicion = models.PositiveIntegerField()" in participant_source
+    assert "shield = models.PositiveIntegerField()" in participant_source
+    assert "timeout_count = models.PositiveIntegerField()" in participant_source
+
+    true_fragment_source = _class_source(source, "MatchTrueNameFragmentOwnership")
+    assert "match_id = models.PositiveBigIntegerField()" in true_fragment_source
+    assert "participant_id = models.PositiveBigIntegerField()" in true_fragment_source
+    assert "true_name_fragment_id = models.PositiveBigIntegerField()" in true_fragment_source
+    assert "source_turn_id = models.PositiveBigIntegerField()" in true_fragment_source
+    assert "source_turn_number = models.PositiveIntegerField()" in true_fragment_source
+    assert "created_at = models.DateTimeField(auto_now_add=True)" in true_fragment_source
+
+    false_clue_source = _class_source(source, "MatchFalseClueOwnership")
+    assert "match_id = models.PositiveBigIntegerField()" in false_clue_source
+    assert "participant_id = models.PositiveBigIntegerField()" in false_clue_source
+    assert "false_clue_id = models.PositiveBigIntegerField()" in false_clue_source
+    assert "truth_state = models.TextField(choices=CLUE_TRUTH_STATE_CHOICES)" in false_clue_source
+    assert "source_turn_id = models.PositiveBigIntegerField()" in false_clue_source
+    assert "source_turn_number = models.PositiveIntegerField()" in false_clue_source
+    assert "created_at = models.DateTimeField(auto_now_add=True)" in false_clue_source
 
     turn_source = _class_source(source, "Turn")
     assert "match_id = models.PositiveBigIntegerField()" in turn_source
@@ -145,6 +172,26 @@ def test_match_start_request_is_unique_per_user_and_client_request_id():
     assert "fields=(\"user_id\", \"client_request_id\")" in start_request_source
     assert "name=\"match_start_request_user_client_request_unique\"" in start_request_source
     assert "client_request_id = models.UUIDField(unique=True)" not in start_request_source
+
+
+def test_match_clue_ownership_is_unique_per_match_participant_and_source_definition():
+    source = _read(MATCHES_DIR / "models.py")
+    true_fragment_source = _class_source(source, "MatchTrueNameFragmentOwnership")
+    false_clue_source = _class_source(source, "MatchFalseClueOwnership")
+
+    assert "models.UniqueConstraint(" in true_fragment_source
+    assert (
+        "fields=(\"match_id\", \"participant_id\", \"true_name_fragment_id\")"
+        in true_fragment_source
+    )
+    assert "name=\"match_true_name_fragment_ownership_unique\"" in true_fragment_source
+
+    assert "models.UniqueConstraint(" in false_clue_source
+    assert (
+        "fields=(\"match_id\", \"participant_id\", \"false_clue_id\")"
+        in false_clue_source
+    )
+    assert "name=\"match_false_clue_ownership_unique\"" in false_clue_source
 
 
 def test_match_storage_services_validate_participant_identity_and_json_schema_version():

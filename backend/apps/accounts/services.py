@@ -6,7 +6,7 @@ from typing import Any
 import jwt
 from django.conf import settings
 from django.contrib.auth import authenticate
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from backend.apps.accounts.models import RefreshToken, SecurityEvent, User
@@ -35,6 +35,7 @@ from backend.apps.profiles.models import Profile
 
 
 HTTP_401_UNAUTHORIZED = 401
+HTTP_400_BAD_REQUEST = 400
 HTTP_500_INTERNAL_SERVER_ERROR = 500
 FORBIDDEN_SECURITY_METADATA_KEYS = (
     "raw_token",
@@ -54,6 +55,11 @@ STYLE_METRIC_FIELDS = (
     "crisis_contract_rate",
     "late_choice_rate",
 )
+
+
+@dataclass(frozen=True)
+class SignupResult:
+    user: dict[str, Any]
 
 
 @dataclass(frozen=True)
@@ -114,6 +120,35 @@ def login(
         refresh_token=refresh_token,
         access_expires_in_seconds=settings.ACCESS_TOKEN_TTL_SECONDS,
     )
+
+
+def signup(
+    *,
+    email: str,
+    nickname: str,
+    password: str,
+) -> SignupResult:
+    try:
+        with transaction.atomic():
+            user = User.objects.create_user(email=email, password=password)
+            Profile.objects.create(
+                user=user,
+                nickname=nickname,
+                ai_story_matches=0,
+                ai_story_wins=0,
+                ai_story_losses=0,
+                style_label=None,
+                style_display_text=None,
+                style_summary_updated_at=None,
+            )
+    except IntegrityError as exc:
+        raise ApiErrorResponseException(
+            "VALIDATION_ERROR",
+            status_code=HTTP_400_BAD_REQUEST,
+            details={"email": ["A user with this email already exists."]},
+        ) from exc
+
+    return SignupResult(user=_format_user(user))
 
 
 def refresh(

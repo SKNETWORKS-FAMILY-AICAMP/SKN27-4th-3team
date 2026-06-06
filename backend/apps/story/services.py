@@ -215,6 +215,12 @@ def _start_story_case_match_in_transaction(
         ritual_power=initial_state.ritual_power,
         curse_marks=initial_state.curse_marks,
         secret_exposure=initial_state.secret_exposure,
+        true_name_fragments=initial_state.true_name_fragments,
+        incomplete_true_name_fragments=initial_state.incomplete_true_name_fragments,
+        false_clues=initial_state.false_clues,
+        suspicion=initial_state.suspicion,
+        shield=initial_state.shield,
+        timeout_count=0,
     )
     apparition_participant = MatchParticipant.objects.create(
         match_id=match.id,
@@ -226,6 +232,12 @@ def _start_story_case_match_in_transaction(
         ritual_power=initial_state.ritual_power,
         curse_marks=initial_state.curse_marks,
         secret_exposure=initial_state.secret_exposure,
+        true_name_fragments=initial_state.true_name_fragments,
+        incomplete_true_name_fragments=initial_state.incomplete_true_name_fragments,
+        false_clues=initial_state.false_clues,
+        suspicion=initial_state.suspicion,
+        shield=initial_state.shield,
+        timeout_count=0,
     )
     turn = Turn.objects.create(
         match_id=match.id,
@@ -241,7 +253,7 @@ def _start_story_case_match_in_transaction(
     )
 
     return StoryCaseMatchStartResult(
-        match=_format_match_state(
+        match=format_match_state(
             session=session,
             match=match,
             turn=turn,
@@ -286,7 +298,7 @@ def _match_start_result_from_existing_request(
 
     match = _get_match(match_id=start_request.match_id)
     return StoryCaseMatchStartResult(
-        match=_format_match_state(
+        match=format_match_state(
             session=session,
             match=match,
             turn=_get_initial_turn(match_id=match.id),
@@ -303,7 +315,7 @@ def _match_start_result_from_existing_request(
     )
 
 
-def _format_match_state(
+def format_match_state(
     *,
     session: auth_services.SessionResult,
     match: Match,
@@ -312,7 +324,7 @@ def _format_match_state(
     apparition_participant: MatchParticipant,
     now,
 ) -> dict[str, Any]:
-    initial_state = ResourceState.initial()
+    player_state = _resource_state_from_human_participant(human_participant)
     return {
         "match_id": _public_id(prefix="match", value=match.id),
         "mode": match.mode,
@@ -334,25 +346,42 @@ def _format_match_state(
             "participant_id": _public_id(prefix="participant", value=human_participant.id),
             "participant_type": PARTICIPANT_TYPE_HUMAN,
             "display_name": _player_display_name(session=session),
-            "resources": _resource_payload(initial_state),
+            "resources": _resource_payload(
+                player_state,
+                timeout_count=human_participant.timeout_count,
+            ),
         },
         "opponent": {
             "participant_id": _public_id(prefix="participant", value=apparition_participant.id),
             "participant_type": PARTICIPANT_TYPE_APPARITION,
             "display_name": MIRROR_GUEST_TITLE,
             "public_state": {
-                "true_name_fragments_revealed": initial_state.true_name_fragments,
+                "true_name_fragments_revealed": player_state.true_name_fragments,
                 "true_name_fragments_required": MAX_TRUE_NAME_FRAGMENTS,
-                "seal_available": initial_state.true_name_fragments >= MAX_TRUE_NAME_FRAGMENTS,
+                "seal_available": player_state.true_name_fragments >= MAX_TRUE_NAME_FRAGMENTS,
             },
         },
-        "available_actions": _available_actions(initial_state),
+        "available_actions": _available_actions(player_state),
         "clues": [],
         "recent_public_logs": [],
     }
 
 
-def _resource_payload(state: ResourceState) -> dict[str, int]:
+def _resource_state_from_human_participant(human_participant: MatchParticipant) -> ResourceState:
+    return ResourceState.initial().replace(
+        sanity=human_participant.sanity,
+        ritual_power=human_participant.ritual_power,
+        curse_marks=human_participant.curse_marks,
+        secret_exposure=human_participant.secret_exposure,
+        true_name_fragments=human_participant.true_name_fragments,
+        incomplete_true_name_fragments=human_participant.incomplete_true_name_fragments,
+        false_clues=human_participant.false_clues,
+        suspicion=human_participant.suspicion,
+        shield=human_participant.shield,
+    )
+
+
+def _resource_payload(state: ResourceState, *, timeout_count: int) -> dict[str, int]:
     return {
         "sanity": state.sanity,
         "sanity_max": MAX_SANITY,
@@ -369,7 +398,7 @@ def _resource_payload(state: ResourceState) -> dict[str, int]:
         "suspicion_max": MAX_SUSPICION,
         "shield": state.shield,
         "shield_max": MAX_SHIELD,
-        "timeout_count": 0,
+        "timeout_count": timeout_count,
     }
 
 

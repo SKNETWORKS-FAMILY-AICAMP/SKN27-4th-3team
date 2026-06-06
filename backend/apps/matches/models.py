@@ -2,6 +2,7 @@ from django.db import models
 
 from backend.apps.matches.constants import (
     ACTION_CODE_CHOICES,
+    CLUE_TRUTH_STATE_CHOICES,
     MATCH_MODE_CHOICES,
     MATCH_STATUS_CHOICES,
     PARTICIPANT_TYPE_CHOICES,
@@ -30,9 +31,52 @@ class MatchParticipant(models.Model):
     ritual_power = models.PositiveIntegerField()
     curse_marks = models.PositiveIntegerField()
     secret_exposure = models.PositiveIntegerField()
+    true_name_fragments = models.PositiveIntegerField()
+    incomplete_true_name_fragments = models.PositiveIntegerField()
+    false_clues = models.PositiveIntegerField()
+    suspicion = models.PositiveIntegerField()
+    shield = models.PositiveIntegerField()
+    timeout_count = models.PositiveIntegerField()
 
     class Meta:
         db_table = "match_participants"
+
+
+class MatchTrueNameFragmentOwnership(models.Model):
+    match_id = models.PositiveBigIntegerField()
+    participant_id = models.PositiveBigIntegerField()
+    true_name_fragment_id = models.PositiveBigIntegerField()
+    source_turn_id = models.PositiveBigIntegerField()
+    source_turn_number = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "match_true_name_fragments"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("match_id", "participant_id", "true_name_fragment_id"),
+                name="match_true_name_fragment_ownership_unique",
+            )
+        ]
+
+
+class MatchFalseClueOwnership(models.Model):
+    match_id = models.PositiveBigIntegerField()
+    participant_id = models.PositiveBigIntegerField()
+    false_clue_id = models.PositiveBigIntegerField()
+    truth_state = models.TextField(choices=CLUE_TRUTH_STATE_CHOICES)
+    source_turn_id = models.PositiveBigIntegerField()
+    source_turn_number = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "match_false_clues"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("match_id", "participant_id", "false_clue_id"),
+                name="match_false_clue_ownership_unique",
+            )
+        ]
 
 
 class Turn(models.Model):

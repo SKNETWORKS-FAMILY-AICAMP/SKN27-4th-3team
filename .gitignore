@@ -2,3 +2,70 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .venv/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+*.secret
+
+# Python / Django
+*$py.class
+.Python
+venv/
+env/
+ENV/
+pip-wheel-metadata/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+
+# Node / Frontend
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+build/
+frontend/.vite/
+.vite/
+.vite-temp/
+frontend/.vite-temp/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# LLM experiment outputs
+llm/output/
+llm/runs/
+llm/tmp/
+llm/.cache/
+*.generated.json
+*.generated.txt
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+tmp/
+temp/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+
+# Generated outputs
+output/*
+!output/.gitkeep

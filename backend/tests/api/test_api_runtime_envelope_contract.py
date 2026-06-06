@@ -49,8 +49,8 @@ def test_csrf_endpoint_returns_success_envelope_and_server_request_id_header():
 
 def test_unimplemented_service_returns_501_error_envelope_with_stable_service_key():
     response = APIClient().post(
-        "/api/v1/auth/signup",
-        {"email": "user@example.com", "nickname": "pilot", "password": "password"},
+        "/api/v1/auth/logout",
+        {},
         format="json",
         HTTP_HOST="localhost",
         HTTP_X_REQUEST_ID="external-trace",
@@ -63,7 +63,7 @@ def test_unimplemented_service_returns_501_error_envelope_with_stable_service_ke
     assert body["error"] == {
         "code": "SERVICE_NOT_IMPLEMENTED",
         "message": "Service is not implemented yet.",
-        "details": {"service": "auth.signup"},
+        "details": {"service": "auth.logout"},
     }
     assert body["meta"]["request_id"] == response["X-Request-ID"]
     assert body["meta"]["request_id"] != "external-trace"

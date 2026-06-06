@@ -1,6 +1,65 @@
 ﻿# Project Memory
 
-Updated: 2026-06-04
+Updated: 2026-06-05
+
+## Status Check 2026-06-05
+
+- `docs/superpowers/plans/2026-06-02-backend-implementation-order.md` 1665행 기준 진행 현황을 현재 코드와 대조했다.
+- 현재 브랜치는 `feature-backend-structure`, 최신 커밋은 `012761a 기록한 내용`, working tree에는 backend match/story 구현 WIP 변경이 있다.
+- Official API runtime 기준 endpoint는 13개이며, 실제 응답 구현은 10개다: `auth.csrf`, `auth.login`, `auth.refresh`, `auth.me`, `profile.me`, `story.cases.list`, `story.cases.briefing`, `story.cases.matches.start`, `matches.detail`, `matches.turns.submit`.
+- 남은 stub endpoint는 3개다: `auth.signup`, `auth.logout`, `matches.result`.
+- AI Story 플레이 흐름은 매치 시작, 매치 조회, 행동 제출, 턴 resolve 결과 저장까지 열려 있고, 결과 조회는 아직 남아 있다.
+- 신선 검증 결과: `.\.venv\Scripts\python.exe -m pytest backend\tests -q`는 `146 passed`, `.\.venv\Scripts\python.exe backend\manage.py check`는 `System check identified no issues (0 silenced).` 실제 PostgreSQL migration 적용 검증은 연결 타임아웃으로 미완료다.
+
+## LLM Approval Scope Decision 2026-06-05
+
+- Options considered:
+  - A: 결과 요약만 승인.
+  - B: 결과 요약, 스타일 문장, 운영자용 매치 로그 요약 승인.
+  - C: B안에 승인된 기준 문장의 짧은 변형 후보까지 포함.
+- Decision: B안.
+- Constraints:
+  - LLM 승인 기준은 `결과 화면 요약`, `플레이 스타일 요약 문장`, `운영자용 매치 로그 요약`에만 적용한다.
+  - LLM은 턴/전투 판정, 승패, 자원 계산, 진명 조각 획득, 거짓 단서 진위, 공식 설정 추가, 룰 변경에 관여하지 않는다.
+  - 승인된 기준 문장의 짧은 변형 후보 생성은 이번 LLM 승인 기준 범위에 포함하지 않는다.
+  - LLM 실패 시 정적 `story_result_text`와 서버 판정 결과만으로 화면이 완성되어야 한다.
+
+## Turn Submit State Decision 2026-06-05
+
+- Options considered:
+  - A: `match_participants`에 resource scalar field를 확장하고, clue ownership table을 별도로 둔다.
+  - B: `TurnResult.result_json` snapshot만으로 current state를 재구성한다.
+  - C: 별도 current-state table과 clue ownership table을 둔다.
+- Decision: A안.
+- Constraints:
+  - 핵심 자원 수치는 JSONField에 숨기지 않고 `match_participants` scalar field로 저장한다.
+  - 진명 조각/거짓 단서 보유 상태는 match별 ownership table에 저장한다.
+  - `true_name_fragments`, `false_clues`, `suspicion`, `shield`, `timeout_count`는 `MatchState` 재구성에 사용할 수 있어야 한다.
+  - Story clue definition은 DB seed가 아니라 승인 상수로 시작한다.
+  - `false_clue_detection_check`는 확률 없이 결정적으로 처리한다.
+  - 중복/종료 충돌은 HTTP 409, 행동 불가/정보 대상/의식력/deadline 오류는 HTTP 400으로 처리한다.
+
+## Branch Integration And Audit 2026-06-06
+
+- `origin/feature-llm`의 최상위 `llm/` 산출물과 `ops/env/llm.env.example`을 현재 브랜치에 반영했다.
+- `origin/feature-frontend-game-screen`의 `frontend/` 산출물을 현재 브랜치에 반영했다.
+- React frontend는 현재 `frontend/public/prototype/game-background.html`을 iframe으로 띄우는 wrapper 구조다. 실제 Django API fetch는 아직 없다.
+- Frontend prototype 내부 키는 일부 demo key를 유지하지만, API 제출 경계에서는 `buildTurnSubmitPayload()`로 official enum payload를 만든다.
+  - `deceive` -> `trick`
+  - `attic_diary` -> `mirror_back`
+  - `truth_mirror` -> `mirror_surface`
+  - `stitched_mouth` -> `missing_child_voice`
+  - `bloodied_teddy` -> `forgotten_room`
+  - `ian_reflection` -> `self_reflection`
+- `frontend/scripts/verify-official-enums.mjs`와 `npm run test:contracts`를 추가해 official API payload boundary를 검증한다.
+- LLM은 최상위 `llm/` 실험/프롬프트/평가/guardrail 영역으로만 반영했다. `backend/apps/llm/`, backend runtime LLM 연결, generation log 저장은 추가하지 않았다.
+- 루트 `requirements.txt`에는 `groq`를 추가하지 않았다. backend dependency lock은 승인된 백엔드 의존성만 유지한다.
+- 문서 대비 감사 리포트: `docs/superpowers/reports/2026-06-06-branch-integration-doc-audit.md`.
+- 주요 감사 결론:
+  - Monorepo 폴더 구조, 최상위 LLM 작업 영역, backend LLM/PvP/realtime 금지선은 대체로 문서 의도와 맞다.
+  - Frontend는 prototype 단계이며 full API-connected React app은 아니다.
+  - `turn_flavor_text` official API 응답 위치, `generation_id` 저장 방식, `matches.result` runtime 조립은 아직 미확정/미구현이다.
+  - Frontend prototype 내부 문서와 demo fixture에는 official enum과 다른 demo key가 남아 있어 API 연결 시 혼동 위험이 있다.
 
 ## Current State
 

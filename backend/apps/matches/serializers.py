@@ -8,7 +8,7 @@ class MatchDetailResponseSerializer(serializers.Serializer):
 class TurnSubmitRequestSerializer(serializers.Serializer):
     action_code = serializers.CharField()
     info_target_key = serializers.CharField(required=False, allow_null=True)
-    client_nonce = serializers.CharField()
+    client_nonce = serializers.UUIDField()
 
 
 class TurnSubmitResponseSerializer(serializers.Serializer):

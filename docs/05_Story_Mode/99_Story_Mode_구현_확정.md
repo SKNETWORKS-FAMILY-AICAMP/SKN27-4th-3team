@@ -4,7 +4,7 @@ status: "needs-decision"
 type: "implementation-confirmation"
 source: "[[pilot]]"
 created: "2026-05-30"
-updated: "2026-06-02"
+updated: "2026-06-06"
 ---
 
 # Story Mode 구현 확정
@@ -27,3 +27,11 @@ updated: "2026-06-02"
 | `거울 속의 손님` 진명 조각 reveal condition | [[05_Story_Mode/02_거울_속의_손님]]과 [[09_Approved_Contracts/03_진명_조각_획득_기준]]을 따른다. |
 | `거울 속의 손님` 거짓 단서 trigger condition | [[05_Story_Mode/02_거울_속의_손님]]과 [[09_Approved_Contracts/04_거짓_단서_생성_기준]]을 따른다. |
 | `거울 속의 손님` 괴이 행동 정책 | [[09_Approved_Contracts/16_거울_속의_손님_괴이_행동_정책]]을 따른다. |
+
+## 구현 확정 제외 스토리
+
+| 스토리 | 현재 상태 | 구현 기준 |
+|---|---|---|
+| `무명(無名)의 저주` | PDF 원문 반영 초안 | [[05_Story_Mode/08_무명의_저주_게임설정]], [[05_Story_Mode/09_무명의_저주_프롤로그_시나리오]]는 구현 확정본이 아니다. |
+
+`무명(無名)의 저주`를 구현하려면 사건 통합 여부, 주인공명 치환 기준, 피티의 진명 확정, 표현 수위, 현재 `거울 속의 손님` 계약과의 병합 여부를 먼저 결정해야 한다.
