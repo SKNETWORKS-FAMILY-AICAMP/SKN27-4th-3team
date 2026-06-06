@@ -183,12 +183,34 @@
       "contract",
       "seal"
     ],
+    "story_case_id": [
+      "mirror_guest",
+      "nameless_curse"
+    ],
     "mirror_guest_info_target_key": [
       "mirror_surface",
       "mirror_back",
       "missing_child_voice",
       "forgotten_room",
       "self_reflection"
+    ],
+    "nameless_curse_info_target_key": [
+      "truth_mirror",
+      "family_journal",
+      "nameless_thread",
+      "basement_wall",
+      "self_reflection"
+    ],
+    "story_info_target_key": [
+      "mirror_surface",
+      "mirror_back",
+      "missing_child_voice",
+      "forgotten_room",
+      "self_reflection",
+      "truth_mirror",
+      "family_journal",
+      "nameless_thread",
+      "basement_wall"
     ],
     "match_result": [
       "player_win",
@@ -295,7 +317,7 @@
         "mvp_available"
       ],
       "properties": {
-        "case_id": "string",
+        "case_id": "string:story_case_id",
         "title": "string",
         "summary": "string",
         "difficulty": "string",
@@ -315,7 +337,7 @@
         "max_turns"
       ],
       "properties": {
-        "case_id": "string",
+        "case_id": "string:story_case_id",
         "title": "string",
         "apparition_alias": "string",
         "briefing_text": "array:string",
@@ -334,7 +356,7 @@
         "display_name"
       ],
       "properties": {
-        "key": "string:mirror_guest_info_target_key",
+        "key": "string:story_info_target_key",
         "display_name": "string"
       }
     },
@@ -459,7 +481,7 @@
         "mode": "string:match_mode",
         "status": "string:match_status",
         "case": {
-          "case_id": "string",
+          "case_id": "string:story_case_id",
           "title": "string"
         },
         "turn": {
@@ -497,7 +519,7 @@
       "properties": {
         "code": "string:action_code",
         "display_name": "string",
-        "info_target_key": "string:mirror_guest_info_target_key|null",
+        "info_target_key": "string:story_info_target_key|null",
         "timeout_applied": "boolean"
       }
     },
@@ -551,7 +573,7 @@
         "result": "string:match_result",
         "result_reason": "string:result_reason",
         "case": {
-          "case_id": "string",
+          "case_id": "string:story_case_id",
           "title": "string"
         },
         "final_resources": {
@@ -824,7 +846,7 @@
       "success_status": 200,
       "request": {
         "path_params": {
-          "case_id": "string"
+          "case_id": "string:story_case_id"
         },
         "query": {},
         "body": null
@@ -857,7 +879,7 @@
       "success_status": 201,
       "request": {
         "path_params": {
-          "case_id": "string"
+          "case_id": "string:story_case_id"
         },
         "query": {},
         "body": {
@@ -935,7 +957,7 @@
         "query": {},
         "body": {
           "action_code": "string:action_code",
-          "info_target_key": "string:mirror_guest_info_target_key|null",
+          "info_target_key": "string:story_info_target_key|null",
           "client_nonce": "string:uuid"
         }
       },

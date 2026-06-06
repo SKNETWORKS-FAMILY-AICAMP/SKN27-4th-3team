@@ -33,8 +33,8 @@ from backend.apps.matches.models import Match, MatchParticipant, MatchStartReque
 from backend.apps.story.constants import (
     APPROVED_MVP_STORY_CASE_BRIEFINGS,
     APPROVED_MVP_STORY_CASE_SUMMARIES,
+    APPROVED_STORY_CASE_DEFINITIONS,
     MIRROR_GUEST_CASE_ID,
-    MIRROR_GUEST_TITLE,
     MVP_STORY_MAX_TURNS,
 )
 
@@ -43,7 +43,6 @@ HTTP_401_UNAUTHORIZED = 401
 HTTP_404_NOT_FOUND = 404
 HTTP_409_CONFLICT = 409
 DEFAULT_TURN_SECONDS = 25
-MIRROR_GUEST_APPARITION_ID = 1
 PLAYER_SIDE = "player"
 OPPONENT_SIDE = "opponent"
 SEAL_DISABLED_REASON_TRUE_NAME_FRAGMENTS = "TRUE_NAME_FRAGMENTS_NOT_ENOUGH"
@@ -197,6 +196,7 @@ def _start_story_case_match_in_transaction(
         )
 
     _assert_supported_story_case(case_id=case_id)
+    case_definition = _story_case_definition(case_id=case_id)
 
     now = timezone.now()
     initial_state = ResourceState.initial()
@@ -226,7 +226,7 @@ def _start_story_case_match_in_transaction(
         match_id=match.id,
         participant_type=PARTICIPANT_TYPE_APPARITION,
         user_id=None,
-        apparition_id=MIRROR_GUEST_APPARITION_ID,
+        apparition_id=case_definition["apparition_id"],
         side=OPPONENT_SIDE,
         sanity=initial_state.sanity,
         ritual_power=initial_state.ritual_power,
@@ -261,6 +261,7 @@ def _start_story_case_match_in_transaction(
             human_participant=human_participant,
             apparition_participant=apparition_participant,
             now=now,
+            case_id=case_id,
         )
     )
 
@@ -312,6 +313,7 @@ def _match_start_result_from_existing_request(
                 participant_type=PARTICIPANT_TYPE_APPARITION,
             ),
             now=timezone.now(),
+            case_id=case_id,
         )
     )
 
@@ -324,15 +326,18 @@ def format_match_state(
     human_participant: MatchParticipant,
     apparition_participant: MatchParticipant,
     now,
+    case_id: str | None = None,
 ) -> dict[str, Any]:
     player_state = _resource_state_from_human_participant(human_participant)
+    resolved_case_id = case_id or _get_match_case_id(match_id=match.id)
+    case_definition = _story_case_definition(case_id=resolved_case_id)
     return {
         "match_id": _public_id(prefix="match", value=match.id),
         "mode": match.mode,
         "status": match.status,
         "case": {
-            "case_id": MIRROR_GUEST_CASE_ID,
-            "title": MIRROR_GUEST_TITLE,
+            "case_id": case_definition["case_id"],
+            "title": case_definition["title"],
         },
         "turn": {
             "turn_id": _public_id(prefix="turn", value=turn.id),
@@ -355,7 +360,7 @@ def format_match_state(
         "opponent": {
             "participant_id": _public_id(prefix="participant", value=apparition_participant.id),
             "participant_type": PARTICIPANT_TYPE_APPARITION,
-            "display_name": MIRROR_GUEST_TITLE,
+            "display_name": case_definition["apparition_alias"],
             "public_state": {
                 "true_name_fragments_revealed": player_state.true_name_fragments,
                 "true_name_fragments_required": MAX_TRUE_NAME_FRAGMENTS,
@@ -462,11 +467,27 @@ def _get_participant(*, match_id: int, participant_type: str) -> MatchParticipan
 
 
 def _assert_supported_story_case(*, case_id: str) -> None:
-    if case_id != MIRROR_GUEST_CASE_ID:
+    if case_id not in APPROVED_STORY_CASE_DEFINITIONS:
         raise ApiErrorResponseException(
             "CASE_NOT_FOUND",
             status_code=HTTP_404_NOT_FOUND,
         )
+
+
+def _story_case_definition(*, case_id: str) -> dict[str, Any]:
+    _assert_supported_story_case(case_id=case_id)
+    return dict(APPROVED_STORY_CASE_DEFINITIONS[case_id])
+
+
+def _get_match_case_id(*, match_id: int) -> str:
+    start_request = (
+        MatchStartRequest.objects.filter(match_id=match_id)
+        .order_by("id")
+        .first()
+    )
+    if start_request is None:
+        return MIRROR_GUEST_CASE_ID
+    return start_request.case_id
 
 
 def _session_user_id(*, session: auth_services.SessionResult) -> int:

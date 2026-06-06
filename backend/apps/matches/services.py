@@ -66,12 +66,8 @@ from backend.apps.matches.models import (
 )
 from backend.apps.llm import services as llm_services
 from backend.apps.story.constants import (
-    APPROVED_MIRROR_GUEST_FALSE_CLUES,
-    APPROVED_MIRROR_GUEST_INFO_TARGET_KEYS,
-    APPROVED_MIRROR_GUEST_RESULT_TEXT_BY_REASON,
-    APPROVED_MIRROR_GUEST_TRUE_NAME_FRAGMENTS,
+    APPROVED_STORY_CASE_DEFINITIONS,
     MIRROR_GUEST_CASE_ID,
-    MIRROR_GUEST_TITLE,
     MVP_STORY_MAX_TURNS,
 )
 
@@ -252,26 +248,28 @@ def get_match_result(
         participant_type=PARTICIPANT_TYPE_APPARITION,
     )
     last_turn = _get_current_turn(match_id=match_id)
+    case_definition = _get_match_case_definition(match_id=match_id)
     result_reason = _match_result_reason(
         match=match,
         human_participant=human_participant,
         last_turn=last_turn,
     )
+    result_text_by_reason = case_definition["result_text_by_reason"]
 
     result_payload = {
         "match_id": _public_id(prefix="match", value=match.id),
         "result": _match_result(match=match, human_participant=human_participant),
         "result_reason": result_reason,
         "case": {
-            "case_id": MIRROR_GUEST_CASE_ID,
-            "title": MIRROR_GUEST_TITLE,
+            "case_id": case_definition["case_id"],
+            "title": case_definition["title"],
         },
         "final_resources": _final_resource_payload(human_participant),
         "turn_logs": _get_match_turn_logs(match_id=match_id),
         "story_result_text": list(
-            APPROVED_MIRROR_GUEST_RESULT_TEXT_BY_REASON.get(
+            result_text_by_reason.get(
                 result_reason,
-                APPROVED_MIRROR_GUEST_RESULT_TEXT_BY_REASON[RESULT_REASON_UNRESOLVED],
+                result_text_by_reason[RESULT_REASON_UNRESOLVED],
             )
         ),
         "style_summary": _style_summary_payload(session=session),
@@ -305,13 +303,14 @@ def generate_turn_llm_text(
         raise _match_not_found()
 
     turn_result = _get_turn_result_payload(turn_id=turn.id)
+    case_definition = _get_match_case_definition(match_id=match_id)
     llm_text = llm_services.generate_turn_flavor_text(
         turn_result=turn_result,
         match_id=match_id,
         turn_id=turn.id,
         user_id=user_id,
         display_slot=display_slot or DEFAULT_TURN_LLM_DISPLAY_SLOT,
-        apparition_alias=MIRROR_GUEST_TITLE,
+        apparition_alias=case_definition["apparition_alias"],
     )
     return TurnLlmTextResult(llm_text=llm_text)
 
@@ -404,6 +403,7 @@ def submit_match_turn(
             )
 
         _assert_match_access(user_id=user_id, match_id=match_id)
+        case_id = _get_match_case_id(match_id=match_id)
         human_participant = _get_participant(
             match_id=match_id,
             participant_type=PARTICIPANT_TYPE_HUMAN,
@@ -423,6 +423,7 @@ def submit_match_turn(
             action_code=action_code,
             info_target_key=info_target_key,
             human_participant=human_participant,
+            case_id=case_id,
         )
 
         now = timezone.now()
@@ -488,6 +489,7 @@ def submit_match_turn(
             human_participant=human_participant,
             apparition_participant=apparition_participant,
             info_target_key=info_target_key,
+            case_id=case_id,
         )
         resolution = replace(resolution, match_outcome=effect_result.match_outcome)
 
@@ -684,17 +686,18 @@ def _duel_match_payload(
     )
     current_turn = _get_current_turn(match_id=match_id)
     recent_public_logs = _get_match_turn_logs(match_id=match_id)[-3:]
+    case_definition = _get_match_case_definition(match_id=match_id)
     return {
         "case": {
-            "case_id": MIRROR_GUEST_CASE_ID,
-            "title": MIRROR_GUEST_TITLE,
+            "case_id": case_definition["case_id"],
+            "title": case_definition["title"],
         },
         "match": {
             "match_id": _public_id(prefix="match", value=match.id),
             "turn_number": current_turn.turn_number,
             "result": _match_result_for_duel(match=match, human_participant=human_participant),
         },
-        "apparition_alias": MIRROR_GUEST_TITLE,
+        "apparition_alias": case_definition["apparition_alias"],
         "public_context": {
             "true_name_fragments": human_participant.true_name_fragments,
             "curse_marks": human_participant.curse_marks,
@@ -780,6 +783,31 @@ def _style_summary_payload(*, session: auth_services.SessionResult) -> dict[str,
     }
 
 
+def _get_match_case_id(*, match_id: int) -> str:
+    start_request = (
+        MatchStartRequest.objects.filter(match_id=match_id)
+        .order_by("id")
+        .first()
+    )
+    if start_request is None:
+        return MIRROR_GUEST_CASE_ID
+    return start_request.case_id
+
+
+def _get_match_case_definition(*, match_id: int) -> dict[str, Any]:
+    return _story_case_definition(case_id=_get_match_case_id(match_id=match_id))
+
+
+def _story_case_definition(*, case_id: str) -> dict[str, Any]:
+    try:
+        return dict(APPROVED_STORY_CASE_DEFINITIONS[case_id])
+    except KeyError as exc:
+        raise ApiErrorResponseException(
+            "CASE_NOT_FOUND",
+            status_code=HTTP_404_NOT_FOUND,
+        ) from exc
+
+
 def parse_public_match_id(public_match_id: str) -> int:
     return _parse_public_id(public_match_id, prefix=MATCH_PUBLIC_ID_PREFIX)
 
@@ -822,6 +850,7 @@ def apply_deterministic_false_clue_detection(
     match_id: int,
     participant_id: int,
     turn_number: int,
+    case_id: str | None = None,
 ) -> dict[str, list[dict[str, Any]] | list[str]]:
     false_clue = (
         MatchFalseClueOwnership.objects.filter(
@@ -841,6 +870,7 @@ def apply_deterministic_false_clue_detection(
         false_clue_id=false_clue.false_clue_id,
         truth_state=CLUE_TRUTH_STATE_FALSE_REVEALED,
         source_turn_number=turn_number,
+        case_id=case_id or _get_match_case_id(match_id=match_id),
     )
     return {
         "added": [],
@@ -854,7 +884,9 @@ def _validate_turn_submit_request(
     action_code: str,
     info_target_key: str | None,
     human_participant: MatchParticipant,
+    case_id: str = MIRROR_GUEST_CASE_ID,
 ) -> None:
+    case_definition = _story_case_definition(case_id=case_id)
     if action_code not in ACTION_CODES:
         raise ApiErrorResponseException(
             "ACTION_NOT_AVAILABLE",
@@ -867,7 +899,7 @@ def _validate_turn_submit_request(
         )
     if (
         info_target_key is not None
-        and info_target_key not in APPROVED_MIRROR_GUEST_INFO_TARGET_KEYS
+        and info_target_key not in case_definition["info_target_keys"]
     ):
         raise ApiErrorResponseException(
             "VALIDATION_ERROR",
@@ -926,6 +958,7 @@ def _apply_turn_effects(
     human_participant: MatchParticipant,
     apparition_participant: MatchParticipant,
     info_target_key: str | None,
+    case_id: str,
 ) -> TurnEffectResult:
     state_before = _resource_state_from_participant(human_participant)
     state_after = _consume_action_cost(
@@ -949,6 +982,7 @@ def _apply_turn_effects(
             participant=human_participant,
             info_target_key=info_target_key,
             current_true_name_fragments=state_after.true_name_fragments,
+            case_id=case_id,
         )
         if added_false_clue is not None:
             state_after = add_false_clue(state_after)
@@ -959,6 +993,7 @@ def _apply_turn_effects(
             match_id=match.id,
             participant_id=human_participant.id,
             turn_number=turn.turn_number,
+            case_id=case_id,
         )
         if detection_delta["revealed"]:
             state_after = remove_false_clue(state_after)
@@ -976,6 +1011,7 @@ def _apply_turn_effects(
             action_code=resolution.player_action_code,
             info_target_key=info_target_key,
             current_true_name_fragments=state_after.true_name_fragments,
+            case_id=case_id,
         )
         if added_true_fragment is not None:
             state_after = state_after.replace(
@@ -1139,11 +1175,13 @@ def _add_true_name_fragment_from_reveal(
     action_code: str,
     info_target_key: str | None,
     current_true_name_fragments: int,
+    case_id: str,
 ) -> dict[str, Any] | None:
     definition = _matching_true_name_fragment_definition(
         action_code=action_code,
         info_target_key=info_target_key,
         current_true_name_fragments=current_true_name_fragments,
+        case_id=case_id,
     )
     if definition is None:
         return None
@@ -1171,8 +1209,9 @@ def _matching_true_name_fragment_definition(
     action_code: str,
     info_target_key: str | None,
     current_true_name_fragments: int,
+    case_id: str = MIRROR_GUEST_CASE_ID,
 ) -> dict[str, Any] | None:
-    for definition in APPROVED_MIRROR_GUEST_TRUE_NAME_FRAGMENTS:
+    for definition in _story_case_definition(case_id=case_id)["true_name_fragments"]:
         if definition["primary_info_target_key"] != info_target_key:
             continue
         if action_code not in definition["required_action_codes"]:
@@ -1190,10 +1229,12 @@ def _add_false_clue_from_trigger(
     participant: MatchParticipant,
     info_target_key: str | None,
     current_true_name_fragments: int,
+    case_id: str,
 ) -> dict[str, Any] | None:
     definition = _matching_false_clue_definition(
         info_target_key=info_target_key,
         current_true_name_fragments=current_true_name_fragments,
+        case_id=case_id,
     )
     if definition is None:
         return None
@@ -1215,6 +1256,7 @@ def _add_false_clue_from_trigger(
         false_clue_id=definition["id"],
         truth_state=CLUE_TRUTH_STATE_UNKNOWN,
         source_turn_number=turn.turn_number,
+        case_id=case_id,
     )
 
 
@@ -1222,8 +1264,9 @@ def _matching_false_clue_definition(
     *,
     info_target_key: str | None,
     current_true_name_fragments: int,
+    case_id: str = MIRROR_GUEST_CASE_ID,
 ) -> dict[str, Any] | None:
-    for definition in APPROVED_MIRROR_GUEST_FALSE_CLUES:
+    for definition in _story_case_definition(case_id=case_id)["false_clues"]:
         if info_target_key not in definition["trigger_info_target_keys"]:
             continue
         if current_true_name_fragments < definition.get("minimum_true_name_fragments", 0):
@@ -1250,8 +1293,9 @@ def _false_clue_payload(
     false_clue_id: int,
     truth_state: str,
     source_turn_number: int,
+    case_id: str = MIRROR_GUEST_CASE_ID,
 ) -> dict[str, Any]:
-    definition = _false_clue_definition_by_id(false_clue_id)
+    definition = _false_clue_definition_by_id(false_clue_id, case_id=case_id)
     return {
         "clue_id": definition["clue_id"],
         "text": definition["text"],
@@ -1260,8 +1304,8 @@ def _false_clue_payload(
     }
 
 
-def _false_clue_definition_by_id(false_clue_id: int) -> dict[str, Any]:
-    for definition in APPROVED_MIRROR_GUEST_FALSE_CLUES:
+def _false_clue_definition_by_id(false_clue_id: int, *, case_id: str = MIRROR_GUEST_CASE_ID) -> dict[str, Any]:
+    for definition in _story_case_definition(case_id=case_id)["false_clues"]:
         if definition["id"] == false_clue_id:
             return dict(definition)
     raise ValueError(f"unknown false clue id: {false_clue_id}")

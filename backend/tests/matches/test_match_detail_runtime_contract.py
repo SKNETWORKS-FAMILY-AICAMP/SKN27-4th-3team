@@ -225,6 +225,7 @@ def test_shared_match_state_formatter_uses_persisted_human_resource_fields():
             participant_type=PARTICIPANT_TYPE_APPARITION,
         ),
         now=datetime(2026, 6, 5, 0, 0, 0, tzinfo=timezone.utc),
+        case_id="mirror_guest",
     )
 
     assert state["player"]["resources"]["sanity"] == 7

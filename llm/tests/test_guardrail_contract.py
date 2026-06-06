@@ -50,6 +50,25 @@ class GuardrailContractTest(unittest.TestCase):
 
         self.assertIn("line_length_violation", violations)
 
+    # 피티는 nameless_curse 입력에 들어올 때만 공식 괴이 이름으로 허용한다.
+    def test_turn_flavor_text_prompt_uses_piti_persona_only_when_alias_is_piti(self) -> None:
+        generation_input = _generation_input("turn_flavor_text.official.sample.json")
+
+        self.assertNotIn("피티", generation_input["system_prompt"])
+
+        payload = json.loads(
+            (ROOT / "llm" / "fixtures" / "turn_flavor_text.official.sample.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        payload["apparition_alias"] = "피티"
+        generation_input = build_generation_input(payload)
+
+        self.assertIn("피티", generation_input["system_prompt"])
+        self.assertEqual([], validate_output(generation_input, "피티는 유리 안쪽에서 이름을 붙잡았다."))
+        self.assertIn("demo_reference_leak", validate_output(generation_input, "이안은 유리 안쪽에서 이름을 붙잡았다."))
+        self.assertIn("demo_reference_leak", validate_output(generation_input, "엘리자베스는 유리 안쪽에서 이름을 붙잡았다."))
+
     # 입력 로그에 있는 "진실" 표현은 운영자 로그 요약에서 허용한다.
     def test_match_log_summary_allows_truth_word_when_it_exists_in_payload(self) -> None:
         generation_input = _generation_input("match_log_summary.sample.json")

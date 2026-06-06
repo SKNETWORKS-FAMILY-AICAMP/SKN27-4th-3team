@@ -43,6 +43,30 @@ EXPECTED_MIRROR_GUEST_BRIEFING = {
     ],
     "max_turns": 12,
 }
+EXPECTED_NAMELESS_CURSE_BRIEFING = {
+    "case_id": "nameless_curse",
+    "title": "무명(無名)의 저주",
+    "apparition_alias": "피티",
+    "briefing_text": [
+        "사건 파일 02. 무명(無名)의 저주.",
+        "안개가 걷히지 않는 저택에는 이름을 빼앗긴 목소리가 남아 있다.",
+        "진실의 거울은 얼굴이 아니라, 숨겨진 이름과 상처를 되비춘다.",
+        "피티를 처치 대상으로 단정하지 마라.",
+        "그 이름을 되찾게 해야 저주의 사슬을 끊을 수 있다.",
+    ],
+    "taboo": {
+        "title": "같은 상처 반복 금지",
+        "description": "같은 정보 대상을 연속으로 조사하면 금기 위반으로 판정한다.",
+    },
+    "info_targets": [
+        {"key": "truth_mirror", "display_name": "진실의 거울"},
+        {"key": "family_journal", "display_name": "가죽 장정 일기장"},
+        {"key": "nameless_thread", "display_name": "무명실"},
+        {"key": "basement_wall", "display_name": "지하실 벽"},
+        {"key": "self_reflection", "display_name": "플레이어의 비친 얼굴"},
+    ],
+    "max_turns": 12,
+}
 
 
 def _assert_server_request_id(value: str) -> None:
@@ -117,6 +141,27 @@ def test_story_case_briefing_service_returns_only_approved_mirror_guest_case(mon
 
     assert captured_tokens == ["access-token"]
     assert result.case == EXPECTED_MIRROR_GUEST_BRIEFING
+
+
+def test_story_case_briefing_service_returns_nameless_curse_pdf_concept_case(monkeypatch):
+    from backend.apps.accounts import services as auth_services
+    from backend.apps.story.services import get_story_case_briefing
+
+    captured_tokens = []
+
+    def fake_get_current_session(*, raw_access_token):
+        captured_tokens.append(raw_access_token)
+        return SimpleNamespace(authenticated=True)
+
+    monkeypatch.setattr(auth_services, "get_current_session", fake_get_current_session)
+
+    result = get_story_case_briefing(
+        raw_access_token="access-token",
+        case_id="nameless_curse",
+    )
+
+    assert captured_tokens == ["access-token"]
+    assert result.case == EXPECTED_NAMELESS_CURSE_BRIEFING
 
 
 def test_story_case_briefing_service_returns_case_not_found_for_unknown_case(monkeypatch):

@@ -13,6 +13,24 @@ from rest_framework.test import APIClient
 django.setup()
 
 REQUEST_ID_PATTERN = re.compile(r"^req_[0-9a-f]{32}$")
+EXPECTED_APPROVED_CASES = [
+    {
+        "case_id": "mirror_guest",
+        "title": "거울 속의 손님",
+        "summary": "거울을 통해 사람의 기억을 훔치는 괴이.",
+        "difficulty": "mvp_01",
+        "mvp_available": True,
+        "estimated_turns": 12,
+    },
+    {
+        "case_id": "nameless_curse",
+        "title": "무명(無名)의 저주",
+        "summary": "이름을 빼앗긴 원혼 피티와 진실의 거울을 마주하는 사건.",
+        "difficulty": "mvp_02",
+        "mvp_available": True,
+        "estimated_turns": 12,
+    },
+]
 
 
 def _assert_server_request_id(value: str) -> None:
@@ -40,20 +58,9 @@ def test_story_case_list_without_access_cookie_returns_auth_required_error_envel
 def test_story_case_list_with_access_cookie_returns_success_envelope(monkeypatch):
     from backend.apps.story import services as story_services
 
-    expected_cases = [
-        {
-            "case_id": "mirror_guest",
-            "title": "거울 속의 손님",
-            "summary": "거울을 통해 사람의 기억을 훔치는 괴이.",
-            "difficulty": "mvp_01",
-            "mvp_available": True,
-            "estimated_turns": 12,
-        }
-    ]
-
     def fake_list_story_cases(*, raw_access_token):
         assert raw_access_token == "access-token"
-        return SimpleNamespace(cases=expected_cases)
+        return SimpleNamespace(cases=EXPECTED_APPROVED_CASES)
 
     monkeypatch.setattr(story_services, "list_story_cases", fake_list_story_cases)
 
@@ -68,13 +75,13 @@ def test_story_case_list_with_access_cookie_returns_success_envelope(monkeypatch
     assert response.status_code == 200
     body = response.json()
 
-    assert body["data"] == {"cases": expected_cases}
+    assert body["data"] == {"cases": EXPECTED_APPROVED_CASES}
     assert body["meta"]["request_id"] == response["X-Request-ID"]
     assert body["meta"]["request_id"] != "external-trace"
     _assert_server_request_id(body["meta"]["request_id"])
 
 
-def test_story_case_list_service_returns_only_approved_static_mvp_case(monkeypatch):
+def test_story_case_list_service_returns_mirror_guest_and_nameless_curse(monkeypatch):
     from backend.apps.accounts import services as auth_services
     from backend.apps.story.services import list_story_cases
 
@@ -89,16 +96,7 @@ def test_story_case_list_service_returns_only_approved_static_mvp_case(monkeypat
     result = list_story_cases(raw_access_token="access-token")
 
     assert captured_tokens == ["access-token"]
-    assert result.cases == [
-        {
-            "case_id": "mirror_guest",
-            "title": "거울 속의 손님",
-            "summary": "거울을 통해 사람의 기억을 훔치는 괴이.",
-            "difficulty": "mvp_01",
-            "mvp_available": True,
-            "estimated_turns": 12,
-        }
-    ]
+    assert result.cases == EXPECTED_APPROVED_CASES
 
 
 def test_story_case_list_view_no_longer_returns_501():

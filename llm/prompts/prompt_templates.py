@@ -65,11 +65,12 @@ def base_system_prompt(extra: str) -> str:
     )
 
 
-def apparition_persona_prompt() -> str:
+def apparition_persona_prompt(apparition_alias: str | None = None) -> str:
+    subject = "피티" if apparition_alias == "피티" else "괴이"
     return "\n".join(
         [
             "괴이 반응 문구가 필요할 때의 페르소나 기준:",
-            "- 피티는 단순한 악당이 아니라 이름과 목소리를 빼앗긴 상처의 잔향처럼 다룬다.",
+            f"- {subject}는 단순한 악당이 아니라 이름과 목소리를 빼앗긴 상처의 잔향처럼 다룬다.",
             "- 말투는 낮고 조용하며, 원망과 외로움이 섞인 속삭임에 가깝다.",
             "- 직접적인 협박보다 거울, 침묵, 먼지, 금속 냄새, 식은 손끝 같은 감각으로 압박한다.",
             "- 아이 같은 여린 감각과 오래된 분노가 함께 느껴지게 하되, 과거사를 새로 설명하지 않는다.",
@@ -232,7 +233,7 @@ def build_turn_flavor_text_input(payload: dict[str, Any]) -> dict[str, Any]:
             "\n".join(
                 [
                     "문장은 짧고 어둡게, 게임 UI 위에 얹히는 속삭임처럼 작성한다.",
-                    apparition_persona_prompt(),
+                    apparition_persona_prompt(payload.get("apparition_alias")),
                 ]
             )
         ),
@@ -281,7 +282,7 @@ def build_final_duel_dialogue_input(payload: dict[str, Any]) -> dict[str, Any]:
 - 직접적인 신체 훼손 묘사나 과한 gore 표현을 쓰지 않는다.
 
 [문체]
-- 피티는 거울 속의 손님이다.
+- apparition_alias가 피티이면, 피티는 거울 속의 손님이라는 공식 설정을 따른다.
 - 짧고 조용한 심리 공포 톤을 유지한다.
 - 이름, 기억, 입술, 유리, 금속 냄새, 시선 같은 감각 이미지를 우선한다.
 - 플레이어 이름은 입력에 있을 때만 사용한다.
@@ -295,7 +296,7 @@ def build_final_duel_dialogue_input(payload: dict[str, Any]) -> dict[str, Any]:
             "\n".join(
                 [
                     "결전 대화는 게임 상태를 바꾸지 않는 연출 응답이다.",
-                    apparition_persona_prompt(),
+                    apparition_persona_prompt(apparition_alias),
                 ]
             )
         ),

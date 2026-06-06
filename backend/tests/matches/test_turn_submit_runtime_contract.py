@@ -3,6 +3,8 @@ import re
 import uuid
 from types import SimpleNamespace
 
+import pytest
+
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.config.settings")
 
@@ -290,6 +292,34 @@ def test_turn_submit_decision_constraints_are_encoded_in_source():
     assert "llm" not in turn_submit_source.lower()
     assert "backend.apps.retrieval" not in turn_submit_source
     assert "embedding" not in turn_submit_source.lower()
+
+
+def test_turn_submit_validation_uses_case_specific_nameless_curse_info_targets():
+    from backend.apps.common.exceptions import ApiErrorResponseException
+    from backend.apps.matches import services as match_services
+
+    human_participant = SimpleNamespace(
+        ritual_power=3,
+        true_name_fragments=0,
+    )
+
+    match_services._validate_turn_submit_request(
+        action_code="insight",
+        info_target_key="family_journal",
+        human_participant=human_participant,
+        case_id="nameless_curse",
+    )
+
+    with pytest.raises(ApiErrorResponseException) as exc_info:
+        match_services._validate_turn_submit_request(
+            action_code="insight",
+            info_target_key="family_journal",
+            human_participant=human_participant,
+            case_id="mirror_guest",
+        )
+
+    assert exc_info.value.code == "VALIDATION_ERROR"
+    assert exc_info.value.status_code == 400
 
 
 def test_turn_submit_service_uses_start_request_membership_access_guard():

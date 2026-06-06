@@ -48,7 +48,7 @@ updated: "2026-06-06"
 
 | 항목 | 상태 | 이유 |
 |---|---|---|
-| `nameless_curse` 사건 seed | 보류 | info_targets, 진명 조각, 거짓 단서, 결과 문구의 최종 seed 값이 아직 확정되지 않았다. 임의 생성 금지 원칙 때문에 구현하지 않았다. |
+| `nameless_curse` 사건 seed | 반영 | [[09_Approved_Contracts/26_무명의_저주_사건_계약]]의 승인값 기준으로 별도 case, info_targets, 진명 조각, 거짓 단서, 결과 문구를 추가했다. |
 | RAG ingest management command | 보류 | embedding provider 호출 방식, 저장할 vector 차원, ingest 대상 파일 목록의 실행 방식이 아직 구현 계약으로 충분히 좁혀지지 않았다. |
 | `auth.logout` 실제 revoke | 보류 | refresh family revoke 실패 정책, 보안 이벤트 metadata, access-only/logout 요청 처리 방식이 아직 별도 확정되지 않았다. |
 
