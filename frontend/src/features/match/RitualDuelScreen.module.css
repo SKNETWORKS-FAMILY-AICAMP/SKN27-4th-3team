@@ -1,0 +1,108 @@
+.screen {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  overflow: hidden;
+  background: #050505;
+}
+
+.prototypeHost {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #050505;
+}
+
+.prototypeHost :global(.game-frame) {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  --frame-max-width: 1440px;
+  margin: 0;
+  transform: translate(-50%, -50%);
+}
+
+.backButton {
+  position: absolute;
+  top: clamp(12px, 1.8vw, 22px);
+  left: clamp(12px, 1.8vw, 22px);
+  z-index: 4;
+  min-height: 30px;
+  padding: 0 12px;
+  color: rgba(215, 202, 169, 0.64);
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(180, 151, 91, 0.22);
+  border-radius: 2px;
+  opacity: 0.45;
+}
+
+.backButton:hover,
+.backButton:focus-visible {
+  color: rgba(235, 220, 181, 0.9);
+  background: rgba(0, 0, 0, 0.42);
+  border-color: rgba(212, 179, 105, 0.58);
+  outline: none;
+  opacity: 0.95;
+}
+
+.prototypeHost:empty::before {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(220, 217, 205, 0.78);
+  content: "의식장을 여는 중...";
+  font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  font-size: 14px;
+  letter-spacing: 0;
+}
+
+.loadError {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  z-index: 3;
+  width: min(420px, calc(100vw - 40px));
+  padding: 22px 24px;
+  color: rgba(232, 225, 208, 0.9);
+  background: rgba(9, 7, 6, 0.88);
+  border: 1px solid rgba(148, 36, 36, 0.56);
+  transform: translate(-50%, -50%);
+}
+
+.loadError strong {
+  display: block;
+  margin-bottom: 10px;
+  color: rgba(231, 190, 142, 0.94);
+  font-size: 18px;
+}
+
+.loadError p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.screen.fadeIn::after {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  content: "";
+  pointer-events: none;
+  background: #000;
+  animation: gameScreenFadeIn 1550ms ease-out forwards;
+}
+
+@keyframes gameScreenFadeIn {
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
