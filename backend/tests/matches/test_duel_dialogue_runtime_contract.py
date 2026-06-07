@@ -213,3 +213,61 @@ def test_duel_dialogue_view_source_uses_csrf_cookie_session_and_service_boundary
     assert "settings.ACCESS_TOKEN_COOKIE_NAME" in duel_source
     assert "api_success_response(" in duel_source
     assert "llm.generation" not in duel_source
+
+
+def test_duel_match_payload_includes_player_name_and_case_specific_duel_rules(monkeypatch):
+    from backend.apps.matches import services as match_services
+    from backend.apps.matches.constants import MATCH_STATUS_ACTIVE, PARTICIPANT_TYPE_HUMAN
+
+    human_participant = SimpleNamespace(
+        id=7,
+        true_name_fragments=2,
+        false_clues=2,
+        curse_marks=1,
+        sanity=6,
+    )
+
+    monkeypatch.setattr(
+        match_services,
+        "_get_participant",
+        lambda *, match_id, participant_type: human_participant
+        if participant_type == PARTICIPANT_TYPE_HUMAN
+        else SimpleNamespace(id=8),
+    )
+    monkeypatch.setattr(
+        match_services,
+        "_get_current_turn",
+        lambda *, match_id: SimpleNamespace(id=3, turn_number=7),
+    )
+    monkeypatch.setattr(match_services, "_get_match_turn_logs", lambda *, match_id: [])
+    monkeypatch.setattr(
+        match_services,
+        "_get_match_case_definition",
+        lambda *, match_id: {
+            "case_id": "nameless_curse",
+            "title": "nameless curse",
+            "apparition_alias": "Piti",
+            "required_true_name_fragments_for_seal": 2,
+            "duel_win_condition": "recover_piti_true_name",
+        },
+    )
+    monkeypatch.setattr(
+        match_services,
+        "_get_match_player_display_name",
+        lambda *, match_id, user_id: "Yunseo",
+        raising=False,
+    )
+
+    payload = match_services._duel_match_payload(
+        match=SimpleNamespace(id=1, status=MATCH_STATUS_ACTIVE),
+        match_id=1,
+        user_id=10,
+    )
+
+    assert payload["player"] == {"display_name": "Yunseo"}
+    assert payload["public_context"]["false_clues"] == 2
+    assert payload["duel_rules"] == {
+        "required_true_name_fragments": 2,
+        "win_condition": "recover_piti_true_name",
+        "false_clue_pressure": True,
+    }

@@ -124,6 +124,7 @@ class MatchStartRequest(models.Model):
     user_id = models.PositiveBigIntegerField()
     client_request_id = models.UUIDField()
     case_id = models.TextField()
+    player_display_name = models.TextField(null=True, blank=True)
     match_id = models.PositiveBigIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
 

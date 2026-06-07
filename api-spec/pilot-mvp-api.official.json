@@ -5,7 +5,7 @@
     "schema_status": "approved",
     "schema_version": "2026-06-02.mvp.v1",
     "created": "2026-06-02",
-    "updated": "2026-06-04",
+    "updated": "2026-06-06",
     "source_documents": [
       "docs/09_Approved_Contracts/05_API_명세_관리_기준.md",
       "docs/09_Approved_Contracts/06_API_응답_형태_기준.md",
@@ -883,7 +883,8 @@
         },
         "query": {},
         "body": {
-          "client_request_id": "string:uuid"
+          "client_request_id": "string:uuid",
+          "player_display_name": "string|null"
         }
       },
       "response": {
@@ -907,7 +908,10 @@
         "IDEMPOTENCY_CONFLICT",
         "RATE_LIMITED"
       ],
-      "schema_status": "approved"
+      "schema_status": "approved",
+      "notes": [
+        "player_display_name: optional, trim whitespace, 1-24 chars"
+      ]
     },
     {
       "id": "matches.detail",

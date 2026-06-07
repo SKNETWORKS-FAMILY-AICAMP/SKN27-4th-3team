@@ -80,6 +80,29 @@ def test_retrieval_source_allowlist_includes_only_approved_targets():
     assert not is_retrieval_source_allowed("docs/07_LLM/01_prompt_draft.md")
 
 
+def test_nameless_curse_rag_source_plan_prioritizes_approved_story_contracts():
+    from backend.apps.retrieval.services import (
+        build_story_case_rag_source_plan,
+        is_retrieval_source_allowed,
+    )
+
+    plan = build_story_case_rag_source_plan(
+        case_id="nameless_curse",
+        caller="final_duel_dialogue",
+    )
+
+    assert plan.case_id == "nameless_curse"
+    assert plan.caller == "final_duel_dialogue"
+    assert plan.source_paths[:4] == (
+        "docs/09_Approved_Contracts/27_플레이어_이름_무명의_저주_결전_RAG_계약.md",
+        "docs/09_Approved_Contracts/26_무명의_저주_사건_계약.md",
+        "docs/09_Approved_Contracts/25_LLM_Runtime_통합_계약.md",
+        "docs/09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약.md",
+    )
+    assert all(is_retrieval_source_allowed(source_path) for source_path in plan.source_paths)
+    assert not hasattr(plan, "rule_overrides")
+
+
 def test_chunking_uses_approved_size_bounds_overlap_and_payload_fields():
     from backend.apps.retrieval.chunking import (
         DEFAULT_CHUNK_MAX_CHARS,

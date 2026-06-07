@@ -237,3 +237,116 @@ def test_shared_match_state_formatter_uses_persisted_human_resource_fields():
     assert state["player"]["resources"]["suspicion"] == 2
     assert state["player"]["resources"]["shield"] == 1
     assert state["player"]["resources"]["timeout_count"] == 1
+
+
+def test_shared_match_state_formatter_prefers_match_start_player_display_name(monkeypatch):
+    from backend.apps.matches.constants import (
+        MATCH_MODE_AI_STORY,
+        MATCH_STATUS_ACTIVE,
+        PARTICIPANT_TYPE_APPARITION,
+        PARTICIPANT_TYPE_HUMAN,
+        TURN_STATUS_AWAITING_PLAYER,
+    )
+    from backend.apps.story import services as story_services
+    from backend.apps.story.services import format_match_state
+
+    monkeypatch.setattr(
+        story_services,
+        "_stored_match_player_display_name",
+        lambda *, match_id: "Yunseo",
+        raising=False,
+    )
+    monkeypatch.setattr(
+        story_services,
+        "_get_match_case_id",
+        lambda *, match_id: "nameless_curse",
+    )
+
+    state = format_match_state(
+        session=SimpleNamespace(
+            user={"id": "1", "email": "user@example.com"},
+            profile={"nickname": "profile-nickname"},
+        ),
+        match=SimpleNamespace(id=1, mode=MATCH_MODE_AI_STORY, status=MATCH_STATUS_ACTIVE),
+        turn=SimpleNamespace(
+            id=1,
+            turn_number=1,
+            status=TURN_STATUS_AWAITING_PLAYER,
+            deadline_at=datetime(2026, 6, 5, 0, 0, 25, tzinfo=timezone.utc),
+            resolved_at=None,
+        ),
+        human_participant=SimpleNamespace(
+            id=1,
+            participant_type=PARTICIPANT_TYPE_HUMAN,
+            sanity=12,
+            ritual_power=3,
+            curse_marks=0,
+            secret_exposure=0,
+            true_name_fragments=0,
+            incomplete_true_name_fragments=0,
+            false_clues=0,
+            suspicion=0,
+            shield=0,
+            timeout_count=0,
+        ),
+        apparition_participant=SimpleNamespace(
+            id=2,
+            participant_type=PARTICIPANT_TYPE_APPARITION,
+        ),
+        now=datetime(2026, 6, 5, 0, 0, 0, tzinfo=timezone.utc),
+    )
+
+    assert state["player"]["display_name"] == "Yunseo"
+
+
+def test_nameless_curse_match_state_enables_seal_after_two_true_name_fragments():
+    from backend.apps.matches.constants import (
+        MATCH_MODE_AI_STORY,
+        MATCH_STATUS_ACTIVE,
+        PARTICIPANT_TYPE_APPARITION,
+        PARTICIPANT_TYPE_HUMAN,
+        TURN_STATUS_AWAITING_PLAYER,
+    )
+    from backend.apps.story.services import format_match_state
+
+    state = format_match_state(
+        session=SimpleNamespace(
+            user={"id": "1", "email": "user@example.com"},
+            profile={"nickname": "pilot"},
+        ),
+        match=SimpleNamespace(id=1, mode=MATCH_MODE_AI_STORY, status=MATCH_STATUS_ACTIVE),
+        turn=SimpleNamespace(
+            id=1,
+            turn_number=1,
+            status=TURN_STATUS_AWAITING_PLAYER,
+            deadline_at=datetime(2026, 6, 5, 0, 0, 25, tzinfo=timezone.utc),
+            resolved_at=None,
+        ),
+        human_participant=SimpleNamespace(
+            id=1,
+            participant_type=PARTICIPANT_TYPE_HUMAN,
+            sanity=12,
+            ritual_power=3,
+            curse_marks=0,
+            secret_exposure=0,
+            true_name_fragments=2,
+            incomplete_true_name_fragments=0,
+            false_clues=0,
+            suspicion=0,
+            shield=0,
+            timeout_count=0,
+        ),
+        apparition_participant=SimpleNamespace(
+            id=2,
+            participant_type=PARTICIPANT_TYPE_APPARITION,
+        ),
+        now=datetime(2026, 6, 5, 0, 0, 0, tzinfo=timezone.utc),
+        case_id="nameless_curse",
+    )
+
+    seal_action = next(action for action in state["available_actions"] if action["code"] == "seal")
+
+    assert state["player"]["resources"]["true_name_fragments_required"] == 2
+    assert state["opponent"]["public_state"]["true_name_fragments_required"] == 2
+    assert state["opponent"]["public_state"]["seal_available"] is True
+    assert seal_action["enabled"] is True

@@ -64,6 +64,8 @@ class OfficialFixtureContractTest(unittest.TestCase):
         self.assertIs(True, result["fallback_used"])
         self.assertEqual("dry_run", result["metadata"]["reason"])
         self.assertIn("final_duel_dialogue", result["purpose"])
+        self.assertIn("Yunseo", result["metadata"]["user_prompt"])
+        self.assertIn("recover_piti_true_name", result["metadata"]["user_prompt"])
         self.assertIn("피티", result["metadata"]["user_prompt"])
         self.assertIn("네 이름을 알고 있어", result["metadata"]["user_prompt"])
 

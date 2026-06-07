@@ -62,6 +62,7 @@ class StoryCaseMatchStartView(APIView):
             raw_access_token=request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME),
             case_id=case_id,
             client_request_id=serializer.validated_data["client_request_id"],
+            player_display_name=serializer.validated_data.get("player_display_name"),
         )
         return api_success_response(
             request,

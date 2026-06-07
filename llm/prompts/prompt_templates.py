@@ -246,7 +246,9 @@ def build_turn_flavor_text_input(payload: dict[str, Any]) -> dict[str, Any]:
 def build_final_duel_dialogue_input(payload: dict[str, Any]) -> dict[str, Any]:
     case = payload.get("case", {})
     match = payload.get("match", {})
+    player = payload.get("player", {})
     public_context = payload.get("public_context", {})
+    duel_rules = payload.get("duel_rules", {})
     recent_logs = format_result_turn_logs(public_context.get("recent_public_logs", []))
     player_message = str(payload.get("player_message") or "")
     apparition_alias = payload.get("apparition_alias")
@@ -262,9 +264,18 @@ def build_final_duel_dialogue_input(payload: dict[str, Any]) -> dict[str, Any]:
 - turn_number: {match.get("turn_number")}
 - result: {match.get("result")}
 
+[player]
+- display_name: {player.get("display_name")}
+
+[duel_rules]
+- required_true_name_fragments: {duel_rules.get("required_true_name_fragments")}
+- win_condition: {duel_rules.get("win_condition")}
+- false_clue_pressure: {duel_rules.get("false_clue_pressure")}
+
 [공개 상태]
 - apparition_alias: {apparition_alias}
 - true_name_fragments: {public_context.get("true_name_fragments")}
+- false_clues: {public_context.get("false_clues")}
 - curse_marks: {public_context.get("curse_marks")}
 - sanity: {public_context.get("sanity")}
 

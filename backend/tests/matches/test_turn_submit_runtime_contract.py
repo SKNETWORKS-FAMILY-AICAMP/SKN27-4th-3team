@@ -322,6 +322,50 @@ def test_turn_submit_validation_uses_case_specific_nameless_curse_info_targets()
     assert exc_info.value.status_code == 400
 
 
+def test_turn_submit_validation_uses_case_specific_seal_requirement():
+    from backend.apps.common.exceptions import ApiErrorResponseException
+    from backend.apps.matches import services as match_services
+
+    human_participant = SimpleNamespace(
+        ritual_power=3,
+        true_name_fragments=2,
+    )
+
+    match_services._validate_turn_submit_request(
+        action_code="seal",
+        info_target_key="truth_mirror",
+        human_participant=human_participant,
+        case_id="nameless_curse",
+    )
+
+    with pytest.raises(ApiErrorResponseException) as exc_info:
+        match_services._validate_turn_submit_request(
+            action_code="seal",
+            info_target_key="mirror_back",
+            human_participant=human_participant,
+            case_id="mirror_guest",
+        )
+
+    assert exc_info.value.code == "ACTION_NOT_AVAILABLE"
+    assert exc_info.value.status_code == 400
+
+
+def test_turn_submit_resolution_uses_case_specific_seal_condition_source():
+    from pathlib import Path
+
+    root_dir = Path(__file__).resolve().parents[3]
+    services_source = (root_dir / "backend" / "apps" / "matches" / "services.py").read_text(
+        encoding="utf-8"
+    )
+    turn_submit_source = services_source.split("def submit_match_turn(", maxsplit=1)[1].split(
+        "\n\ndef _match_result(",
+        maxsplit=1,
+    )[0]
+
+    assert "seal_condition_met=_seal_condition_met(" in turn_submit_source
+    assert "MAX_TRUE_NAME_FRAGMENTS" not in turn_submit_source
+
+
 def test_turn_submit_service_uses_start_request_membership_access_guard():
     from pathlib import Path
 

@@ -19,7 +19,6 @@ from backend.apps.game_rules.resources import (
     MAX_SANITY,
     MAX_SHIELD,
     MAX_SUSPICION,
-    MAX_TRUE_NAME_FRAGMENTS,
     ResourceState,
 )
 from backend.apps.matches.constants import (
@@ -36,10 +35,12 @@ from backend.apps.story.constants import (
     APPROVED_STORY_CASE_DEFINITIONS,
     MIRROR_GUEST_CASE_ID,
     MVP_STORY_MAX_TURNS,
+    PLAYER_DISPLAY_NAME_MAX_LENGTH,
 )
 
 
 HTTP_401_UNAUTHORIZED = 401
+HTTP_400_BAD_REQUEST = 400
 HTTP_404_NOT_FOUND = 404
 HTTP_409_CONFLICT = 409
 DEFAULT_TURN_SECONDS = 25
@@ -145,9 +146,11 @@ def start_story_case_match(
     raw_access_token: str | None,
     case_id: str,
     client_request_id: UUID,
+    player_display_name: str | None = None,
 ) -> StoryCaseMatchStartResult:
     session = auth_services.get_current_session(raw_access_token=raw_access_token)
     user_id = _session_user_id(session=session)
+    normalized_player_display_name = _normalize_player_display_name(player_display_name)
 
     try:
         with transaction.atomic():
@@ -156,6 +159,7 @@ def start_story_case_match(
                 user_id=user_id,
                 case_id=case_id,
                 client_request_id=client_request_id,
+                player_display_name=normalized_player_display_name,
             )
     except IntegrityError as exc:
         try:
@@ -165,6 +169,7 @@ def start_story_case_match(
                     user_id=user_id,
                     case_id=case_id,
                     client_request_id=client_request_id,
+                    player_display_name=normalized_player_display_name,
                 )
         except MatchStartRequest.DoesNotExist:
             raise exc
@@ -182,6 +187,7 @@ def _start_story_case_match_in_transaction(
     user_id: int,
     case_id: str,
     client_request_id: UUID,
+    player_display_name: str | None,
 ) -> StoryCaseMatchStartResult:
     existing_start_request = (
         MatchStartRequest.objects.select_for_update()
@@ -192,6 +198,7 @@ def _start_story_case_match_in_transaction(
         return _match_start_result_from_existing_request(
             session=session,
             case_id=case_id,
+            player_display_name=player_display_name,
             start_request=existing_start_request,
         )
 
@@ -250,6 +257,7 @@ def _start_story_case_match_in_transaction(
         user_id=user_id,
         client_request_id=client_request_id,
         case_id=case_id,
+        player_display_name=player_display_name,
         match_id=match.id,
     )
 
@@ -262,6 +270,7 @@ def _start_story_case_match_in_transaction(
             apparition_participant=apparition_participant,
             now=now,
             case_id=case_id,
+            player_display_name=player_display_name,
         )
     )
 
@@ -272,6 +281,7 @@ def _existing_match_start_result(
     user_id: int,
     case_id: str,
     client_request_id: UUID,
+    player_display_name: str | None,
 ) -> StoryCaseMatchStartResult:
     start_request = MatchStartRequest.objects.select_for_update().get(
         user_id=user_id,
@@ -280,6 +290,7 @@ def _existing_match_start_result(
     return _match_start_result_from_existing_request(
         session=session,
         case_id=case_id,
+        player_display_name=player_display_name,
         start_request=start_request,
     )
 
@@ -288,9 +299,15 @@ def _match_start_result_from_existing_request(
     *,
     session: auth_services.SessionResult,
     case_id: str,
+    player_display_name: str | None,
     start_request: MatchStartRequest,
 ) -> StoryCaseMatchStartResult:
     if start_request.case_id != case_id:
+        raise ApiErrorResponseException(
+            "IDEMPOTENCY_CONFLICT",
+            status_code=HTTP_409_CONFLICT,
+        )
+    if _stored_player_display_name_value(start_request) != player_display_name:
         raise ApiErrorResponseException(
             "IDEMPOTENCY_CONFLICT",
             status_code=HTTP_409_CONFLICT,
@@ -314,6 +331,7 @@ def _match_start_result_from_existing_request(
             ),
             now=timezone.now(),
             case_id=case_id,
+            player_display_name=_stored_player_display_name_value(start_request),
         )
     )
 
@@ -327,10 +345,12 @@ def format_match_state(
     apparition_participant: MatchParticipant,
     now,
     case_id: str | None = None,
+    player_display_name: str | None = None,
 ) -> dict[str, Any]:
     player_state = _resource_state_from_human_participant(human_participant)
     resolved_case_id = case_id or _get_match_case_id(match_id=match.id)
     case_definition = _story_case_definition(case_id=resolved_case_id)
+    required_true_name_fragments = case_definition["required_true_name_fragments_for_seal"]
     return {
         "match_id": _public_id(prefix="match", value=match.id),
         "mode": match.mode,
@@ -351,10 +371,15 @@ def format_match_state(
         "player": {
             "participant_id": _public_id(prefix="participant", value=human_participant.id),
             "participant_type": PARTICIPANT_TYPE_HUMAN,
-            "display_name": _player_display_name(session=session),
+            "display_name": _player_display_name(
+                session=session,
+                match_id=None if case_id is not None else match.id,
+                player_display_name=player_display_name,
+            ),
             "resources": _resource_payload(
                 player_state,
                 timeout_count=human_participant.timeout_count,
+                required_true_name_fragments=required_true_name_fragments,
             ),
         },
         "opponent": {
@@ -363,11 +388,14 @@ def format_match_state(
             "display_name": case_definition["apparition_alias"],
             "public_state": {
                 "true_name_fragments_revealed": player_state.true_name_fragments,
-                "true_name_fragments_required": MAX_TRUE_NAME_FRAGMENTS,
-                "seal_available": player_state.true_name_fragments >= MAX_TRUE_NAME_FRAGMENTS,
+                "true_name_fragments_required": required_true_name_fragments,
+                "seal_available": player_state.true_name_fragments >= required_true_name_fragments,
             },
         },
-        "available_actions": _available_actions(player_state),
+        "available_actions": _available_actions(
+            player_state,
+            required_true_name_fragments=required_true_name_fragments,
+        ),
         "clues": [],
         "recent_public_logs": [],
     }
@@ -387,7 +415,12 @@ def _resource_state_from_human_participant(human_participant: MatchParticipant) 
     )
 
 
-def _resource_payload(state: ResourceState, *, timeout_count: int) -> dict[str, int]:
+def _resource_payload(
+    state: ResourceState,
+    *,
+    timeout_count: int,
+    required_true_name_fragments: int,
+) -> dict[str, int]:
     return {
         "sanity": state.sanity,
         "sanity_max": MAX_SANITY,
@@ -396,7 +429,7 @@ def _resource_payload(state: ResourceState, *, timeout_count: int) -> dict[str, 
         "curse_marks": state.curse_marks,
         "curse_marks_max": MAX_CURSE_MARKS,
         "true_name_fragments": state.true_name_fragments,
-        "true_name_fragments_required": MAX_TRUE_NAME_FRAGMENTS,
+        "true_name_fragments_required": required_true_name_fragments,
         "incomplete_true_name_fragments": state.incomplete_true_name_fragments,
         "false_clues": state.false_clues,
         "false_clues_max": MAX_FALSE_CLUES,
@@ -408,8 +441,12 @@ def _resource_payload(state: ResourceState, *, timeout_count: int) -> dict[str, 
     }
 
 
-def _available_actions(state: ResourceState) -> list[dict[str, Any]]:
-    seal_enabled = state.true_name_fragments >= MAX_TRUE_NAME_FRAGMENTS
+def _available_actions(
+    state: ResourceState,
+    *,
+    required_true_name_fragments: int,
+) -> list[dict[str, Any]]:
+    seal_enabled = state.true_name_fragments >= required_true_name_fragments
     actions = []
     for definition in ACTION_AVAILABILITY_DEFINITIONS:
         is_seal = definition["code"] == "seal"
@@ -507,7 +544,61 @@ def _session_user_id(*, session: auth_services.SessionResult) -> int:
     return user_id
 
 
-def _player_display_name(*, session: auth_services.SessionResult) -> str:
+def _normalize_player_display_name(value: str | None) -> str | None:
+    if value is None:
+        return None
+
+    normalized = value.strip()
+    if not normalized:
+        raise ApiErrorResponseException(
+            "VALIDATION_ERROR",
+            status_code=HTTP_400_BAD_REQUEST,
+            details={"player_display_name": ["This field may not be blank."]},
+        )
+    if len(normalized) > PLAYER_DISPLAY_NAME_MAX_LENGTH:
+        raise ApiErrorResponseException(
+            "VALIDATION_ERROR",
+            status_code=HTTP_400_BAD_REQUEST,
+            details={
+                "player_display_name": [
+                    f"Ensure this field has no more than {PLAYER_DISPLAY_NAME_MAX_LENGTH} characters."
+                ]
+            },
+        )
+    return normalized
+
+
+def _stored_match_player_display_name(*, match_id: int) -> str | None:
+    start_request = (
+        MatchStartRequest.objects.filter(match_id=match_id)
+        .order_by("id")
+        .first()
+    )
+    if start_request is None:
+        return None
+    return _stored_player_display_name_value(start_request)
+
+
+def _stored_player_display_name_value(start_request: MatchStartRequest) -> str | None:
+    value = getattr(start_request, "player_display_name", None)
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+    return None
+
+
+def _player_display_name(
+    *,
+    session: auth_services.SessionResult,
+    match_id: int | None = None,
+    player_display_name: str | None = None,
+) -> str:
+    if player_display_name:
+        return player_display_name
+    if match_id is not None:
+        stored_display_name = _stored_match_player_display_name(match_id=match_id)
+        if stored_display_name:
+            return stored_display_name
+
     nickname = session.profile.get("nickname")
     if isinstance(nickname, str) and nickname.strip():
         return nickname

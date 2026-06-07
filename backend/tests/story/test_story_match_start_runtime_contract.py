@@ -1,6 +1,8 @@
 import os
 import re
 import uuid
+import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -15,6 +17,8 @@ from rest_framework.test import APIClient
 django.setup()
 
 REQUEST_ID_PATTERN = re.compile(r"^req_[0-9a-f]{32}$")
+ROOT_DIR = Path(__file__).resolve().parents[3]
+OFFICIAL_API_SPEC = ROOT_DIR / "api-spec" / "pilot-mvp-api.official.json"
 
 
 def _assert_server_request_id(value: str) -> None:
@@ -22,11 +26,13 @@ def _assert_server_request_id(value: str) -> None:
     assert uuid.UUID(hex=value.removeprefix("req_")).version == 4
 
 
-def _valid_payload(client_request_id: str | None = None) -> dict[str, str]:
-    return {
+def _valid_payload(client_request_id: str | None = None, **overrides) -> dict[str, str]:
+    payload = {
         "client_request_id": client_request_id
         or "11111111-1111-4111-8111-111111111111",
     }
+    payload.update(overrides)
+    return payload
 
 
 def _client_with_access_cookie(raw_access_token: str = "access-token") -> APIClient:
@@ -103,9 +109,16 @@ def test_story_match_start_unknown_case_returns_case_not_found(monkeypatch):
     from backend.apps.common.exceptions import ApiErrorResponseException
     from backend.apps.story import services as story_services
 
-    def fake_start_story_case_match(*, raw_access_token, case_id, client_request_id):
+    def fake_start_story_case_match(
+        *,
+        raw_access_token,
+        case_id,
+        client_request_id,
+        player_display_name=None,
+    ):
         assert raw_access_token == "access-token"
         assert case_id == "unknown_case"
+        assert player_display_name is None
         raise ApiErrorResponseException("CASE_NOT_FOUND", status_code=404)
 
     monkeypatch.setattr(
@@ -144,6 +157,62 @@ def test_story_match_start_invalid_client_request_id_returns_validation_error(mo
     body = response.json()
     assert body["error"]["code"] == "VALIDATION_ERROR"
     assert "client_request_id" in body["error"]["details"]
+
+
+def test_story_match_start_invalid_player_display_name_returns_validation_error(monkeypatch):
+    from backend.apps.story import services as story_services
+
+    def fail_if_called(**_kwargs):
+        raise AssertionError("invalid player_display_name must not reach service")
+
+    monkeypatch.setattr(story_services, "start_story_case_match", fail_if_called)
+
+    response = _client_with_access_cookie().post(
+        "/api/v1/story/cases/nameless_curse/matches",
+        _valid_payload(player_display_name=" " * 3),
+        format="json",
+        HTTP_HOST="localhost",
+    )
+
+    assert response.status_code == 400
+    body = response.json()
+    assert body["error"]["code"] == "VALIDATION_ERROR"
+    assert "player_display_name" in body["error"]["details"]
+
+
+def test_story_match_start_view_passes_trimmed_player_display_name_to_service(monkeypatch):
+    from backend.apps.story import services as story_services
+
+    expected_match = {"match_id": "match_1", "player": {"display_name": "Yunseo"}}
+
+    def fake_start_story_case_match(
+        *,
+        raw_access_token,
+        case_id,
+        client_request_id,
+        player_display_name,
+    ):
+        assert raw_access_token == "access-token"
+        assert case_id == "nameless_curse"
+        assert client_request_id == uuid.UUID("11111111-1111-4111-8111-111111111111")
+        assert player_display_name == "Yunseo"
+        return SimpleNamespace(match=expected_match)
+
+    monkeypatch.setattr(
+        story_services,
+        "start_story_case_match",
+        fake_start_story_case_match,
+    )
+
+    response = _client_with_access_cookie().post(
+        "/api/v1/story/cases/nameless_curse/matches",
+        _valid_payload(player_display_name="  Yunseo  "),
+        format="json",
+        HTTP_HOST="localhost",
+    )
+
+    assert response.status_code == 201
+    assert response.json()["data"] == {"match": expected_match}
 
 
 def test_story_match_start_view_returns_created_match_state_from_service(monkeypatch):
@@ -218,10 +287,17 @@ def test_story_match_start_view_returns_created_match_state_from_service(monkeyp
         "recent_public_logs": [],
     }
 
-    def fake_start_story_case_match(*, raw_access_token, case_id, client_request_id):
+    def fake_start_story_case_match(
+        *,
+        raw_access_token,
+        case_id,
+        client_request_id,
+        player_display_name=None,
+    ):
         assert raw_access_token == "access-token"
         assert case_id == "mirror_guest"
         assert client_request_id == uuid.UUID("11111111-1111-4111-8111-111111111111")
+        assert player_display_name is None
         return SimpleNamespace(match=expected_match)
 
     monkeypatch.setattr(
@@ -262,6 +338,19 @@ def test_story_match_start_service_source_uses_idempotency_table_and_initial_mat
     assert "Turn.objects.create(" in services_source
     assert "IDEMPOTENCY_CONFLICT" in services_source
     assert "deadline_at=now + timedelta(seconds=DEFAULT_TURN_SECONDS)" in services_source
+
+
+def test_official_story_match_start_schema_includes_optional_player_display_name():
+    spec = json.loads(OFFICIAL_API_SPEC.read_text(encoding="utf-8"))
+    endpoint = next(
+        item
+        for item in spec["endpoints"]
+        if item["id"] == "story.cases.matches.start"
+    )
+
+    assert endpoint["request"]["body"]["client_request_id"] == "string:uuid"
+    assert endpoint["request"]["body"]["player_display_name"] == "string|null"
+    assert "player_display_name: optional, trim whitespace, 1-24 chars" in endpoint["notes"]
 
 
 def test_story_match_start_service_checks_idempotency_before_case_allowlist():

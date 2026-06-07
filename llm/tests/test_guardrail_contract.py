@@ -70,6 +70,37 @@ class GuardrailContractTest(unittest.TestCase):
         self.assertIn("demo_reference_leak", validate_output(generation_input, "엘리자베스는 유리 안쪽에서 이름을 붙잡았다."))
 
     # 입력 로그에 있는 "진실" 표현은 운영자 로그 요약에서 허용한다.
+    def test_final_duel_dialogue_prompt_includes_player_name_and_duel_rules(self) -> None:
+        generation_input = build_generation_input(
+            {
+                "purpose": "final_duel_dialogue",
+                "case": {"case_id": "nameless_curse", "title": "nameless curse"},
+                "match": {"match_id": "match_1", "turn_number": 7, "result": "unresolved"},
+                "player": {"display_name": "Yunseo"},
+                "player_message": "I will return your name.",
+                "apparition_alias": "Piti",
+                "public_context": {
+                    "true_name_fragments": 2,
+                    "false_clues": 2,
+                    "curse_marks": 1,
+                    "sanity": 6,
+                    "recent_public_logs": [],
+                },
+                "duel_rules": {
+                    "required_true_name_fragments": 2,
+                    "win_condition": "recover_piti_true_name",
+                    "false_clue_pressure": True,
+                },
+                "display_slot": "duel_dialogue",
+            }
+        )
+
+        self.assertIn("Yunseo", generation_input["user_prompt"])
+        self.assertIn("false_clues: 2", generation_input["user_prompt"])
+        self.assertIn("required_true_name_fragments: 2", generation_input["user_prompt"])
+        self.assertIn("recover_piti_true_name", generation_input["user_prompt"])
+        self.assertIn("false_clue_pressure: True", generation_input["user_prompt"])
+
     def test_match_log_summary_allows_truth_word_when_it_exists_in_payload(self) -> None:
         generation_input = _generation_input("match_log_summary.sample.json")
         text = (

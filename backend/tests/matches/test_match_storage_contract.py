@@ -153,8 +153,10 @@ def test_match_models_define_approved_tables_and_fields_without_unapproved_forei
     assert "user_id = models.PositiveBigIntegerField()" in start_request_source
     assert "client_request_id = models.UUIDField()" in start_request_source
     assert "case_id = models.TextField()" in start_request_source
+    assert "player_display_name = models.TextField(null=True, blank=True)" in start_request_source
     assert "match_id = models.PositiveBigIntegerField()" in start_request_source
     assert "created_at = models.DateTimeField(auto_now_add=True)" in start_request_source
+    assert (MATCHES_DIR / "migrations" / "0005_matchstartrequest_player_display_name.py").exists()
 
     duel_dialogue_source = _class_source(source, "DuelDialogue")
     assert "match_id = models.PositiveBigIntegerField()" in duel_dialogue_source

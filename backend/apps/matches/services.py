@@ -264,7 +264,10 @@ def get_match_result(
             "case_id": case_definition["case_id"],
             "title": case_definition["title"],
         },
-        "final_resources": _final_resource_payload(human_participant),
+        "final_resources": _final_resource_payload(
+            human_participant,
+            required_true_name_fragments=case_definition["required_true_name_fragments_for_seal"],
+        ),
         "turn_logs": _get_match_turn_logs(match_id=match_id),
         "story_result_text": list(
             result_text_by_reason.get(
@@ -404,6 +407,7 @@ def submit_match_turn(
 
         _assert_match_access(user_id=user_id, match_id=match_id)
         case_id = _get_match_case_id(match_id=match_id)
+        case_definition = _story_case_definition(case_id=case_id)
         human_participant = _get_participant(
             match_id=match_id,
             participant_type=PARTICIPANT_TYPE_HUMAN,
@@ -475,8 +479,9 @@ def submit_match_turn(
             opponent_action_code=opponent_action_code,
             player_timeout_count=human_participant.timeout_count,
             player_state=player_state_before,
-            seal_condition_met=(
-                human_participant.true_name_fragments >= MAX_TRUE_NAME_FRAGMENTS
+            seal_condition_met=_seal_condition_met(
+                human_participant=human_participant,
+                case_definition=case_definition,
             ),
             curse_marks_loss_triggered=False,
         )
@@ -609,7 +614,11 @@ def _match_result_reason(
     return outcome.reason.value
 
 
-def _final_resource_payload(participant: MatchParticipant) -> dict[str, int]:
+def _final_resource_payload(
+    participant: MatchParticipant,
+    *,
+    required_true_name_fragments: int,
+) -> dict[str, int]:
     return {
         "sanity": participant.sanity,
         "sanity_max": MAX_SANITY,
@@ -618,7 +627,7 @@ def _final_resource_payload(participant: MatchParticipant) -> dict[str, int]:
         "curse_marks": participant.curse_marks,
         "curse_marks_max": MAX_CURSE_MARKS,
         "true_name_fragments": participant.true_name_fragments,
-        "true_name_fragments_required": MAX_TRUE_NAME_FRAGMENTS,
+        "true_name_fragments_required": required_true_name_fragments,
         "incomplete_true_name_fragments": participant.incomplete_true_name_fragments,
         "false_clues": participant.false_clues,
         "false_clues_max": MAX_FALSE_CLUES,
@@ -697,9 +706,23 @@ def _duel_match_payload(
             "turn_number": current_turn.turn_number,
             "result": _match_result_for_duel(match=match, human_participant=human_participant),
         },
+        "player": {
+            "display_name": _get_match_player_display_name(
+                match_id=match_id,
+                user_id=user_id,
+            ),
+        },
         "apparition_alias": case_definition["apparition_alias"],
+        "duel_rules": {
+            "required_true_name_fragments": case_definition[
+                "required_true_name_fragments_for_seal"
+            ],
+            "win_condition": case_definition["duel_win_condition"],
+            "false_clue_pressure": human_participant.false_clues >= 2,
+        },
         "public_context": {
             "true_name_fragments": human_participant.true_name_fragments,
+            "false_clues": human_participant.false_clues,
             "curse_marks": human_participant.curse_marks,
             "sanity": human_participant.sanity,
             "recent_public_logs": recent_public_logs,
@@ -796,6 +819,21 @@ def _get_match_case_id(*, match_id: int) -> str:
 
 def _get_match_case_definition(*, match_id: int) -> dict[str, Any]:
     return _story_case_definition(case_id=_get_match_case_id(match_id=match_id))
+
+
+def _get_match_player_display_name(*, match_id: int, user_id: int) -> str:
+    start_request = (
+        MatchStartRequest.objects.filter(match_id=match_id, user_id=user_id)
+        .order_by("id")
+        .first()
+    )
+    if start_request is None:
+        return f"user_{user_id}"
+
+    player_display_name = getattr(start_request, "player_display_name", None)
+    if isinstance(player_display_name, str) and player_display_name.strip():
+        return player_display_name.strip()
+    return f"user_{user_id}"
 
 
 def _story_case_definition(*, case_id: str) -> dict[str, Any]:
@@ -908,7 +946,10 @@ def _validate_turn_submit_request(
         )
     if (
         action_code == SEAL_ACTION_CODE
-        and human_participant.true_name_fragments < MAX_TRUE_NAME_FRAGMENTS
+        and not _seal_condition_met(
+            human_participant=human_participant,
+            case_definition=case_definition,
+        )
     ):
         raise ApiErrorResponseException(
             "ACTION_NOT_AVAILABLE",
@@ -919,6 +960,17 @@ def _validate_turn_submit_request(
             "INSUFFICIENT_RITUAL_POWER",
             status_code=HTTP_400_BAD_REQUEST,
         )
+
+
+def _seal_condition_met(
+    *,
+    human_participant: MatchParticipant,
+    case_definition: Mapping[str, Any],
+) -> bool:
+    return (
+        human_participant.true_name_fragments
+        >= case_definition["required_true_name_fragments_for_seal"]
+    )
 
 
 def _choose_apparition_action(*, match_id: int, human_participant: MatchParticipant) -> str:
