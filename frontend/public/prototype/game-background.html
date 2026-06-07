@@ -224,6 +224,11 @@
       <p data-player-log-text></p>
     </section>
 
+    <section class="ambient-dialogue" data-ambient-dialogue hidden aria-live="polite" aria-label="이안과 거울 속 목소리의 대화">
+      <strong data-ambient-dialogue-speaker></strong>
+      <p data-ambient-dialogue-text></p>
+    </section>
+
     <section class="defeat-jumpscare" data-defeat-jumpscare hidden aria-hidden="true">
       <div class="defeat-jumpscare-figure" data-jumpscare-figure></div>
     </section>
@@ -232,7 +237,7 @@
       <img data-result-image src="assets/clear_.png" alt="" width="1332" height="768" decoding="async">
     </section>
 
-    <section class="clue-journal" data-clue-journal aria-label="기록서">
+    <section class="clue-journal" data-clue-journal aria-label="일지">
       <button type="button" class="journal-tab" data-journal-toggle aria-expanded="false" aria-controls="journal-panel">
         <span class="journal-icon" aria-hidden="true"></span>
         <span class="journal-count" data-journal-count>0/3</span>
@@ -240,12 +245,12 @@
 
       <article class="journal-panel" id="journal-panel" hidden>
         <header class="journal-header">
-          <span>무명의 저주 기록서</span>
-          <button type="button" class="journal-close" data-journal-close aria-label="기록서 닫기">×</button>
+          <span>무명의 저주 일지</span>
+          <button type="button" class="journal-close" data-journal-close aria-label="일지 닫기">×</button>
         </header>
         <div class="journal-book">
-          <p class="journal-possession-note" aria-hidden="true">이 기록은 이안이 잃어버린 밤을 대신 적는다.</p>
-          <dl class="journal-state-strip" aria-label="보조 상태 기록">
+          <p class="journal-possession-note" aria-hidden="true">이 일지는 이안이 잃어버린 밤을 대신 적는다.</p>
+          <dl class="journal-state-strip" aria-label="보조 상태 일지">
             <div>
               <dt>보호막</dt>
               <dd data-journal-shield>0/1</dd>
@@ -263,7 +268,7 @@
           <div class="journal-page left-page">
             <section class="journal-section case-note">
               <h2>사건 파일</h2>
-              <p>이안은 피 묻은 곰 인형과 낯선 미소로 아침을 맞았다. 다락방 일기장은 오래 닫힌 방, 금이 간 거울, 그리고 비어 있는 기록을 가리킨다.</p>
+              <p>이안은 피 묻은 곰 인형과 낯선 미소로 아침을 맞았다. 다락방 일기장은 오래 닫힌 방, 금이 간 거울, 그리고 비어 있는 일지를 가리킨다.</p>
             </section>
 
             <section class="journal-section">
@@ -314,7 +319,7 @@
 
             <section class="journal-section">
               <h2>의심 단서</h2>
-              <p class="journal-hint">아직 거짓으로 드러나지 않은 문장은 기록서에 단서처럼 남는다.</p>
+              <p class="journal-hint">아직 거짓으로 드러나지 않은 문장은 일지에 의심 단서처럼 남는다.</p>
               <ul class="suspect-list" data-suspect-clues>
                 <li>곰 인형을 태우면 저주는 사라진다.</li>
                 <li>거울을 깨면 더는 보지 않아도 된다.</li>
@@ -339,15 +344,15 @@
             </section>
 
             <section class="journal-section enemy-policy-note" data-enemy-policy-note>
-              <h2>괴이 반응 기록</h2>
-              <p>거울 안쪽의 것은 이안의 반복 행동에 반응한다. 확정되지 않은 행동은 기록하지 않는다.</p>
+              <h2>괴이 반응 일지</h2>
+              <p>거울 안쪽의 것은 이안의 반복 행동에 반응한다. 확정되지 않은 행동은 일지에 단정하지 않는다.</p>
               <p data-timeout-policy-note>누적 침묵 0/3. 침묵이 반복될수록 검은 실은 손목을 더 깊게 기억한다.</p>
             </section>
 
             <section class="journal-section turn-record-note">
-              <h2>턴 기록</h2>
+              <h2>턴 일지</h2>
               <ol class="turn-record-list" data-turn-records>
-                <li>아직 기록된 턴이 없다.</li>
+                <li>아직 남긴 턴 일지가 없다.</li>
               </ol>
             </section>
           </div>

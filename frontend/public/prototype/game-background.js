@@ -7,6 +7,31 @@
   - Keep result text split into reveal, judgment, state, changes, and flavor sections.
 */
 
+var prototypeScriptRunId = document.currentScript?.dataset.prototypeRunId || "";
+var prototypeActiveRunId = window.__mirrorGuestPrototypeActiveRunId || "";
+var shouldBootPrototype = !prototypeActiveRunId || !prototypeScriptRunId || prototypeActiveRunId === prototypeScriptRunId;
+
+if (shouldBootPrototype) {
+window.__mirrorGuestPrototypeCleanup?.();
+
+const prototypeManagedEvents = [];
+
+function addPrototypeEvent(target, type, handler, options) {
+  if (!target) return;
+  target.addEventListener(type, handler, options);
+  prototypeManagedEvents.push(() => target.removeEventListener(type, handler, options));
+}
+
+window.__mirrorGuestPrototypeCleanup = () => {
+  while (prototypeManagedEvents.length) {
+    prototypeManagedEvents.pop()?.();
+  }
+
+  window.clearInterval(window.gamePrototypeState?.state?.timerId);
+  window.clearTimeout(window.gamePrototypeState?.state?.ambientDialogueTimer);
+  delete window.gamePrototypeState;
+};
+
 const GAME_RULES = {
   maxTurn: 12,
   timerSeconds: 25,
@@ -39,6 +64,43 @@ const LLM_DISPLAY_SLOTS = {
   system: "center_system_message"
 };
 
+const AMBIENT_DIALOGUE_START_DELAY_MS = 1400;
+const AMBIENT_DIALOGUE_INTERVAL_MS = 5200;
+const AMBIENT_DIALOGUE_END_DELAY_MS = 2600;
+
+const AMBIENT_DIALOGUE_LINES = [
+  {
+    side: "ian",
+    speaker: "이안",
+    text: "여기까지 왔어. 네 이름이 왜 기록에서 지워졌는지 확인하려고."
+  },
+  {
+    side: "spirit",
+    speaker: "거울 속 목소리",
+    text: "이름은 필요 없어. 문이 닫히면 아무도 더 묻지 않아."
+  },
+  {
+    side: "ian",
+    speaker: "이안",
+    text: "그 문이 널 가둔 거잖아. 나는 깨뜨리러 온 게 아니라 사실을 보러 왔어."
+  },
+  {
+    side: "spirit",
+    speaker: "거울 속 목소리",
+    text: "사실을 보면 달라져? 죽은 사람은 돌아오지 않아."
+  },
+  {
+    side: "ian",
+    speaker: "이안",
+    text: "그래도 거짓말 위에 널 그대로 둘 수는 없어. 천천히 확인할게."
+  },
+  {
+    side: "spirit",
+    speaker: "거울 속 목소리",
+    text: "그럼 봐. 네가 잃어버린 밤도 같이 보게 될 테니까."
+  }
+];
+
 const ACTION_CARDS = {
   silence: {
     title: "침묵",
@@ -48,7 +110,7 @@ const ACTION_CARDS = {
     symbol: "초",
     image: "assets/action-card-silence.png",
     desc: "거울 안쪽의 속삭임을 끊고 다음 턴 의식력을 1 회복한다.",
-    playerLine: "말하지 마. 네 목소리도, 내 안의 목소리도.",
+    playerLine: "초를 낮춘다. 먼저 방 안의 소리를 줄여야 한다.",
     briefing: "검은 초가 낮게 타오른다. 거울 안쪽에서 번지던 속삭임이 잠시 멀어지고, 이안은 자신의 숨소리를 되찾는다."
   },
   guard: {
@@ -59,7 +121,7 @@ const ACTION_CARDS = {
     symbol: "방어진",
     image: "assets/action-card-guard.png",
     desc: "저주 피해를 줄이고 보호막을 얻는다.",
-    playerLine: "방어진을 세운다. 여기서 더는 빼앗기지 않는다.",
+    playerLine: "방어진을 세운다. 지금은 버티는 쪽이 맞다.",
     briefing: "두 손 사이에 낡은 방어진이 떠오른다. 빛은 약하지만, 저주의 길목을 잠시 막아낸다."
   },
   curse: {
@@ -70,7 +132,7 @@ const ACTION_CARDS = {
     symbol: "못",
     image: "assets/action-card-curse.png",
     desc: "거울 안쪽의 힘을 밀어내지만 저주 흔적이 깊어질 수 있다.",
-    playerLine: "이 고통을 다시 누군가에게 박아 넣게 두지 않겠어.",
+    playerLine: "녹슨 못을 박는다. 거울 안쪽의 힘을 밀어내 본다.",
     briefing: "녹슨 못이 탁자에 박히자 거울 속 형상이 뒤틀린다. 소리 없는 파문이 은빛 표면을 흔든다."
   },
   contract: {
@@ -81,7 +143,7 @@ const ACTION_CARDS = {
     symbol: "서약",
     image: "assets/action-card-contract.png",
     desc: "대가를 걸고 기록의 빈칸을 열어 진명 조각을 찾는다.",
-    playerLine: "대가가 필요하다면 치르겠어. 대신 빈칸 하나는 열어야 해.",
+    playerLine: "기록의 빈칸에 대가를 건다. 남은 흔적을 확인해야 한다.",
     briefing: "피 묻은 서약서 위로 낡은 인장이 눌린다. 오래 닫혀 있던 문장 일부가 검은 잉크처럼 다시 떠오른다."
   },
   insight: {
@@ -92,7 +154,7 @@ const ACTION_CARDS = {
     symbol: "눈",
     image: "assets/action-card-insight.png",
     desc: "단서의 진위 또는 괴이의 공개된 반응 징후를 확인한다.",
-    playerLine: "거울이 비추는 게 내 얼굴이 아니라면, 그 안의 진짜를 보겠어.",
+    playerLine: "유리 조각을 들어 균열을 살핀다. 진짜 단서와 거짓을 가른다.",
     briefing: "깨진 유리 조각이 차갑게 빛난다. 이안의 얼굴 뒤편으로 설명할 수 없는 그림자가 겹쳐진다."
   },
   deceive: {
@@ -103,7 +165,7 @@ const ACTION_CARDS = {
     symbol: "잉크",
     image: "assets/action-card-deceive.png",
     desc: "뒤틀린 문장과 위조 단서로 거울 안쪽의 간파를 흐린다.",
-    playerLine: "문장은 믿을 수 없어. 지금은 틀린 길을 먼저 보이게 해야 해.",
+    playerLine: "위조 메모를 섞는다. 안쪽의 시선이 다른 곳을 보게 한다.",
     briefing: "잉크 번진 메모들이 탁자 위에서 어긋난 순서로 겹친다. 거울 안쪽의 시선이 잠시 잘못된 문장에 묶인다."
   },
   seal: {
@@ -114,18 +176,18 @@ const ACTION_CARDS = {
     symbol: "명",
     image: "assets/seal-card.png",
     desc: "진명 조각 3개가 모였을 때 마지막 이름을 선언한다.",
-    playerLine: "엘리자베스. 이제 거울 안쪽에서 나오지 않아도 돼.",
+    playerLine: "모은 이름을 거울 앞에 둔다. 이제 끝낼 수 있는지 확인한다.",
     briefing: "이름이 거울 앞에 떨어진다. 검은 실이 재처럼 풀리고, 은빛 표면 전체에 거미줄 같은 금이 번진다."
   }
 };
 
 const ENEMY_ACTIONS = [
-  { key: "deceive", label: "속임수", action: "괴이 행동: 속임수", line: "넌 이미 알고 있어. 모르는 척할 뿐이지." },
-  { key: "silence", label: "침묵", action: "괴이 행동: 침묵", line: "보지 마." },
-  { key: "contract", label: "계약", action: "괴이 행동: 계약", line: "빈칸은 네 안에 있어." },
-  { key: "insight", label: "간파", action: "괴이 행동: 간파", line: "네 손이 먼저 기억할 거야." },
-  { key: "curse", label: "저주", action: "괴이 행동: 저주", line: "잘했어. 계속해." },
-  { key: "guard", label: "수호", action: "괴이 행동: 수호", line: "닫힌 곳은 조용해." }
+  { key: "deceive", label: "속임수", action: "괴이 행동: 속임수", line: "그 문장은 네가 쓴 게 아니야." },
+  { key: "silence", label: "침묵", action: "괴이 행동: 침묵", line: "소리가 멎으면 기억도 멎어." },
+  { key: "contract", label: "계약", action: "괴이 행동: 계약", line: "빈칸을 열면 네 것도 비게 돼." },
+  { key: "insight", label: "간파", action: "괴이 행동: 간파", line: "보이는 대로 믿지 마." },
+  { key: "curse", label: "저주", action: "괴이 행동: 저주", line: "아픈 곳을 고르면 더 잘 남아." },
+  { key: "guard", label: "수호", action: "괴이 행동: 수호", line: "닫아 두면 아무도 들어오지 못해." }
 ];
 
 const CARD_VISUAL_COPY = {
@@ -135,13 +197,13 @@ const CARD_VISUAL_COPY = {
       kicker: "방어진을 든 순례자",
       symbol: "방어진",
       image: "assets/action-card-guard.png",
-      playerLine: "방어진을 세운다. 여기서 더는 빼앗기지 않는다.",
+      playerLine: "방어진을 세운다. 지금은 버티는 쪽이 맞다.",
       briefing: "수호의 그림, 두 손 사이에 낡은 방어진이 떠오른다. 빛은 약하지만 저주의 길목을 잠시 막아낸다."
     },
     enemy: {
       label: "수호 / 방어진",
       action: "괴이 행동: 수호 / 방어진",
-      line: "닫힌 곳은 조용해. 아무것도 쉽게 지나오지 못해."
+      line: "닫힌 방은 오래 버틴다."
     }
   },
   silence: {
@@ -150,13 +212,13 @@ const CARD_VISUAL_COPY = {
       kicker: "날개 달린 사슴",
       symbol: "날개",
       desc: "침묵 카드. 검은 날개를 펼친 사슴 형상이 거울의 목소리를 잠시 덮어 다음 턴 혼불을 1 회복한다.",
-      playerLine: "침묵을 고른다. 검은 날개가 접히는 동안, 거울 안쪽의 숨소리도 잠시 멎는다.",
+      playerLine: "검은 날개가 접히듯 방 안의 소리를 낮춘다.",
       briefing: "침묵의 그림, 검은 날개가 카드 위에서 천천히 접힌다. 그 그림자가 거울 면을 스치자 안쪽의 속삭임이 한 박자 늦어지고, 남은 혼불이 다시 살아난다."
     },
     enemy: {
       label: "침묵 / 검은 날개",
       action: "괴이 행동: 침묵 / 검은 날개",
-      line: "날개 아래에 숨으면 네 목소리도 보이지 않겠지."
+      line: "말하지 않으면 아무 일도 없었던 것처럼 남아."
     }
   },
   curse: {
@@ -165,13 +227,13 @@ const CARD_VISUAL_COPY = {
       kicker: "마른 가지의 형틀",
       symbol: "십자가",
       desc: "저주 카드. 가시처럼 뻗은 십자가가 거울 속 형상을 찌르지만, 저주의 흔적도 함께 깊어진다.",
-      playerLine: "저주를 건다. 가시 십자가가 선다. 네가 숨은 곳을 찢어 보이게 하겠다.",
+      playerLine: "가시 십자가를 세운다. 거울 안쪽의 힘이 어디서 새는지 본다.",
       briefing: "저주의 그림, 가시 십자가가 카드 중앙에 솟는다. 그 끝이 거울 면을 긁자 안쪽의 형상이 비틀리지만, 손목을 감은 저주도 더 세게 조인다."
     },
     enemy: {
       label: "저주 / 가시 십자가",
       action: "괴이 행동: 저주 / 가시 십자가",
-      line: "그 십자가는 나보다 먼저 너를 찌를 거야."
+      line: "상처를 누르면 네 손에도 자국이 남아."
     }
   },
   contract: {
@@ -180,13 +242,13 @@ const CARD_VISUAL_COPY = {
       kicker: "달 아래 선 후드",
       symbol: "후드",
       desc: "계약 카드. 달 아래 멈춰 선 순례자의 그림자가 기록을 들추어 진명 조각을 찾는다.",
-      playerLine: "계약을 맺는다. 달의 순례자가 걷는다. 그 발자국 끝에서 이름의 조각을 찾겠다.",
+      playerLine: "달 아래 선 그림자를 따라 기록의 빈칸을 확인한다.",
       briefing: "계약의 그림, 달의 순례자가 달빛 속에서 한 걸음 앞으로 나온다. 검은 옷자락이 펼쳐질 때마다 오래 닫힌 기록의 문장이 다시 떠오른다."
     },
     enemy: {
       label: "계약 / 달의 순례자",
       action: "괴이 행동: 계약 / 달의 순례자",
-      line: "달빛 아래 걷는 건 너야. 나는 네 그림자일 뿐."
+      line: "빈칸은 값을 요구해."
     }
   },
   insight: {
@@ -195,13 +257,13 @@ const CARD_VISUAL_COPY = {
       kicker: "사슴뿔의 군주",
       symbol: "뿔",
       desc: "간파 카드. 뿔의 왕이 거울 안쪽을 정면으로 응시해 다음 징후와 거짓 단서를 가른다.",
-      playerLine: "간파한다. 뿔의 왕이 고개를 든다. 네가 숨긴 진짜 징후를 보겠다.",
+      playerLine: "뿔의 형상이 향한 곳을 본다. 흐린 징후를 하나씩 가른다.",
       briefing: "간파의 그림, 뿔의 왕이 달을 가른다. 왕관처럼 솟은 뿔 사이로 거울의 표면이 얇아지고, 흐릿했던 징후가 하나씩 윤곽을 얻는다."
     },
     enemy: {
       label: "간파 / 뿔의 왕",
       action: "괴이 행동: 간파 / 뿔의 왕",
-      line: "왕관을 쓴 것은 나일까, 네 두려움일까."
+      line: "너도 네 얼굴을 제대로 못 보고 있어."
     }
   },
   deceive: {
@@ -210,13 +272,13 @@ const CARD_VISUAL_COPY = {
       kicker: "달을 삼킨 나무",
       symbol: "고목",
       desc: "속임수 카드. 뒤틀린 고목의 그림자가 거울의 시선을 흐려, 거짓 문장으로 괴이의 판단을 흔든다.",
-      playerLine: "속임수를 펼친다. 뒤틀린 고목이 달을 가린다. 이번에는 네가 잘못된 길을 보게 될 거다.",
+      playerLine: "뒤틀린 고목의 그림자를 섞어 시선을 다른 문장으로 돌린다.",
       briefing: "속임수의 그림, 뒤틀린 고목이 달빛을 갈라 먹는다. 카드 속 고목의 그림자가 책상 위로 번지자 거울 안쪽의 시선이 엉뚱한 문장을 따라 흔들린다."
     },
     enemy: {
       label: "속임수 / 뒤틀린 고목",
       action: "괴이 행동: 속임수 / 뒤틀린 고목",
-      line: "나무가 휘어진 게 아니야. 네 기억이 휘어진 거지."
+      line: "기억은 틀린 길도 진짜처럼 보여 줘."
     }
   }
 };
@@ -418,6 +480,9 @@ const dom = {
   sealInterferenceValue: document.querySelector("[data-seal-interference-value]"),
   playerLog: document.querySelector("[data-player-log]"),
   playerLogText: document.querySelector("[data-player-log-text]"),
+  ambientDialogue: document.querySelector("[data-ambient-dialogue]"),
+  ambientDialogueSpeaker: document.querySelector("[data-ambient-dialogue-speaker]"),
+  ambientDialogueText: document.querySelector("[data-ambient-dialogue-text]"),
   protagonistLogStack: document.querySelector("[data-protagonist-log-stack]"),
   systemLogStack: document.querySelector("[data-system-log-stack]"),
   spiritLogStack: document.querySelector("[data-spirit-log-stack]"),
@@ -495,6 +560,8 @@ const state = {
   turnEndAwaitingAdvance: false,
   dialogueArchive: [],
   llmUiTexts: [],
+  ambientDialogueIndex: 0,
+  ambientDialogueTimer: null,
   clockPausedByJournal: false,
   clockWasRunningBeforeHidden: false,
   clockRenderCache: {
@@ -693,8 +760,13 @@ function renderJournal() {
   }
 
   if (dom.falseClues) {
-    dom.falseClues.innerHTML = state.revealedFalseClues.length
-      ? state.revealedFalseClues.map((clue) => `<li>${clue.text}</li>`).join("")
+    const allFalseClues = [...state.falseClues, ...state.suspectClues, ...state.revealedFalseClues]
+      .filter((clue, index, list) => clue && list.findIndex((item) => item.id === clue.id) === index);
+    dom.falseClues.innerHTML = allFalseClues.length
+      ? allFalseClues.map((clue) => {
+        const isRevealed = state.revealedFalseClues.some((item) => item.id === clue.id);
+        return `<li data-clue-state="${isRevealed ? "revealed" : "suspect"}"><span>${clue.text}</span><em>${isRevealed ? "확정 거짓" : "의심 중"}</em></li>`;
+      }).join("")
       : "<li>아직 없다.</li>";
   }
 
@@ -712,7 +784,7 @@ function renderJournal() {
         const summary = record.practicalSummary ? `<small>${record.practicalSummary}</small>` : "";
         return `<li><strong>${record.turn}턴</strong>${target}${taboo}${entry}${summary}</li>`;
       }).join("")
-      : "<li>아직 기록된 턴이 없다.</li>";
+      : "<li>아직 남긴 턴 일지가 없다.</li>";
   }
 }
 
@@ -728,7 +800,7 @@ function applyJournalRecord(record = {}) {
     External turn results can replace the prototype diary text through this API.
     Expected fields are optional and section-scoped:
     {
-      trueNamePieceIds, acquiredClues, suspectClues, revealedFalseClues,
+      trueNamePieceIds, acquiredClues, suspectClues, falseClues, revealedFalseClues,
       turnRecords, shield, partialTrueName, suspicion, lastInvestigation
     }
   */
@@ -738,6 +810,7 @@ function applyJournalRecord(record = {}) {
   }
   if (Array.isArray(record.acquiredClues)) state.acquiredClues = [...record.acquiredClues];
   if (Array.isArray(record.suspectClues)) state.suspectClues = [...record.suspectClues];
+  if (Array.isArray(record.falseClues)) state.falseClues = [...record.falseClues];
   if (Array.isArray(record.revealedFalseClues)) state.revealedFalseClues = [...record.revealedFalseClues];
   if (Array.isArray(record.turnRecords)) state.turnRecords = [...record.turnRecords];
   if (Number.isFinite(record.shield)) state.shield = clamp(record.shield, 0, 1);
@@ -746,6 +819,94 @@ function applyJournalRecord(record = {}) {
   if (typeof record.lastInvestigation === "string") state.lastInvestigation = record.lastInvestigation;
 
   renderAll();
+}
+
+function clearAmbientDialogueTimer() {
+  if (state.ambientDialogueTimer) {
+    window.clearTimeout(state.ambientDialogueTimer);
+    state.ambientDialogueTimer = null;
+  }
+}
+
+function hideAmbientDialogue() {
+  if (!dom.ambientDialogue) return;
+  dom.ambientDialogue.hidden = true;
+  dom.ambientDialogue.classList.remove("is-visible");
+}
+
+function showAmbientDialogueLine(entry) {
+  if (!dom.ambientDialogue || !dom.ambientDialogueSpeaker || !dom.ambientDialogueText) return;
+  dom.ambientDialogue.dataset.side = entry.side;
+  dom.ambientDialogueSpeaker.textContent = entry.speaker;
+  dom.ambientDialogueText.textContent = entry.text;
+  dom.ambientDialogue.hidden = false;
+  dom.ambientDialogue.classList.remove("is-visible");
+  void dom.ambientDialogue.offsetWidth;
+  dom.ambientDialogue.classList.add("is-visible");
+}
+
+function playNextAmbientDialogueLine() {
+  if (state.ambientDialogueIndex >= AMBIENT_DIALOGUE_LINES.length) {
+    state.ambientDialogueTimer = window.setTimeout(finishAmbientDialogue, AMBIENT_DIALOGUE_END_DELAY_MS);
+    return;
+  }
+
+  showAmbientDialogueLine(AMBIENT_DIALOGUE_LINES[state.ambientDialogueIndex]);
+  state.ambientDialogueIndex += 1;
+  state.ambientDialogueTimer = window.setTimeout(playNextAmbientDialogueLine, AMBIENT_DIALOGUE_INTERVAL_MS);
+}
+
+function advanceAmbientDialogue() {
+  if (state.phase !== "intro") return false;
+  clearAmbientDialogueTimer();
+
+  if (state.ambientDialogueIndex >= AMBIENT_DIALOGUE_LINES.length) {
+    finishAmbientDialogue();
+    return true;
+  }
+
+  playNextAmbientDialogueLine();
+  return true;
+}
+
+function startAmbientDialogue() {
+  clearAmbientDialogueTimer();
+  state.phase = "intro";
+  state.ambientDialogueIndex = 0;
+  hideAmbientDialogue();
+  renderIntroLock();
+  if (!dom.ambientDialogue) {
+    finishAmbientDialogue();
+    return;
+  }
+  setTurnState("대화");
+  state.ambientDialogueTimer = window.setTimeout(playNextAmbientDialogueLine, AMBIENT_DIALOGUE_START_DELAY_MS);
+}
+
+function ensureAmbientDialogue() {
+  if (state.phase !== "intro") return;
+  renderIntroLock();
+  if (state.ambientDialogueTimer) return;
+  if (!dom.ambientDialogue || state.ambientDialogueIndex >= AMBIENT_DIALOGUE_LINES.length) {
+    finishAmbientDialogue();
+    return;
+  }
+  state.ambientDialogueTimer = window.setTimeout(playNextAmbientDialogueLine, 80);
+}
+
+function finishAmbientDialogue() {
+  clearAmbientDialogueTimer();
+  hideAmbientDialogue();
+  if (state.phase !== "intro") return;
+  state.phase = "ready";
+  renderIntroLock();
+  setTurnState("");
+  renderClock();
+  startClock();
+}
+
+function renderIntroLock() {
+  dom.frame?.classList.toggle("is-intro-locked", state.phase === "intro");
 }
 
 function renderToolAvailability() {
@@ -781,10 +942,11 @@ function renderAll() {
   renderJournalNavigation();
   renderToolAvailability();
   renderGuardWard();
+  renderIntroLock();
 }
 
 function getJournalSectionTitle(section, index) {
-  return section.querySelector("h2")?.textContent?.trim() || `기록 ${index + 1}`;
+  return section.querySelector("h2")?.textContent?.trim() || `일지 ${index + 1}`;
 }
 
 function getActiveJournalSection() {
@@ -836,7 +998,7 @@ function renderJournalNavigation() {
     nav = document.createElement("nav");
     nav.className = "journal-section-nav";
     nav.dataset.journalSectionNav = "";
-    nav.setAttribute("aria-label", "기록서 섹션");
+    nav.setAttribute("aria-label", "일지 섹션");
 
     const controls = document.createElement("div");
     controls.className = "journal-page-controls";
@@ -948,7 +1110,7 @@ function getCorruptedActionDesc(desc) {
 }
 
 function openActionCard(actionKey, sourceElement) {
-  if (!dom.actionCard || state.isSubmitting || isLogVisible()) return;
+  if (!dom.actionCard || state.phase === "intro" || state.isSubmitting || isLogVisible()) return;
 
   const card = ACTION_CARDS[actionKey];
   if (!card) return;
@@ -1258,21 +1420,33 @@ function openEndingScreen(outcome, reason) {
   const target = new URL("ending.html", window.location.href);
   const resultSummary = resolveLlmDisplayText("result_summary", null, "");
   const styleSummary = resolveLlmDisplayText("style_summary", null, "");
-  target.searchParams.set("outcome", outcome);
-  target.searchParams.set("reason", reason);
-  target.searchParams.set("turn", String(Math.min(state.turn, GAME_RULES.maxTurn)));
-  target.searchParams.set("truth", `${state.trueNamePieces}/${GAME_RULES.sealRequiredTrueNamePieces}`);
-  target.searchParams.set("sanity", `${state.sanity}/${GAME_RULES.maxSanity}`);
-  target.searchParams.set("curse", `${state.curse}/${GAME_RULES.maxCurseTrace}`);
-  target.searchParams.set("log", state.turnRecords.slice(-4).map(formatTurnRecordLine).join(" | "));
+  const payload = {
+    outcome,
+    reason,
+    turn: String(Math.min(state.turn, GAME_RULES.maxTurn)),
+    truth: `${state.trueNamePieces}/${GAME_RULES.sealRequiredTrueNamePieces}`,
+    sanity: `${state.sanity}/${GAME_RULES.maxSanity}`,
+    curse: `${state.curse}/${GAME_RULES.maxCurseTrace}`,
+    log: state.turnRecords.slice(-4).map(formatTurnRecordLine).join(" | ")
+  };
   if (resultSummary.text) {
-    target.searchParams.set("result_summary", resultSummary.text);
-    target.searchParams.set("result_summary_fallback", String(resultSummary.fallbackUsed));
+    payload.result_summary = resultSummary.text;
+    payload.result_summary_fallback = String(resultSummary.fallbackUsed);
   }
   if (styleSummary.text) {
-    target.searchParams.set("style_summary", styleSummary.text);
-    target.searchParams.set("style_summary_fallback", String(styleSummary.fallbackUsed));
+    payload.style_summary = styleSummary.text;
+    payload.style_summary_fallback = String(styleSummary.fallbackUsed);
   }
+
+  Object.entries(payload).forEach(([key, value]) => {
+    target.searchParams.set(key, value);
+  });
+
+  if (typeof window.gamePrototypeBridge?.openEndingScreen === "function") {
+    window.gamePrototypeBridge.openEndingScreen(payload);
+    return;
+  }
+
   window.location.href = target.toString();
 }
 
@@ -1379,6 +1553,7 @@ function addSuspectClue(rule, source) {
 
   const clue = { id: rule.id, text: rule.text, source };
   state.suspectClues.push(clue);
+  if (!state.falseClues.some((item) => item.id === clue.id)) state.falseClues.push(clue);
   return clue;
 }
 
@@ -1391,6 +1566,7 @@ function revealSuspectFalseClue(targetKey) {
   if (index < 0) return null;
 
   const [clue] = state.suspectClues.splice(index, 1);
+  if (!state.falseClues.some((item) => item.id === clue.id)) state.falseClues.push(clue);
   state.revealedFalseClues.push(clue);
   return clue;
 }
@@ -1461,7 +1637,7 @@ function resolveTableStateChanges(playerAction, enemy, isTimeout) {
       if (revealed) revealedFalseClues.push(revealed);
       turnEvents.push("간파가 속임수의 결을 붙잡았다. 거짓 기척 하나가 힘을 잃었다.");
     } else if (addFalseClueFromRule("insight_failed")) {
-      turnEvents.push("간파가 빗나갔다. 거짓 단서 하나가 기록서에 섞였다.");
+      turnEvents.push("간파가 빗나갔다. 거짓 단서 하나가 일지에 섞였다.");
     }
   };
 
@@ -1697,6 +1873,23 @@ function createPrototypeTurnResult(playerAction, { timeout = false, enemyActionK
 
 function requestTurnResult(playerAction, options = {}) {
   // Swap this prototype provider with the Django turn-result API when backend endpoints are ready.
+  if (typeof window.gamePrototypeBridge?.requestTurnResult === "function") {
+    const bridgeResult = window.gamePrototypeBridge.requestTurnResult({
+      playerAction,
+      options,
+      state: {
+        turn: state.turn,
+        sanity: state.sanity,
+        soulfire: state.soulfire,
+        curse: state.curse,
+        trueNamePieces: state.trueNamePieces,
+        selectedInfoTargetKey: state.selectedInfoTargetKey
+      }
+    });
+
+    if (bridgeResult) return Promise.resolve(bridgeResult);
+  }
+
   return new Promise((resolve) => {
     window.setTimeout(() => {
       resolve(createPrototypeTurnResult(playerAction, options));
@@ -1740,8 +1933,11 @@ function applyTurnStateChanges(changes = {}, result = null) {
   state.acquiredClues.push(...(changes.clues || []));
   (changes.suspectClues || []).forEach((clue) => {
     if (!state.suspectClues.some((item) => item.id === clue.id)) state.suspectClues.push(clue);
+    if (!state.falseClues.some((item) => item.id === clue.id)) state.falseClues.push(clue);
   });
   (changes.revealedFalseClues || []).forEach((clue) => {
+    state.suspectClues = state.suspectClues.filter((item) => item.id !== clue.id);
+    if (!state.falseClues.some((item) => item.id === clue.id)) state.falseClues.push(clue);
     if (!state.revealedFalseClues.some((item) => item.id === clue.id)) state.revealedFalseClues.push(clue);
   });
   if (changes.tabooViolation) {
@@ -2031,6 +2227,8 @@ function endGameIfNeeded(result) {
 }
 
 async function runTurnSequence(actionKey, options = {}) {
+  if (state.phase === "intro" && !options.ignoreIntro) return;
+
   const card = ACTION_CARDS[actionKey];
   if (!card || state.isSubmitting) return;
 
@@ -2141,7 +2339,7 @@ function renderClock() {
 }
 
 function startClock() {
-  if (state.timerId || state.remainingSeconds <= 0 || document.hidden) return;
+  if (state.phase !== "ready" || state.timerId || state.remainingSeconds <= 0 || document.hidden) return;
   state.timerId = window.setInterval(() => {
     if (state.isSubmitting || state.phase !== "ready") return;
     state.remainingSeconds -= 1;
@@ -2168,6 +2366,7 @@ function handleVisibilityChange() {
 
 function setJournalOpen(isOpen) {
   if (!dom.journalPanel || !dom.journalToggle || !dom.journal) return;
+  if (state.phase === "intro" && isOpen) return;
 
   if (isOpen && state.timerId && state.phase === "ready") {
     stopClock();
@@ -2188,10 +2387,10 @@ function setJournalOpen(isOpen) {
 function bindEvents() {
   dom.ritualTools.forEach((tool) => {
     const action = tool.dataset.action;
-    tool.addEventListener("click", () => {
+    addPrototypeEvent(tool, "click", () => {
       if (!tool.classList.contains("is-locked")) openActionCard(action, tool);
     });
-    tool.addEventListener("keydown", (event) => {
+    addPrototypeEvent(tool, "keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
         if (!tool.classList.contains("is-locked")) openActionCard(action, tool);
@@ -2199,45 +2398,54 @@ function bindEvents() {
     });
   });
 
-  dom.sealInvocation?.addEventListener("click", () => {
+  addPrototypeEvent(dom.sealInvocation, "click", () => {
     if (state.trueNamePieces >= GAME_RULES.sealRequiredTrueNamePieces) {
       openActionCard("seal", dom.sealInvocation);
     }
   });
 
-  dom.actionCard?.querySelector("[data-card-cancel]")?.addEventListener("click", hideActionCard);
-  dom.actionCard?.querySelector("[data-card-use]")?.addEventListener("click", () => {
+  addPrototypeEvent(dom.actionCard?.querySelector("[data-card-cancel]"), "click", hideActionCard);
+  addPrototypeEvent(dom.actionCard?.querySelector("[data-card-use]"), "click", () => {
     if (state.selectedAction) runTurnSequence(state.selectedAction);
   });
 
-  dom.dialogueArchiveToggle?.addEventListener("click", (event) => {
+  addPrototypeEvent(dom.dialogueArchiveToggle, "click", (event) => {
     event.preventDefault();
     event.stopPropagation();
     setDialogueArchiveOpen(dom.dialogueArchivePanel?.hidden);
   });
 
-  dom.dialogueArchiveClose?.addEventListener("click", (event) => {
+  addPrototypeEvent(dom.dialogueArchiveClose, "click", (event) => {
     event.preventDefault();
     setDialogueArchiveOpen(false);
   });
 
-  dom.dialogueArchivePanel?.addEventListener("click", (event) => {
+  addPrototypeEvent(dom.dialogueArchivePanel, "click", (event) => {
     event.stopPropagation();
   });
 
-  dom.playerLog?.addEventListener("click", (event) => {
+  addPrototypeEvent(dom.playerLog, "click", (event) => {
     event.preventDefault();
     advanceLogSequence();
   });
 
-  dom.frame?.addEventListener("click", (event) => {
+  addPrototypeEvent(dom.frame, "click", (event) => {
+    if (advanceAmbientDialogue()) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
     if (!state.resultAwaitingAdvance && !state.advanceResolver && !isLogVisible()) return;
     event.preventDefault();
     event.stopPropagation();
     advanceLogSequence();
   }, true);
 
-  window.addEventListener("keydown", (event) => {
+  addPrototypeEvent(window, "keydown", (event) => {
+    if ((event.key === "Enter" || event.key === " ") && advanceAmbientDialogue()) {
+      event.preventDefault();
+      return;
+    }
     if (event.key === "Enter" && (state.resultAwaitingAdvance || state.advanceResolver || isLogVisible())) {
       event.preventDefault();
       advanceLogSequence();
@@ -2247,22 +2455,23 @@ function bindEvents() {
       setJournalOpen(false);
     }
   });
-  document.addEventListener("visibilitychange", handleVisibilityChange);
+  addPrototypeEvent(document, "visibilitychange", handleVisibilityChange);
 
-  dom.journalToggle?.addEventListener("click", () => setJournalOpen(dom.journalPanel?.hidden));
-  dom.journalClose?.addEventListener("click", () => setJournalOpen(false));
-  dom.journalPanel?.addEventListener("click", (event) => {
+  addPrototypeEvent(dom.journalToggle, "click", () => setJournalOpen(dom.journalPanel?.hidden));
+  addPrototypeEvent(dom.journalClose, "click", () => setJournalOpen(false));
+  addPrototypeEvent(dom.journalPanel, "click", (event) => {
     if (event.target === dom.journalPanel) setJournalOpen(false);
   });
-  dom.journalBook?.addEventListener("click", (event) => {
+  addPrototypeEvent(dom.journalBook, "click", (event) => {
     event.stopPropagation();
   });
 }
 
 function resetDemoGame() {
+  clearAmbientDialogueTimer();
   Object.assign(state, {
     turn: 1,
-    phase: "ready",
+    phase: "intro",
     sanity: GAME_RULES.startingSanity,
     soulfire: GAME_RULES.startingSoulfire,
     curse: GAME_RULES.startingCurse,
@@ -2293,6 +2502,8 @@ function resetDemoGame() {
     turnEndAwaitingAdvance: false,
     dialogueArchive: [],
     llmUiTexts: [],
+    ambientDialogueIndex: 0,
+    ambientDialogueTimer: null,
     clockPausedByJournal: false,
     clockWasRunningBeforeHidden: false,
     clockRenderCache: {
@@ -2330,10 +2541,16 @@ function resetDemoGame() {
   renderAll();
   resetClock();
   setTurnState("");
+  startAmbientDialogue();
 }
 
 function testEnding(kind) {
   resetDemoGame();
+  clearAmbientDialogueTimer();
+  hideAmbientDialogue();
+  state.phase = "ready";
+  renderIntroLock();
+  resetClock();
   const key = String(kind || "").toLowerCase();
 
   if (key === "clear" || key === "win" || key === "seal") {
@@ -2417,8 +2634,12 @@ window.gamePrototypeState = {
   testEnding,
   applyJournalRecord,
   applyTurnStateChanges,
-  runTurnSequence
+  runTurnSequence,
+  restartIntroDialogue: startAmbientDialogue,
+  ensureIntroDialogue: ensureAmbientDialogue,
+  advanceIntroDialogue: advanceAmbientDialogue
 };
 
 bindEvents();
 resetDemoGame();
+}

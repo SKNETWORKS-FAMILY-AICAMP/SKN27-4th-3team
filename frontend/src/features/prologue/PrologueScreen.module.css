@@ -1,0 +1,279 @@
+.screen {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  color: #ddd8cd;
+  background: #020202;
+  cursor: pointer;
+}
+
+.screen::before {
+  position: absolute;
+  inset: -4%;
+  z-index: 0;
+  content: "";
+  background-image: var(--scene-image);
+  background-position: var(--scene-focus);
+  background-size: cover;
+  filter: blur(24px) brightness(0.46) saturate(0.78);
+  opacity: 0;
+  transform: scale(1.04);
+  animation:
+    sceneFadeIn 980ms ease forwards,
+    backdropDrift 14000ms ease-in-out forwards;
+}
+
+.sceneImage {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background-image: var(--scene-image);
+  background-position: var(--scene-focus);
+  background-repeat: no-repeat;
+  background-size: contain;
+  opacity: 0;
+  animation: sceneFadeIn 980ms ease forwards;
+}
+
+.vignette,
+.noise {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.vignette {
+  z-index: 2;
+  background:
+    radial-gradient(circle at 48% 42%, rgba(0, 0, 0, 0) 0 22%, rgba(0, 0, 0, 0.28) 56%, rgba(0, 0, 0, 0.86) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.56));
+}
+
+.noise {
+  z-index: 3;
+  opacity: 0.11;
+  mix-blend-mode: screen;
+  background-image:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px 3px),
+    radial-gradient(circle at 24% 18%, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 4px),
+    radial-gradient(circle at 72% 70%, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 5px);
+  background-size: 7px 7px, 13px 13px, 17px 17px;
+  animation: noiseShift 900ms steps(2, end) infinite;
+}
+
+.textPanel {
+  position: absolute;
+  left: clamp(24px, 6vw, 104px);
+  bottom: clamp(44px, 8vh, 96px);
+  z-index: 4;
+  width: min(1040px, 86vw);
+  max-height: calc(100vh - 48px);
+  padding: clamp(12px, 1.7vw, 22px) clamp(16px, 2.4vw, 30px);
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0.44) 68%, rgba(0, 0, 0, 0));
+  border-left: 1px solid rgba(203, 191, 160, 0.42);
+  box-shadow: -18px 0 34px rgba(0, 0, 0, 0.42);
+}
+
+.skipButton {
+  position: absolute;
+  right: clamp(18px, 2.4vw, 34px);
+  top: clamp(18px, 2.4vw, 34px);
+  z-index: 5;
+  min-height: 32px;
+  padding: 0 12px;
+  color: rgba(185, 176, 154, 0.42);
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(180, 166, 126, 0.16);
+  font-size: 12px;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.skipButton:hover,
+.skipButton:focus-visible {
+  color: rgba(226, 216, 188, 0.82);
+  background: rgba(0, 0, 0, 0.34);
+  border-color: rgba(204, 184, 132, 0.42);
+  outline: none;
+}
+
+.mainText,
+.detailText {
+  margin: 0;
+  white-space: pre-line;
+  letter-spacing: 0;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.92);
+}
+
+.mainText {
+  min-height: clamp(124px, 20vh, 204px);
+  font-size: clamp(13px, 1.24vw, 18px);
+  line-height: 1.48;
+  color: rgba(235, 231, 219, 0.92);
+}
+
+.detailText {
+  max-width: 920px;
+  margin-top: clamp(8px, 1.4vh, 14px);
+  font-size: clamp(11px, 0.96vw, 14px);
+  line-height: 1.46;
+  color: rgba(183, 174, 157, 0.72);
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 860ms ease,
+    transform 860ms ease;
+}
+
+.detailText.isVisible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.continueMark {
+  position: absolute;
+  right: clamp(28px, 4vw, 64px);
+  bottom: clamp(28px, 5vh, 56px);
+  z-index: 5;
+  width: 0;
+  height: 0;
+  border-top: 9px solid transparent;
+  border-bottom: 9px solid transparent;
+  border-left: 14px solid rgba(221, 213, 190, 0.78);
+  filter: drop-shadow(0 0 10px rgba(221, 213, 190, 0.32));
+  opacity: 0;
+  transform: translateX(-6px);
+}
+
+.continueMark.isVisible {
+  animation: continuePulse 1450ms ease-in-out infinite;
+}
+
+.screen.isLeaving .textPanel,
+.screen.isLeaving .skipButton,
+.screen.isLeaving .continueMark {
+  animation: prologueTextFadeOut 540ms ease forwards;
+}
+
+.screen.isLeaving .sceneImage {
+  animation: sceneExit 880ms ease forwards;
+}
+
+.screen.isLeaving::before {
+  animation: backdropExit 880ms ease forwards;
+}
+
+.screen.toMatch::after {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  content: "";
+  background: #000;
+  opacity: 0;
+  animation: prologueBlackout 1450ms ease forwards;
+}
+
+@media (max-width: 760px) {
+  .textPanel {
+    left: 18px;
+    right: 18px;
+    bottom: 36px;
+    width: auto;
+  }
+
+  .mainText {
+    min-height: 36vh;
+    font-size: clamp(12px, 3.65vw, 16px);
+    line-height: 1.44;
+  }
+
+  .detailText {
+    font-size: clamp(11px, 3vw, 13px);
+    line-height: 1.42;
+  }
+}
+
+@keyframes sceneFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes backdropDrift {
+  from {
+    transform: scale(1.04) translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: scale(1.09) translate3d(-1.1%, -0.7%, 0);
+  }
+}
+
+@keyframes sceneExit {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes backdropExit {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes noiseShift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(-7px, 5px, 0);
+  }
+}
+
+@keyframes continuePulse {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: translateX(-6px);
+  }
+
+  50% {
+    opacity: 0.88;
+    transform: translateX(0);
+  }
+}
+
+@keyframes prologueTextFadeOut {
+  to {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes prologueBlackout {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
