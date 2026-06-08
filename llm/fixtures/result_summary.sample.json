@@ -1,0 +1,53 @@
+{
+  "purpose": "result_summary",
+  "match_result": {
+    "match_id": "sample-match-001",
+    "result": "player_win",
+    "result_reason": "seal_success",
+    "case": {
+      "case_id": "nameless_curse",
+      "title": "무명(無名)의 저주"
+    },
+    "final_resources": {
+      "sanity": 6,
+      "ritual_power": 1,
+      "curse_marks": 1,
+      "true_name_fragments": 3
+    },
+    "turn_logs": [
+      {
+        "turn": 1,
+        "message": "다락방 일기장에서 벽 속에 묻힌 아이의 기록이 발견됐다."
+      },
+      {
+        "turn": 9,
+        "message": "진실의 거울 앞에서 피티의 이름이 불렸고, 무명실이 재처럼 흩어졌다."
+      }
+    ],
+    "story_result_text": [
+      "진명은 완성되었고, 피티는 진실의 거울 앞에서 이름을 되찾았다.",
+      "저주는 끊어졌고, 아침의 빛이 저택 안으로 스며들었다."
+    ],
+    "style_summary": {
+      "label": "신중한 추적자",
+      "display_text": "정보 확인을 우선하면서도 위험한 계약을 제한적으로 사용했다.",
+      "metrics": {
+        "aggression": 0.11,
+        "defense": 0.22,
+        "insight_focus": 0.33,
+        "deception": 0.0,
+        "risk_preference": 0.22,
+        "silence_reliance": 0.11,
+        "crisis_guard_rate": 0.5,
+        "crisis_contract_rate": 0.0,
+        "late_choice_rate": 0.44
+      },
+      "updated_at": "2026-06-04T10:00:00Z"
+    },
+    "llm_summary": {
+      "enabled": false,
+      "text": null,
+      "generation_id": null
+    }
+  }
+}

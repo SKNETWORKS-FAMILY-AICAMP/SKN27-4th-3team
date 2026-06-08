@@ -1,0 +1,60 @@
+{
+  "purpose": "result_summary",
+  "match_result": {
+    "match_id": "official-sample-match-001",
+    "result": "player_win",
+    "result_reason": "seal_success",
+    "case": {
+      "case_id": "mirror_guest",
+      "title": "거울 속의 손님"
+    },
+    "final_resources": {
+      "sanity": 6,
+      "ritual_power": 1,
+      "curse_marks": 1,
+      "true_name_fragments": 3
+    },
+    "turn_logs": [
+      {
+        "turn_number": 1,
+        "text": "거울 표면에 남은 손자국이 차갑게 번졌다.",
+        "log_key": "mirror_surface_trace"
+      },
+      {
+        "turn_number": 5,
+        "text": "사라진 아이의 목소리가 같은 질문을 되풀이하지 말라고 속삭였다.",
+        "log_key": "missing_child_voice_warning"
+      },
+      {
+        "turn_number": 9,
+        "text": "진명 조각이 모두 맞춰졌고, 괴이는 거울 안쪽으로 봉인됐다.",
+        "log_key": "seal_success"
+      }
+    ],
+    "story_result_text": [
+      "진명은 완성되었고, 거울 속 손님은 더는 밖으로 나오지 못했다.",
+      "방 안의 유리는 조용히 빛을 잃었고, 남은 기억은 제자리를 되찾았다."
+    ],
+    "style_summary": {
+      "label": "신중한 추적자",
+      "display_text": "정보 확인을 우선하면서도 위험한 선택은 제한적으로 사용했다.",
+      "metrics": {
+        "aggression": 0.11,
+        "defense": 0.22,
+        "insight_focus": 0.33,
+        "deception": 0.0,
+        "risk_preference": 0.22,
+        "silence_reliance": 0.11,
+        "crisis_guard_rate": 0.5,
+        "crisis_contract_rate": 0.0,
+        "late_choice_rate": 0.44
+      },
+      "updated_at": "2026-06-04T10:00:00Z"
+    },
+    "llm_summary": {
+      "enabled": false,
+      "text": null,
+      "generation_id": null
+    }
+  }
+}
