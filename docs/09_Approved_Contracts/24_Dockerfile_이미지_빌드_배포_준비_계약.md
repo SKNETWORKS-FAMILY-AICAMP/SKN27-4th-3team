@@ -4,16 +4,16 @@ status: "approved"
 type: "approved-dockerfile-deployment-readiness-contract"
 source: "[[09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약]], [[09_Approved_Contracts/23_프로젝트_폴더_구조_계약]]"
 created: "2026-06-04"
-updated: "2026-06-04"
+updated: "2026-06-08"
 ---
 
 # Dockerfile 이미지 빌드 배포 준비 계약
 
 이 문서는 Dockerfile 기반 백엔드 이미지 빌드와 Django 배포 준비를 언제 어떤 순서로 확정할지 정한다.
 
-이 문서는 production 배포 구현값을 확정하지 않는다.
+이 문서는 Dockerfile과 Django 배포 준비의 결정 게이트를 정의한다.
 
-production 배포 구현은 이 문서의 결정 게이트를 통과한 뒤 별도 배포 계약으로 확정한다.
+production 배포 구현값은 [[09_Approved_Contracts/28_Production_배포_계약]]에서 AC-2A 기준으로 확정한다.
 
 ## 현재 확정 범위
 
@@ -24,10 +24,10 @@ production 배포 구현은 이 문서의 결정 게이트를 통과한 뒤 별�
 | env template 위치 | `ops/env/backend.env.example` |
 | 현재 Dockerfile 용도 | 로컬/dev 백엔드 이미지 빌드 시작점 |
 | 현재 entrypoint | Django `runserver` |
-| production entrypoint | 미확정 |
-| 운영 배포 자동화 | 1차 MVP 구현 범위 제외 |
+| production entrypoint | Gunicorn WSGI. 상세 기준은 [[09_Approved_Contracts/28_Production_배포_계약]] |
+| 운영 배포 자동화 | 첫 production 구현에서는 수동 배포 우선. CI/CD는 제외 |
 
-현재 Dockerfile은 production 배포 entrypoint로 간주하지 않는다.
+현재 local/dev Dockerfile command는 `runserver`이지만, production 구현에서는 Gunicorn command로 교체하거나 production compose command로 override한다.
 
 ## 결정 타이밍
 
@@ -87,20 +87,20 @@ production 배포 구현은 이 문서의 결정 게이트를 통과한 뒤 별�
 | Gate C | 컨테이너 기동 검증 | Django container가 기동하고 health check 또는 `manage.py check`가 성공한다. |
 | Gate D | DB runtime 검증 | PostgreSQL `pgvector` 컨테이너와 연결해 migration apply가 성공한다. |
 | Gate E | staging 배포 검증 | staging/dev deploy에서 API, CSRF, cookie, DB 연결이 재현된다. |
-| Gate F | production 배포 확정 | production 공개 전 항목이 별도 계약으로 확정된다. |
+| Gate F | production 배포 확정 | [[09_Approved_Contracts/28_Production_배포_계약]]의 AC-2A 기준을 따른다. |
 
-현재 구현은 Gate A와 Gate B 준비 단계에 있다.
+현재 구현은 Gate F 문서 확정 이후 AC-2A 구현 준비 단계에 있다.
 
 Gate B 이후부터는 Docker image pull/build, 컨테이너 기동, DB 연결 같은 runtime 검증이 필요하다.
 
 ## 구현 금지선
 
-- production WSGI/ASGI server를 문서 확정 없이 임의 선택하지 않는다.
+- production WSGI/ASGI server는 [[09_Approved_Contracts/28_Production_배포_계약]]의 Gunicorn WSGI 기준을 벗어나지 않는다.
 - `runserver`를 production entrypoint로 확정하지 않는다.
 - secret 실제값을 repository에 저장하지 않는다.
 - migration을 컨테이너 시작 시 자동 실행할지 임의 결정하지 않는다.
 - static/media 저장소를 임의 결정하지 않는다.
-- reverse proxy, TLS, domain, registry, CI/CD를 임의 확정하지 않는다.
+- reverse proxy, TLS, domain, registry, CI/CD는 [[09_Approved_Contracts/28_Production_배포_계약]]의 포함/제외 범위를 벗어나지 않는다.
 
 ## 다음 문서화 대상
 

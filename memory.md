@@ -1,6 +1,26 @@
 ﻿# Project Memory
 
-Updated: 2026-06-05
+Updated: 2026-06-08
+
+## AC-2A Production Deployment Decision 2026-06-08
+
+- Options considered:
+  - A: MVP runtime 완성, frontend official API 연결, Auth 보안, stale 문서 정리.
+  - C local/dev: Docker build와 local/dev container 검증까지만 수행.
+  - AC-2A: 단일 VM + Docker Compose + Gunicorn + reverse proxy + PostgreSQL production 배포까지 진행.
+  - AC-2B: managed platform/container platform 배포.
+  - AC-2C: Kubernetes/cloud native 배포.
+- Decision: AC-2A.
+- Constraints:
+  - Production 배포는 단일 VM + Docker Compose + Gunicorn WSGI + Caddy reverse proxy + PostgreSQL `pgvector/pgvector:pg17` 기준으로 진행한다.
+  - Caddy만 외부 포트 `80/443`에 노출하고, Django `8000`과 PostgreSQL `5432`는 Docker 내부 네트워크에서만 사용한다.
+  - Production image tag는 VM 내부 local tag인 `skn27-api:${SKN27_IMAGE_TAG}`, `skn27-web:${SKN27_IMAGE_TAG}`를 사용하고, registry push는 이번 범위에서 제외한다.
+  - Frontend는 Vite build 결과를 Caddy가 정적 서빙한다.
+  - `runserver`는 local/dev 전용이며 production에서 사용하지 않는다.
+  - Migration은 container startup에서 자동 실행하지 않고, 배포 절차에서 명시적으로 실행한다.
+  - 실제 secret 값은 repository에 저장하지 않고, production env template만 repository에 둔다.
+  - Trusted proxy는 Caddy allowlist 기준으로만 `X-Forwarded-*`를 신뢰한다. 기본 production compose는 Caddy 내부 IP `172.28.0.2`, `DJANGO_TRUSTED_PROXY_IPS=172.28.0.2`를 사용한다. local/dev는 기존 `REMOTE_ADDR` 기준을 유지한다.
+  - Kubernetes, managed DB, image registry push, CI/CD 자동화, backup 자동화, monitoring platform, PvP, KAG, Redis, WebSocket, RAG 서버 시작 자동 ingest는 이번 구현 범위에서 제외한다.
 
 ## Status Check 2026-06-05
 
