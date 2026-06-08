@@ -7,6 +7,7 @@ __pycache__/
 .env
 .env.*
 !.env.example
+!.env.sample
 *.pem
 *.key
 *.secret
@@ -14,6 +15,8 @@ __pycache__/
 # Python / Django
 *$py.class
 .Python
+venv/
+env/
 /venv/
 /env/
 /ENV/
@@ -27,17 +30,18 @@ db.sqlite3-journal
 media/
 staticfiles/
 
-# Node / Frontend
+# Frontend
 node_modules/
+frontend/node_modules/
 dist/
+frontend/dist/
 build/
 .vite/
+frontend/.vite/
+frontend/.vite-temp/
 .next/
 .turbo/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+*.tsbuildinfo
 
 # LLM 실험 산출물
 llm/output/
@@ -49,6 +53,10 @@ llm/.cache/
 
 # 로그와 임시 파일
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 *.tmp
 *.temp
 tmp/
@@ -57,6 +65,7 @@ temp/
 # OS / IDE
 .DS_Store
 Thumbs.db
+desktop.ini
 .idea/
 .vscode/
 

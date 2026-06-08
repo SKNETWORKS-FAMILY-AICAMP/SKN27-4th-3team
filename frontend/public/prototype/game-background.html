@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>무명(無名)의 저주 - 의식 결투 화면</title>
+  <link rel="preload" as="image" href="assets/Gemini_Generated_Image_num8cpnum8cpnum8.png" fetchpriority="high">
+  <link rel="preload" as="image" href="assets/mirror-extracted.png" fetchpriority="high">
+  <link rel="preload" as="image" href="assets/table-extracted.png" fetchpriority="high">
+  <link rel="preload" as="image" href="assets/ghost-mirror-presence.png">
+  <link rel="preload" as="image" href="assets/ghost-jumpscare-face.png">
+  <link rel="preload" as="image" href="assets/clear_.png">
+  <link rel="preload" as="image" href="assets/gameover_.png">
+  <link rel="preload" as="image" href="assets/hud-lantern.png">
+  <link rel="preload" as="image" href="assets/action-card-silence.png">
+  <link rel="preload" as="image" href="assets/action-card-guard.png">
+  <link rel="preload" as="image" href="assets/action-card-contract.png">
+  <link rel="preload" as="image" href="assets/action-card-curse.png">
+  <link rel="preload" as="image" href="assets/action-card-insight.png">
+  <link rel="preload" as="image" href="assets/action-card-deceive.png">
+  <link rel="stylesheet" href="game-background.css">
+  <script src="game-background.js" defer></script>
+</head>
+<body>
+  <!--
+    LLM EDIT GUIDE
+    1. Keep the first screen as an actual playable game scene, not a landing page.
+    2. Replace art by swapping files in assets/ or changing the image src values below.
+    3. Keep data-action names synced with ACTION_CARDS in game-background.js.
+    4. Scenario text here is prototype-facing. In Django, official text should come from story/match responses.
+  -->
+  <main class="game-frame" data-damage="0" data-seal-ready="false" aria-label="무명의 저주 의식 결투 화면">
+    <div class="background-layer" aria-hidden="true"></div>
+    <div class="vignette-layer" aria-hidden="true"></div>
+
+    <section class="status-hud" aria-label="플레이어 상태">
+      <div class="player-state">
+        <div class="status-token soulfire-token" tabindex="0" data-current="5" data-max="5" data-stage="5" data-tooltip="혼불: 의식 행동에 쓰이는 힘. 행동 비용으로 소모된다." aria-label="혼불 5 중 5">
+          <div class="lantern-row" aria-hidden="true">
+            <span class="lantern-slot" data-lantern-slot><img src="assets/hud-lantern.png" alt="" width="180" height="240" decoding="async"></span>
+            <span class="lantern-slot" data-lantern-slot><img src="assets/hud-lantern.png" alt="" width="180" height="240" decoding="async"></span>
+            <span class="lantern-slot" data-lantern-slot><img src="assets/hud-lantern.png" alt="" width="180" height="240" decoding="async"></span>
+            <span class="lantern-slot" data-lantern-slot><img src="assets/hud-lantern.png" alt="" width="180" height="240" decoding="async"></span>
+            <span class="lantern-slot" data-lantern-slot><img src="assets/hud-lantern.png" alt="" width="180" height="240" decoding="async"></span>
+          </div>
+          <div class="status-icon soulfire-icon" aria-hidden="true">
+            <img class="soulfire-image" src="assets/soulfire-icon.png" alt="" width="128" height="128" decoding="async">
+          </div>
+          <div class="status-copy">
+            <strong>5/5</strong>
+          </div>
+        </div>
+
+        <div class="status-token sanity-token" tabindex="0" data-current="12" data-max="12" data-tooltip="이성: 0이 되면 이안은 몸의 주도권을 잃는다." aria-label="이성 12 중 12">
+          <div class="status-icon sanity-icon" aria-hidden="true">
+            <img class="sanity-image" src="assets/sanity-mirror-icon.png" alt="" width="128" height="128" decoding="async">
+          </div>
+          <div class="status-copy">
+            <strong>12/12</strong>
+          </div>
+          <div class="sanity-gauge-track" aria-hidden="true">
+            <span data-sanity-fill></span>
+          </div>
+        </div>
+
+        <div class="status-token curse-token" tabindex="0" data-current="0" data-max="5" data-tooltip="저주 흔적: 검은 실이 손목과 기억을 조여 오는 정도." aria-label="저주 흔적 5 중 0">
+          <div class="status-icon curse-icon" aria-hidden="true">
+            <span class="curse-mark"></span>
+          </div>
+          <div class="curse-stack" aria-hidden="true">
+            <i></i><i></i><i></i><i></i><i></i>
+          </div>
+          <div class="status-copy">
+            <strong>0/5</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="turn-readout" aria-label="현재 턴">
+        <span>TURN</span>
+        <strong data-turn-count>01/12</strong>
+      </div>
+      <div class="turn-state" data-turn-state-label hidden></div>
+    </section>
+
+    <section class="clock-widget" data-clock data-duration="25" aria-label="자정까지의 제한 시간">
+      <div class="clock-shell">
+        <img class="clock-media" src="assets/clock-static.png" alt="" width="256" height="256" decoding="async">
+        <div class="clock-hand" aria-hidden="true"></div>
+        <div class="clock-pivot" aria-hidden="true"></div>
+      </div>
+    </section>
+
+    <button type="button" class="seal-invocation" data-action="seal" aria-label="진명 선언 사용">
+      <img src="assets/seal-card.png" alt="" width="280" height="500" decoding="async">
+      <span>진명</span>
+      <small data-seal-reason>진명 3/3 필요</small>
+    </button>
+
+    <section class="seal-interference" data-seal-interference hidden aria-label="진명 선언 방해 단계">
+      <span>선언 방해</span>
+      <strong data-seal-interference-value>0/2</strong>
+    </section>
+
+    <div class="scene-layer">
+      <div class="mirror-layer">
+        <div class="mirror-presence">
+          <div class="mirror-fog"></div>
+          <div class="sanity-cracks" aria-hidden="true"></div>
+          <div class="spirit-shadow has-image"></div>
+          <div class="spirit-eyes"></div>
+          <div class="memory-mark memory-name"></div>
+          <div class="memory-mark memory-room"></div>
+          <div class="voice-trace">나를 보지 마</div>
+        </div>
+        <img src="assets/mirror-extracted.png" alt="" width="317" height="496" decoding="async" fetchpriority="high">
+      </div>
+
+      <div class="ritual-tools" aria-label="의식 도구">
+        <div class="ritual-tool black-candle" role="button" tabindex="0" data-action="silence" data-label="검은 날개 / 침묵" aria-label="검은 날개, 침묵 카드">
+          <img src="assets/action-card-silence.png" alt="" width="280" height="500" decoding="async">
+        </div>
+        <div class="ritual-tool salt-dish" role="button" tabindex="0" data-action="guard" data-label="방어진을 든 순례자 / 수호" aria-label="방어진을 든 순례자, 수호 카드">
+          <img src="assets/action-card-guard.png" alt="" width="280" height="500" decoding="async">
+        </div>
+        <div class="ritual-tool nail-pin" role="button" tabindex="0" data-action="curse" data-label="가시 십자가 / 저주" aria-label="가시 십자가, 저주 카드">
+          <img src="assets/action-card-curse.png" alt="" width="280" height="500" decoding="async">
+        </div>
+        <div class="ritual-tool name-slip" role="button" tabindex="0" data-action="contract" data-label="달의 순례자 / 계약" aria-label="달의 순례자, 계약 카드">
+          <img src="assets/action-card-contract.png" alt="" width="280" height="500" decoding="async">
+        </div>
+        <div class="ritual-tool mirror-shard" role="button" tabindex="0" data-action="insight" data-label="뿔의 왕 / 간파" aria-label="뿔의 왕, 간파 카드">
+          <img src="assets/action-card-insight.png" alt="" width="280" height="500" decoding="async">
+        </div>
+        <div class="ritual-tool thread-coil" role="button" tabindex="0" data-action="deceive" data-label="뒤틀린 고목 / 속임수" aria-label="뒤틀린 고목, 속임수 카드">
+          <img src="assets/action-card-deceive.png" alt="" width="280" height="500" decoding="async">
+        </div>
+      </div>
+
+      <div class="ritual-effect" data-ritual-effect aria-hidden="true"></div>
+      <div class="guard-ward" data-guard-ward aria-hidden="true"></div>
+
+      <div class="hands-layer">
+        <div class="hand left">
+          <img src="assets/left-hand-extracted.png" alt="" width="303" height="245" decoding="async">
+        </div>
+        <div class="hand right">
+          <img src="assets/right-hand-extracted.png" alt="" width="305" height="243" decoding="async">
+        </div>
+      </div>
+
+      <div class="table-layer">
+        <img src="assets/table-extracted.png" alt="" width="911" height="217" decoding="async" fetchpriority="high">
+      </div>
+    </div>
+
+    <section class="enemy-voice" data-enemy-voice hidden aria-live="polite">
+      <span data-enemy-action></span>
+      <p data-enemy-voice-text></p>
+    </section>
+
+    <section class="dialogue-log-stack protagonist-log-stack" data-protagonist-log-stack aria-live="polite" aria-label="주인공 로그"></section>
+    <section class="dialogue-log-stack system-log-stack" data-system-log-stack aria-live="polite" aria-label="시스템 로그"></section>
+    <section class="dialogue-log-stack spirit-log-stack" data-spirit-log-stack aria-live="polite" aria-label="악령 로그"></section>
+
+    <section class="turn-end-cue" data-turn-end-cue hidden aria-live="polite">
+      <strong>&#53556; &#51333;&#47308;</strong>
+      <span>&#53364;&#47533;&#54616;&#50668; &#45796;&#51020; &#53556;</span>
+    </section>
+
+    <button type="button" class="dialogue-archive-toggle" data-dialogue-archive-toggle aria-expanded="false">
+      &#47196;&#44536;
+    </button>
+
+    <section class="dialogue-archive-panel" data-dialogue-archive-panel hidden aria-label="누적 로그">
+      <header>
+        <strong>&#45572;&#51201; &#47196;&#44536;</strong>
+        <button type="button" data-dialogue-archive-close aria-label="로그 닫기">&#215;</button>
+      </header>
+      <ol data-dialogue-archive-list>
+        <li>&#50500;&#51649; &#45224;&#51008; &#47196;&#44536;&#44032; &#50630;&#45796;.</li>
+      </ol>
+    </section>
+
+    <div class="screen-taunts" aria-hidden="true">
+      <span class="taunt-one">우린 똑같아</span>
+      <span class="taunt-two">잘했어</span>
+      <span class="taunt-three">보지 마</span>
+      <span class="taunt-four">아직 아니야</span>
+    </div>
+
+    <section class="action-card-panel" data-action-card hidden aria-live="polite">
+      <article class="action-card">
+        <div class="card-art" data-card-art aria-hidden="true"></div>
+        <div class="card-content">
+          <div class="card-kicker" data-card-kicker>행동 선택</div>
+          <h2 data-card-title>의식 행동</h2>
+          <p data-card-desc>탁자 위의 의식 도구를 선택하면 행동 카드가 펼쳐진다.</p>
+          <p class="card-warning" data-card-warning hidden></p>
+          <label class="card-info-target" data-card-info-target-wrap hidden>
+            <span>조사 대상</span>
+            <select data-card-info-target></select>
+            <small data-card-info-target-note></small>
+          </label>
+          <dl class="card-stats">
+            <div>
+              <dt>비용</dt>
+              <dd data-card-cost>0</dd>
+            </div>
+            <div>
+              <dt>분류</dt>
+              <dd data-card-type>행동</dd>
+            </div>
+          </dl>
+        </div>
+        <div class="card-actions">
+          <button type="button" class="card-button use" data-card-use>사용</button>
+          <button type="button" class="card-button cancel" data-card-cancel>취소</button>
+        </div>
+      </article>
+    </section>
+
+    <section class="player-log" data-player-log hidden aria-live="polite">
+      <p data-player-log-text></p>
+    </section>
+
+    <section class="ambient-dialogue" data-ambient-dialogue hidden aria-live="polite" aria-label="이안과 거울 속 목소리의 대화">
+      <strong data-ambient-dialogue-speaker></strong>
+      <p data-ambient-dialogue-text></p>
+    </section>
+
+    <section class="defeat-jumpscare" data-defeat-jumpscare hidden aria-hidden="true">
+      <div class="defeat-jumpscare-figure" data-jumpscare-figure></div>
+    </section>
+
+    <section class="result-scene" data-result-scene hidden aria-hidden="true">
+      <img data-result-image src="assets/clear_.png" alt="" width="1332" height="768" decoding="async">
+    </section>
+
+    <section class="clue-journal" data-clue-journal aria-label="일지">
+      <button type="button" class="journal-tab" data-journal-toggle aria-expanded="false" aria-controls="journal-panel">
+        <span class="journal-icon" aria-hidden="true"></span>
+        <span class="journal-count" data-journal-count>0/3</span>
+      </button>
+
+      <article class="journal-panel" id="journal-panel" hidden>
+        <header class="journal-header">
+          <span>무명의 저주 일지</span>
+          <button type="button" class="journal-close" data-journal-close aria-label="일지 닫기">×</button>
+        </header>
+        <div class="journal-book">
+          <p class="journal-possession-note" aria-hidden="true">이 일지는 이안이 잃어버린 밤을 대신 적는다.</p>
+          <dl class="journal-state-strip" aria-label="보조 상태 일지">
+            <div>
+              <dt>보호막</dt>
+              <dd data-journal-shield>0/1</dd>
+            </div>
+            <div>
+              <dt>불완전 조각</dt>
+              <dd data-journal-partial>0/2</dd>
+            </div>
+            <div>
+              <dt>의심</dt>
+              <dd data-journal-suspicion>0</dd>
+            </div>
+          </dl>
+
+          <div class="journal-page left-page">
+            <section class="journal-section case-note">
+              <h2>사건 파일</h2>
+              <p>이안은 피 묻은 곰 인형과 낯선 미소로 아침을 맞았다. 다락방 일기장은 오래 닫힌 방, 금이 간 거울, 그리고 비어 있는 일지를 가리킨다.</p>
+            </section>
+
+            <section class="journal-section">
+              <h2>진명 조각</h2>
+              <div class="truth-progress" aria-label="진명 조각 진행도">
+                <span>진명 조각</span>
+                <strong data-truth-progress>0/3</strong>
+              </div>
+              <ol class="truth-list" data-truth-list>
+                <li>
+                  <span>다락방 기록의 첫 번째 공백</span>
+                  <em>미확보</em>
+                </li>
+                <li>
+                  <span>거짓 얼굴을 벗기는 은도금 거울</span>
+                  <em>미확보</em>
+                </li>
+                <li>
+                  <span>닫힌 입가와 마지막 빈칸</span>
+                  <em>미확보</em>
+                </li>
+              </ol>
+            </section>
+
+            <section class="journal-section">
+              <h2>획득 단서</h2>
+              <ul data-acquired-clues>
+                <li>아직 확정된 단서가 없다.</li>
+              </ul>
+            </section>
+          </div>
+
+          <div class="journal-page right-page">
+            <section class="journal-section taboo-note">
+              <h2>금기</h2>
+              <p>같은 기억을 반복해서 파고들면 이안의 방어기제가 흔들린다. 두 번째 선택은 진실이 아니라 거울 안쪽에서 흘러든 확신을 남길 수 있다.</p>
+              <dl class="taboo-state">
+                <div>
+                  <dt>최근 조사</dt>
+                  <dd data-last-investigation>없음</dd>
+                </div>
+                <div>
+                  <dt>경고</dt>
+                  <dd>같은 기억을 연속 조사하지 말 것</dd>
+                </div>
+              </dl>
+            </section>
+
+            <section class="journal-section">
+              <h2>의심 단서</h2>
+              <p class="journal-hint">아직 거짓으로 드러나지 않은 문장은 일지에 의심 단서처럼 남는다.</p>
+              <ul class="suspect-list" data-suspect-clues>
+                <li>곰 인형을 태우면 저주는 사라진다.</li>
+                <li>거울을 깨면 더는 보지 않아도 된다.</li>
+              </ul>
+            </section>
+
+            <section class="journal-section">
+              <h2>거짓 단서</h2>
+              <ul class="revealed-false-list" data-false-clues>
+                <li>아직 없다.</li>
+              </ul>
+            </section>
+
+            <section class="journal-section">
+              <h2>진명 선언 조건</h2>
+              <p>진명 조각 3개를 모두 확보해야 이름을 부를 수 있다. 조건이 충족되기 전까지 진명 카드는 화면에 나타나지 않는다.</p>
+              <div class="seal-progress" aria-label="진명 조각 3개 중 0개">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </section>
+
+            <section class="journal-section enemy-policy-note" data-enemy-policy-note>
+              <h2>괴이 반응 일지</h2>
+              <p>거울 안쪽의 것은 이안의 반복 행동에 반응한다. 확정되지 않은 행동은 일지에 단정하지 않는다.</p>
+              <p data-timeout-policy-note>누적 침묵 0/3. 침묵이 반복될수록 검은 실은 손목을 더 깊게 기억한다.</p>
+            </section>
+
+            <section class="journal-section turn-record-note">
+              <h2>턴 일지</h2>
+              <ol class="turn-record-list" data-turn-records>
+                <li>아직 남긴 턴 일지가 없다.</li>
+              </ol>
+            </section>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
