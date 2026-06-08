@@ -63,7 +63,7 @@ refresh token에는 원문 token 값, token hash, password, cookie 값을 넣지
 | cookie | path |
 |---|---|
 | access token cookie | `/api/v1` |
-| refresh token cookie | `/api/v1/auth/refresh` |
+| refresh token cookie | `/api/v1/auth` |
 
 logout은 refresh cookie path까지 명시해서 cookie를 제거한다.
 
@@ -195,19 +195,56 @@ Django Security 문서는 CSRF 보호를 적절히 사용해야 하며, 임의 �
 - https://docs.djangoproject.com/en/5.2/ref/csrf/
 - https://docs.djangoproject.com/en/5.2/topics/security/
 
-## 아직 별도 결정할 항목
+## Logout refresh family revoke 정책
 
-logout에서 current refresh token family를 식별하는 방식은 추가 결정이 필요하다.
+logout에서 current refresh token family를 식별하는 방식은 refresh cookie 기준으로 확정한다.
 
-현재 refresh token cookie path는 `/api/v1/auth/refresh`이므로 브라우저는 `/api/v1/auth/logout` 요청에 refresh token cookie를 자동 전송하지 않는다.
+refresh token cookie path는 `/api/v1/auth`이므로 브라우저는 `/api/v1/auth/logout` 요청에 refresh token cookie를 자동 전송한다.
 
-A안 access token claim에는 `family_id`가 없으므로 logout 요청만으로 refresh token family를 식별할 수 없다.
+A안 access token claim에는 `family_id`가 없으므로 access token만으로 refresh token family를 식별하지 않는다.
 
-따라서 1차 구현에서는 `auth.logout` service를 501로 유지하고, 아래 중 하나를 별도 확정한 뒤 family revoke runtime을 구현한다.
+확정 정책은 아래와 같다.
 
-- logout endpoint에도 refresh token cookie가 전송되도록 cookie path를 조정한다.
-- access token에 family 식별 claim을 추가한다.
-- 서버 측 session/family mapping을 별도 저장한다.
+- 정상 active refresh cookie가 있으면 해당 refresh token family 전체를 revoke한다.
+- family revoke 시 `refresh token family revoke` security event를 기록한다.
+- `REFRESH_TOKEN_REUSED` 상태가 감지되면 기존 refresh 정책대로 family 전체 revoke, security event 기록, `REFRESH_TOKEN_REUSED` 오류 응답을 유지한다.
+- refresh cookie가 없고 access token만 유효하면 family revoke는 수행하지 않고 access/refresh cookie 삭제 후 성공 응답을 반환한다.
+- refresh/access가 모두 없거나 모두 유효하지 않으면 access/refresh cookie 삭제 후 `AUTH_REQUIRED` 또는 `SESSION_EXPIRED` 오류 envelope를 반환한다.
+- logout 성공과 logout 오류 응답 모두 브라우저의 access/refresh cookie 삭제를 지시한다.
+- logout 이후 state-changing 요청은 새 `GET /api/v1/auth/csrf` 흐름을 거친다.
+
+## Password 및 Login 실패 제한 정책
+
+비밀번호와 로그인 실패 제한은 B안 보수적 균형안으로 확정한다.
+
+### Password 정책
+
+| 항목 | 확정값 |
+|---|---|
+| 최소 길이 | 10자 |
+| 최대 길이 | 128자 |
+| common password | 차단 |
+| 숫자-only password | 차단 |
+| 사용자 정보 유사 password | email, nickname과 너무 유사하면 차단 |
+| 실패 응답 | `VALIDATION_ERROR` |
+
+회원가입 service는 user 생성 전에 password 정책을 검증한다.
+
+### Login 실패 rate limit 정책
+
+| 항목 | 확정값 |
+|---|---|
+| 식별 기준 | 정규화된 email + 서버 관측 `REMOTE_ADDR` |
+| 실패 집계 창 | 10분 |
+| 실패 허용 횟수 | 5회 미만 |
+| 차단 조건 | 10분 내 5회 실패 |
+| 차단 시간 | 15분 |
+| 차단 응답 | HTTP `429`, error code `LOGIN_RATE_LIMITED` |
+| 성공 처리 | 로그인 성공 시 같은 email + IP 실패 카운트 초기화 |
+
+계정 존재 여부가 드러나지 않도록 일반 로그인 실패는 기존 `INVALID_CREDENTIALS` 응답을 유지한다.
+
+trusted proxy 정책이 아직 확정되지 않았으므로 `X-Forwarded-For`는 로그인 실패 제한 기준으로 사용하지 않는다.
 
 브라우저 종료/네트워크 끊김과 시간초과 판정 기준은 [[09_Approved_Contracts/21_AI_스토리_시간초과_판정_계약]]에서 확정됐다.
 

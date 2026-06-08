@@ -129,6 +129,24 @@ ACCESS_TOKEN_TTL_SECONDS = 15 * 60
 REFRESH_TOKEN_TTL_SECONDS = 14 * 24 * 60 * 60
 CSRF_HEADER_NAME = "HTTP_X_CSRFTOKEN"
 
+AUTH_PASSWORD_MIN_LENGTH = 10
+AUTH_PASSWORD_MAX_LENGTH = 128
+LOGIN_FAILURE_WINDOW_SECONDS = 10 * 60
+LOGIN_FAILURE_LIMIT = 5
+LOGIN_FAILURE_LOCKOUT_SECONDS = 15 * 60
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        "OPTIONS": {"user_attributes": ("email", "nickname")},
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {"min_length": AUTH_PASSWORD_MIN_LENGTH},
+    },
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
+
 RAG_EMBEDDING_MODEL_ID = os.getenv("RAG_EMBEDDING_MODEL_ID")
 RAG_DEFAULT_TOP_K = 6
 RAG_DEFAULT_SCORE_THRESHOLD = 0.72

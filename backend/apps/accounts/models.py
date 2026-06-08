@@ -45,3 +45,24 @@ class SecurityEvent(models.Model):
     request_id = models.TextField(null=True, blank=True)
     metadata = models.JSONField(default=dict)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class LoginFailureThrottle(models.Model):
+    email = models.EmailField()
+    ip_address = models.GenericIPAddressField()
+    failure_count = models.PositiveIntegerField(default=0)
+    first_failed_at = models.DateTimeField()
+    last_failed_at = models.DateTimeField()
+    blocked_until = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("email", "ip_address"),
+                name="accounts_login_failure_email_ip_unique",
+            )
+        ]
+        indexes = [
+            models.Index(fields=("email", "ip_address"), name="acct_login_fail_ident_idx"),
+            models.Index(fields=("blocked_until",), name="acct_login_fail_block_idx"),
+        ]

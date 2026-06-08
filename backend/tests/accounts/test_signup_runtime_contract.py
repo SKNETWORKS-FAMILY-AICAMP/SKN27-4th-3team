@@ -27,7 +27,7 @@ def _valid_payload(**overrides) -> dict[str, str]:
     payload = {
         "email": "player@example.com",
         "nickname": "pilot",
-        "password": "password1234",
+        "password": "strong-password-123",
     }
     payload.update(overrides)
     return payload
@@ -80,7 +80,7 @@ def test_signup_view_returns_created_user_without_auth_cookies(monkeypatch):
     def fake_signup(*, email, nickname, password):
         assert email == "player@example.com"
         assert nickname == "pilot"
-        assert password == "password1234"
+        assert password == "strong-password-123"
         return SimpleNamespace(user=expected_user)
 
     monkeypatch.setattr(auth_services, "signup", fake_signup, raising=False)
@@ -117,7 +117,7 @@ def test_signup_service_creates_user_and_profile_with_explicit_initial_public_re
 
     def fake_create_user(*, email, password):
         assert email == "player@example.com"
-        assert password == "password1234"
+        assert password == "strong-password-123"
         return user
 
     def fake_profile_create(**kwargs):
@@ -131,7 +131,7 @@ def test_signup_service_creates_user_and_profile_with_explicit_initial_public_re
     result = auth_services.signup(
         email="player@example.com",
         nickname="pilot",
-        password="password1234",
+        password="strong-password-123",
     )
 
     assert result.user["id"] == "1"
@@ -164,7 +164,7 @@ def test_signup_service_maps_duplicate_email_to_validation_error(monkeypatch):
         auth_services.signup(
             email="player@example.com",
             nickname="pilot",
-            password="password1234",
+            password="strong-password-123",
         )
 
     assert error.value.code == "VALIDATION_ERROR"
@@ -172,7 +172,7 @@ def test_signup_service_maps_duplicate_email_to_validation_error(monkeypatch):
     assert "email" in error.value.details
 
 
-def test_signup_view_delegates_to_service_and_logout_stays_unimplemented():
+def test_signup_view_delegates_to_service_and_logout_uses_runtime_service():
     from pathlib import Path
 
     root_dir = Path(__file__).resolve().parents[3]
@@ -194,4 +194,5 @@ def test_signup_view_delegates_to_service_and_logout_stays_unimplemented():
     assert "status_code=status.HTTP_201_CREATED" in signup_source
     assert '"access_token":' not in signup_source
     assert '"refresh_token":' not in signup_source
-    assert "raise AuthServiceNotImplemented(\"auth.logout\")" in logout_source
+    assert "auth_services.logout(" in logout_source
+    assert "clear_auth_cookies(response)" in logout_source

@@ -1,15 +1,22 @@
 import uuid
 from dataclasses import dataclass
 from datetime import timedelta, timezone as datetime_timezone
+from types import SimpleNamespace
 from typing import Any
 
 import jwt
 from django.conf import settings
 from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import (
+    CommonPasswordValidator,
+    NumericPasswordValidator,
+    UserAttributeSimilarityValidator,
+)
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from backend.apps.accounts.models import RefreshToken, SecurityEvent, User
+from backend.apps.accounts.models import LoginFailureThrottle, RefreshToken, SecurityEvent, User
 from backend.apps.accounts.tokens import (
     ACTIVE_REFRESH_TOKEN_STATUS,
     REFRESH_TOKEN_REUSE_ERROR_CODE,
@@ -17,6 +24,7 @@ from backend.apps.accounts.tokens import (
     REUSED_REFRESH_TOKEN_STATUS,
     REVOKED_REFRESH_TOKEN_STATUS,
     ROTATED_REFRESH_TOKEN_STATUS,
+    SECURITY_EVENT_LOGIN_FAILED_REPEATED,
     SECURITY_EVENT_REFRESH_TOKEN_FAMILY_REVOKED,
     SECURITY_EVENT_REFRESH_TOKEN_REUSE_DETECTED,
     RefreshTokenIdentifiers,
@@ -36,6 +44,7 @@ from backend.apps.profiles.models import Profile
 
 HTTP_401_UNAUTHORIZED = 401
 HTTP_400_BAD_REQUEST = 400
+HTTP_429_TOO_MANY_REQUESTS = 429
 HTTP_500_INTERNAL_SERVER_ERROR = 500
 FORBIDDEN_SECURITY_METADATA_KEYS = (
     "raw_token",
@@ -54,6 +63,11 @@ STYLE_METRIC_FIELDS = (
     "crisis_guard_rate",
     "crisis_contract_rate",
     "late_choice_rate",
+)
+COMMON_PASSWORD_VALIDATOR = CommonPasswordValidator()
+NUMERIC_PASSWORD_VALIDATOR = NumericPasswordValidator()
+SIMILARITY_PASSWORD_VALIDATOR = UserAttributeSimilarityValidator(
+    user_attributes=("email", "nickname"),
 )
 
 
@@ -79,6 +93,11 @@ class RefreshResult:
 
 
 @dataclass(frozen=True)
+class LogoutResult:
+    logged_out: bool
+
+
+@dataclass(frozen=True)
 class SessionResult:
     authenticated: bool
     user: dict[str, Any]
@@ -90,15 +109,33 @@ def login(
     email: str,
     password: str,
     request_id: str | None,
+    client_ip: str,
 ) -> LoginResult:
+    normalized_email = _normalize_login_email(email)
+    normalized_client_ip = _normalize_client_ip(client_ip)
+    now = timezone.now()
+    _assert_login_not_limited(
+        normalized_email=normalized_email,
+        client_ip=normalized_client_ip,
+        now=now,
+    )
+
     user = authenticate(username=email, password=password)
     if user is None:
+        _record_login_failure(
+            normalized_email=normalized_email,
+            client_ip=normalized_client_ip,
+            request_id=request_id,
+            now=now,
+        )
         raise ApiErrorResponseException(
             "INVALID_CREDENTIALS",
             status_code=HTTP_401_UNAUTHORIZED,
         )
 
-    issued_at = timezone.now()
+    session = _session_for_user_id(user.id)
+    _reset_login_failure_count(normalized_email=normalized_email, client_ip=normalized_client_ip)
+    issued_at = now
     identifiers = new_login_refresh_token_identifiers()
     refresh_token = _create_refresh_token(
         user_id=user.id,
@@ -112,7 +149,6 @@ def login(
         ttl_seconds=settings.ACCESS_TOKEN_TTL_SECONDS,
     )
 
-    session = _session_for_user_id(user.id)
     return LoginResult(
         user=session.user,
         profile=session.profile,
@@ -128,6 +164,8 @@ def signup(
     nickname: str,
     password: str,
 ) -> SignupResult:
+    _validate_signup_password(email=email, nickname=nickname, password=password)
+
     try:
         with transaction.atomic():
             user = User.objects.create_user(email=email, password=password)
@@ -149,6 +187,32 @@ def signup(
         ) from exc
 
     return SignupResult(user=_format_user(user))
+
+
+def logout(
+    *,
+    raw_refresh_token: str | None,
+    raw_access_token: str | None,
+    request_id: str | None,
+) -> LogoutResult:
+    if raw_refresh_token:
+        try:
+            _logout_with_refresh_token(
+                raw_refresh_token=raw_refresh_token,
+                request_id=request_id,
+            )
+            return LogoutResult(logged_out=True)
+        except ApiErrorResponseException as exc:
+            if exc.code == REFRESH_TOKEN_REUSE_ERROR_CODE:
+                raise
+            if not raw_access_token:
+                raise
+
+    if raw_access_token:
+        _decode_token_or_expire(raw_access_token, expected_token_type=ACCESS_TOKEN_TYPE)
+        return LogoutResult(logged_out=True)
+
+    raise ApiErrorResponseException("AUTH_REQUIRED", status_code=HTTP_401_UNAUTHORIZED)
 
 
 def refresh(
@@ -253,6 +317,186 @@ def record_security_event(
         request_id=request_id,
         metadata=safe_metadata,
     )
+
+
+def _validate_signup_password(*, email: str, nickname: str, password: str) -> None:
+    errors: list[str] = []
+
+    if len(password) < settings.AUTH_PASSWORD_MIN_LENGTH:
+        errors.append(f"비밀번호는 최소 {settings.AUTH_PASSWORD_MIN_LENGTH}자 이상이어야 한다.")
+    if len(password) > settings.AUTH_PASSWORD_MAX_LENGTH:
+        errors.append(f"비밀번호는 최대 {settings.AUTH_PASSWORD_MAX_LENGTH}자 이하여야 한다.")
+
+    validation_user = SimpleNamespace(
+        email=email,
+        nickname=nickname,
+        _meta=SimpleNamespace(
+            get_field=lambda attribute_name: SimpleNamespace(verbose_name=attribute_name)
+        ),
+    )
+    validator_messages = (
+        (COMMON_PASSWORD_VALIDATOR, "common password는 사용할 수 없다."),
+        (NUMERIC_PASSWORD_VALIDATOR, "비밀번호는 숫자-only 값을 사용할 수 없다."),
+        (SIMILARITY_PASSWORD_VALIDATOR, "비밀번호가 email 또는 nickname과 너무 유사하다."),
+    )
+    for validator, message in validator_messages:
+        try:
+            validator.validate(password, validation_user)
+        except DjangoValidationError:
+            errors.append(message)
+
+    if errors:
+        raise ApiErrorResponseException(
+            "VALIDATION_ERROR",
+            status_code=HTTP_400_BAD_REQUEST,
+            details={"password": errors},
+        )
+
+
+def _normalize_login_email(email: str) -> str:
+    return email.strip().lower()
+
+
+def _normalize_client_ip(client_ip: str | None) -> str:
+    value = "" if client_ip is None else client_ip.strip()
+    return value or "0.0.0.0"
+
+
+def _assert_login_not_limited(*, normalized_email: str, client_ip: str, now) -> None:
+    with transaction.atomic():
+        throttle, _created = LoginFailureThrottle.objects.select_for_update().get_or_create(
+            email=normalized_email,
+            ip_address=client_ip,
+            defaults={
+                "failure_count": 0,
+                "first_failed_at": now,
+                "last_failed_at": now,
+            },
+        )
+
+        if throttle.blocked_until is None:
+            return
+        if throttle.blocked_until > now:
+            _raise_login_rate_limited()
+
+        throttle.failure_count = 0
+        throttle.first_failed_at = now
+        throttle.last_failed_at = now
+        throttle.blocked_until = None
+        throttle.save(
+            update_fields=(
+                "failure_count",
+                "first_failed_at",
+                "last_failed_at",
+                "blocked_until",
+            )
+        )
+
+
+def _record_login_failure(
+    *,
+    normalized_email: str,
+    client_ip: str,
+    request_id: str | None,
+    now,
+) -> None:
+    with transaction.atomic():
+        throttle, _created = LoginFailureThrottle.objects.select_for_update().get_or_create(
+            email=normalized_email,
+            ip_address=client_ip,
+            defaults={
+                "failure_count": 0,
+                "first_failed_at": now,
+                "last_failed_at": now,
+            },
+        )
+        outside_window = (
+            now - throttle.first_failed_at
+        ).total_seconds() > settings.LOGIN_FAILURE_WINDOW_SECONDS
+
+        if outside_window:
+            throttle.failure_count = 1
+            throttle.first_failed_at = now
+            throttle.blocked_until = None
+        else:
+            throttle.failure_count += 1
+
+        throttle.last_failed_at = now
+        update_fields = [
+            "failure_count",
+            "first_failed_at",
+            "last_failed_at",
+            "blocked_until",
+        ]
+
+        if throttle.failure_count >= settings.LOGIN_FAILURE_LIMIT:
+            throttle.blocked_until = now + timedelta(seconds=settings.LOGIN_FAILURE_LOCKOUT_SECONDS)
+            throttle.save(update_fields=update_fields)
+            record_security_event(
+                event_type=SECURITY_EVENT_LOGIN_FAILED_REPEATED,
+                user_id=None,
+                request_id=request_id,
+                metadata={"failure_count": throttle.failure_count},
+            )
+            _raise_login_rate_limited()
+
+        throttle.save(update_fields=update_fields)
+
+
+def _reset_login_failure_count(*, normalized_email: str, client_ip: str) -> None:
+    LoginFailureThrottle.objects.filter(
+        email=normalized_email,
+        ip_address=client_ip,
+    ).delete()
+
+
+def _raise_login_rate_limited() -> None:
+    raise ApiErrorResponseException(
+        "LOGIN_RATE_LIMITED",
+        status_code=HTTP_429_TOO_MANY_REQUESTS,
+    )
+
+
+def _logout_with_refresh_token(
+    *,
+    raw_refresh_token: str,
+    request_id: str | None,
+) -> None:
+    claims = _decode_token_or_expire(raw_refresh_token, expected_token_type=REFRESH_TOKEN_TYPE)
+    submitted_jti = _claim_uuid(claims, "jti")
+    submitted_family_id = _claim_uuid(claims, "family_id")
+    submitted_user_id = _claim_user_id(claims)
+    submitted_hash = hash_refresh_token(raw_refresh_token, settings.SECRET_KEY)
+    now = timezone.now()
+
+    with transaction.atomic():
+        token = _locked_refresh_token(submitted_jti)
+        _assert_submitted_refresh_token_matches(
+            token=token,
+            submitted_hash=submitted_hash,
+            submitted_family_id=submitted_family_id,
+            submitted_user_id=submitted_user_id,
+        )
+
+        if is_refresh_token_reuse_status(token.status):
+            _handle_refresh_token_reuse(token=token, request_id=request_id, now=now)
+
+        if token.status != ACTIVE_REFRESH_TOKEN_STATUS:
+            raise _session_expired()
+
+        if token.expires_at <= now:
+            token.status = REVOKED_REFRESH_TOKEN_STATUS
+            token.revoked_at = now
+            token.save(update_fields=("status", "revoked_at"))
+            raise _session_expired()
+
+        revoke_refresh_token_family(family_id=token.family_id, now=now)
+        record_security_event(
+            event_type=SECURITY_EVENT_REFRESH_TOKEN_FAMILY_REVOKED,
+            user_id=token.user_id,
+            request_id=request_id,
+            metadata={"family_id": str(token.family_id)},
+        )
 
 
 def _create_refresh_token(

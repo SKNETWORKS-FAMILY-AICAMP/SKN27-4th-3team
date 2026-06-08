@@ -141,7 +141,8 @@ def test_auth_views_delegate_runtime_to_service_layer_without_response_body_toke
     )[0]
 
     assert "auth_services.signup(" in signup_source
-    assert "raise AuthServiceNotImplemented(\"auth.logout\")" in views_source
+    assert "auth_services.logout(" in views_source
+    assert "clear_auth_cookies(response)" in views_source
     assert "auth_services.login(" in views_source
     assert "auth_services.refresh(" in views_source
     assert "auth_services.get_current_session(" in views_source

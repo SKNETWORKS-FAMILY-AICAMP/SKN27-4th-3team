@@ -113,6 +113,25 @@
       "secure_cookie": {
         "local_dev": false,
         "production": true
+      },
+      "password_policy": {
+        "min_length": 10,
+        "max_length": 128,
+        "common_password_blocked": true,
+        "numeric_only_blocked": true,
+        "similar_to_email_or_nickname_blocked": true,
+        "validation_error_code": "VALIDATION_ERROR"
+      },
+      "login_failure_rate_limit": {
+        "identity": "normalized email + server observed REMOTE_ADDR",
+        "trusted_proxy_headers": "not used until a trusted proxy policy is approved",
+        "window_seconds": 600,
+        "failure_limit": 5,
+        "lockout_seconds": 900,
+        "http_status": 429,
+        "error_code": "LOGIN_RATE_LIMITED",
+        "reset_on_success": true,
+        "invalid_credentials_response_hides_account_existence": true
       }
     },
     "csrf": {
@@ -697,7 +716,7 @@
         "CSRF_TOKEN_INVALID",
         "INVALID_CREDENTIALS",
         "VALIDATION_ERROR",
-        "RATE_LIMITED"
+        "LOGIN_RATE_LIMITED"
       ],
       "schema_status": "approved"
     },
@@ -731,7 +750,8 @@
         "AUTH_REQUIRED",
         "SESSION_EXPIRED",
         "CSRF_TOKEN_MISSING",
-        "CSRF_TOKEN_INVALID"
+        "CSRF_TOKEN_INVALID",
+        "REFRESH_TOKEN_REUSED"
       ],
       "schema_status": "approved"
     },
@@ -1172,6 +1192,7 @@
     "AUTH_REQUIRED": "인증이 필요하다.",
     "SESSION_EXPIRED": "세션이 만료되었거나 refresh에 실패했다.",
     "INVALID_CREDENTIALS": "로그인 정보가 올바르지 않다.",
+    "LOGIN_RATE_LIMITED": "로그인 실패가 반복되어 일시적으로 로그인이 차단되었다.",
     "CSRF_TOKEN_MISSING": "CSRF token이 없다.",
     "CSRF_TOKEN_INVALID": "CSRF token이 유효하지 않다.",
     "VALIDATION_ERROR": "요청 payload가 schema 또는 서버 검증을 통과하지 못했다.",
@@ -1193,12 +1214,5 @@
     "DUEL_DIALOGUE_LIMIT_EXCEEDED": "결전 대화 생성 제한을 초과했다.",
     "SERVICE_NOT_IMPLEMENTED": "Service is not implemented yet."
   },
-  "remaining_decisions": [
-    {
-      "id": "auth.logout.refresh_family_identification",
-      "status": "needs-owner-decision",
-      "reason": "refresh cookie now reaches /api/v1/auth/logout, but logout still needs the approved refresh family revoke flow, failure policy, and security event details before implementation",
-      "current_runtime": "auth.logout remains SERVICE_NOT_IMPLEMENTED until the logout revoke policy is approved"
-    }
-  ]
+  "remaining_decisions": []
 }

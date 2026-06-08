@@ -47,7 +47,7 @@ def test_csrf_endpoint_returns_success_envelope_and_server_request_id_header():
     assert body["meta"]["server_time"].endswith("Z")
 
 
-def test_unimplemented_service_returns_501_error_envelope_with_stable_service_key():
+def test_logout_without_auth_returns_auth_required_envelope_and_clears_cookies():
     response = APIClient().post(
         "/api/v1/auth/logout",
         {},
@@ -56,15 +56,17 @@ def test_unimplemented_service_returns_501_error_envelope_with_stable_service_ke
         HTTP_X_REQUEST_ID="external-trace",
     )
 
-    assert response.status_code == 501
+    assert response.status_code == 401
     body = response.json()
 
     assert set(body) == {"error", "meta"}
     assert body["error"] == {
-        "code": "SERVICE_NOT_IMPLEMENTED",
-        "message": "Service is not implemented yet.",
-        "details": {"service": "auth.logout"},
+        "code": "AUTH_REQUIRED",
+        "message": "인증이 필요하다.",
+        "details": {},
     }
     assert body["meta"]["request_id"] == response["X-Request-ID"]
     assert body["meta"]["request_id"] != "external-trace"
     _assert_server_request_id(body["meta"]["request_id"])
+    assert response.cookies["pilot_access"]["max-age"] == 0
+    assert response.cookies["pilot_refresh"]["max-age"] == 0

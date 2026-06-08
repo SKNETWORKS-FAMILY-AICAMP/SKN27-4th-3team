@@ -38,7 +38,7 @@ LLM runtime, `nameless_curse`, 플레이어 표시 이름, 결전 LLM payload, R
 |---|---|
 | official API schema는 `{ data, meta }` envelope를 유지한다. | 일치. `auth.signup`, `matches.result` 모두 `api_success_response`를 사용한다. |
 | access/refresh token은 signup 응답 body에 넣지 않는다. | 일치. signup은 cookie도 설정하지 않고 `user`만 반환한다. |
-| logout은 refresh family 식별 정책이 확정될 때까지 501 유지한다. | 일치. `auth.logout`은 계속 `SERVICE_NOT_IMPLEMENTED`다. |
+| logout은 승인된 refresh family revoke 정책을 따른다. | 현재 기준 일치. `auth.logout`은 [[09_Approved_Contracts/20_Django_Auth_보안_계약]]의 logout 정책에 따라 refresh family revoke와 cookie 삭제를 수행한다. |
 | LLM은 서버 판정 이후 보조 요약에만 사용한다. | 일치. `matches.result`는 서버 판정 값을 먼저 조립하고 LLM fallback만 붙인다. |
 | LLM 실패/비활성 시 정적 문구로 화면이 완성돼야 한다. | 일치. `story_result_text`와 `llm_summary.enabled=false`가 반환된다. |
 | LLM provider/prompt/generation 구현은 top-level `llm/`에 둔다. | 일치. backend는 `llm.generation`을 직접 import하지 않는다. |
@@ -61,7 +61,7 @@ LLM runtime, `nameless_curse`, 플레이어 표시 이름, 결전 LLM payload, R
 
 ## 구현하지 않은 이유가 명확한 항목
 
-- `auth.logout`: `docs/09_Approved_Contracts/20_Django_Auth_보안_계약.md`와 official schema의 implementation note가 501 유지를 명시한다.
+- `auth.logout`: 당시에는 미구현 유지가 맞았으나, 현재는 [[09_Approved_Contracts/20_Django_Auth_보안_계약]]의 logout refresh family revoke 정책으로 구현됐다.
 - 프론트엔드 연결: 현재 프론트 작업이 별도 진행 중이므로 이번 작업에서는 건드리지 않았다.
 - RAG를 결과 판정에 연결: RAG가 승패/룰/단서에 영향을 주면 계약 위반이다.
 

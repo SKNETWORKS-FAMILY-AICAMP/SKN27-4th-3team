@@ -206,4 +206,4 @@ RAG 검색 결과는 룰, 승패, 인증, 권한, 공식 단서, 진명 조각, 
 /api/v1/auth
 ```
 
-`auth.logout` 구현 자체는 refresh family 식별과 보안 이벤트 계약을 별도로 완성하기 전까지 기존 501 상태를 유지한다.
+`auth.logout` 구현은 [[09_Approved_Contracts/20_Django_Auth_보안_계약]]의 logout refresh family revoke 정책을 따른다.

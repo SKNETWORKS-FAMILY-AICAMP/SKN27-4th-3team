@@ -9,6 +9,7 @@ API_ERROR_MESSAGES = MappingProxyType(
         "AUTH_REQUIRED": "인증이 필요하다.",
         "SESSION_EXPIRED": "세션이 만료되었거나 refresh에 실패했다.",
         "INVALID_CREDENTIALS": "로그인 정보가 올바르지 않다.",
+        "LOGIN_RATE_LIMITED": "로그인 실패가 반복되어 일시적으로 로그인이 차단되었다.",
         "CSRF_TOKEN_MISSING": "CSRF token이 없다.",
         "CSRF_TOKEN_INVALID": "CSRF token이 유효하지 않다.",
         "VALIDATION_ERROR": "요청 payload가 schema 또는 서버 검증을 통과하지 못했다.",

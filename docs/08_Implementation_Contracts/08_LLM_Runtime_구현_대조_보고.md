@@ -42,7 +42,7 @@ updated: "2026-06-06"
 - LLM 생성 결과는 승패, 종료 사유, 행동 성공/실패, 자원, 진명 조각, 거짓 단서, 괴이 행동 선택을 변경하지 않는다.
 - RAG는 이번 구현에서도 룰/승패/단서 계산에 연결하지 않았다.
 - frontend 파일은 이번 작업에서 수정하지 않았다.
-- `auth.logout`은 refresh cookie path만 준비했고, refresh family revoke 계약이 별도 확정되기 전까지 501을 유지한다.
+- `auth.logout`은 현재 [[09_Approved_Contracts/20_Django_Auth_보안_계약]]의 logout refresh family revoke 정책에 따라 구현한다.
 
 ## 보류 또는 미구현
 

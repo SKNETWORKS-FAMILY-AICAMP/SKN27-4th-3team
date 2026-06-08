@@ -18,14 +18,9 @@ from backend.apps.accounts.serializers import (
     SignupRequestSerializer,
     SignupResponseSerializer,
 )
-from backend.apps.common.exceptions import ApiErrorResponseException, ServiceNotImplementedError
+from backend.apps.common.exceptions import ApiErrorResponseException
 from backend.apps.common.request_ids import get_request_id
-from backend.apps.common.runtime import api_success_response
-
-
-class AuthServiceNotImplemented(ServiceNotImplementedError):
-    pass
-
+from backend.apps.common.runtime import api_error_response, api_success_response
 
 class AuthCookieMixin:
     def set_access_cookie(self, response, value: str) -> None:
@@ -113,6 +108,7 @@ class LoginView(AuthCookieMixin, APIView):
             email=serializer.validated_data["email"],
             password=serializer.validated_data["password"],
             request_id=get_request_id(request),
+            client_ip=_server_observed_client_ip(request),
         )
         rotate_token(request)
         response = api_success_response(
@@ -138,7 +134,25 @@ class LogoutView(AuthCookieMixin, APIView):
     response_serializer_class = LogoutResponseSerializer
 
     def post(self, request):
-        raise AuthServiceNotImplemented("auth.logout")
+        try:
+            logout_result = auth_services.logout(
+                raw_refresh_token=request.COOKIES.get(settings.REFRESH_TOKEN_COOKIE_NAME),
+                raw_access_token=request.COOKIES.get(settings.ACCESS_TOKEN_COOKIE_NAME),
+                request_id=get_request_id(request),
+            )
+        except ApiErrorResponseException as exc:
+            response = api_error_response(
+                request,
+                exc.code,
+                status_code=exc.status_code,
+                details=exc.details,
+            )
+            self.clear_auth_cookies(response)
+            return response
+
+        response = api_success_response(request, {"logged_out": logout_result.logged_out})
+        self.clear_auth_cookies(response)
+        return response
 
 
 @method_decorator(csrf_protect, name="dispatch")
@@ -148,10 +162,24 @@ class RefreshView(AuthCookieMixin, APIView):
     response_serializer_class = RefreshResponseSerializer
 
     def post(self, request):
-        refresh_result = auth_services.refresh(
-            raw_refresh_token=request.COOKIES.get(settings.REFRESH_TOKEN_COOKIE_NAME),
-            request_id=get_request_id(request),
-        )
+        try:
+            refresh_result = auth_services.refresh(
+                raw_refresh_token=request.COOKIES.get(settings.REFRESH_TOKEN_COOKIE_NAME),
+                request_id=get_request_id(request),
+            )
+        except ApiErrorResponseException as exc:
+            if exc.code != "REFRESH_TOKEN_REUSED":
+                raise
+
+            response = api_error_response(
+                request,
+                exc.code,
+                status_code=exc.status_code,
+                details=exc.details,
+            )
+            self.clear_auth_cookies(response)
+            return response
+
         response = api_success_response(
             request,
             {
@@ -180,3 +208,7 @@ class MeView(APIView):
                 "profile": session.profile,
             },
         )
+
+
+def _server_observed_client_ip(request) -> str:
+    return request.META.get("REMOTE_ADDR") or "0.0.0.0"
