@@ -25,6 +25,12 @@
    - Avoid adding permanent HUD elements; prefer journal sections or temporary log panels.
 */
 
+@font-face {
+  font-family: "KyoboJournalHandwriting";
+  src: url("assets/KyoboHandwriting2025lyb.ttf") format("truetype");
+  font-display: swap;
+}
+
 :root {
   --frame-max-width: 1280px;
   --frame-aspect: 16 / 9;
@@ -35,6 +41,7 @@
   --enemy-voice-action-color: rgb(58, 0, 4);
   --log-text: rgba(239, 239, 230, 0.96);
   --journal-ink: rgba(42, 39, 34, 0.96);
+  --journal-font: "KyoboJournalHandwriting", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
   --possession-red: rgb(84, 0, 6);
 }
 
@@ -5320,4 +5327,269 @@ body {
       brightness(0.28)
       blur(5px);
   }
+}
+
+/* Journal-only typography: keep the rest of the play UI on the existing font stack. */
+.clue-journal,
+.clue-journal button,
+.clue-journal input,
+.clue-journal textarea,
+.clue-journal select,
+.journal-panel,
+.journal-panel button,
+.journal-book,
+.journal-page,
+.journal-state-strip,
+.journal-section-nav,
+.journal-page-controls,
+.turn-record-list {
+  font-family: var(--journal-font);
+}
+
+/* Entry conversation: separate from turn/result logs, like a brief memory surfacing on the wall. */
+.ambient-dialogue {
+  position: absolute;
+  left: 50%;
+  top: 34.5%;
+  z-index: 41;
+  display: grid;
+  gap: 5px;
+  width: min(25vw, 340px);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(-50%, 10px, 0);
+  text-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.88),
+    0 0 18px rgba(0, 0, 0, 0.92);
+  transition:
+    opacity 420ms ease,
+    transform 420ms ease;
+}
+
+.ambient-dialogue[hidden] {
+  display: none;
+}
+
+.ambient-dialogue.is-visible {
+  opacity: 1;
+  transform: translate3d(-50%, 0, 0);
+}
+
+.ambient-dialogue[data-side="ian"] {
+  left: 30.5%;
+  text-align: left;
+}
+
+.ambient-dialogue[data-side="spirit"] {
+  left: 70.5%;
+  text-align: left;
+}
+
+.ambient-dialogue strong {
+  color: rgba(165, 132, 69, 0.74);
+  font-size: clamp(11px, 0.82vw, 14px);
+  font-weight: 600;
+}
+
+.ambient-dialogue[data-side="spirit"] strong {
+  color: rgba(129, 13, 21, 0.78);
+}
+
+.ambient-dialogue p {
+  margin: 0;
+  color: rgba(200, 190, 164, 0.78);
+  font-size: clamp(13px, 1vw, 18px);
+  line-height: 1.5;
+  letter-spacing: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.ambient-dialogue[data-side="spirit"] p {
+  color: rgba(162, 34, 42, 0.78);
+}
+
+/* Journal visual reset: make the record read as a replaceable diary/book interior, not a rigid UI panel. */
+.journal-panel {
+  width: min(86vw, 980px);
+  padding: 12px;
+  background:
+    radial-gradient(ellipse at 50% 110%, rgba(0, 0, 0, 0.68), transparent 58%),
+    linear-gradient(180deg, rgba(10, 8, 7, 0.94), rgba(3, 4, 4, 0.62));
+  border-radius: 8px;
+  box-shadow:
+    0 34px 92px rgba(0, 0, 0, 0.92),
+    0 0 0 1px rgba(110, 91, 61, 0.12);
+}
+
+.journal-header {
+  padding: 0 8px 8px 12px;
+  color: rgba(178, 163, 128, 0.78);
+  font-size: clamp(14px, 1.05vw, 18px);
+}
+
+.journal-book.has-section-nav {
+  height: min(76vh, 660px);
+  padding: 15px 22px 18px;
+  border: 1px solid rgba(17, 11, 8, 0.92);
+  border-radius: 6px;
+  background:
+    linear-gradient(90deg, rgba(8, 7, 6, 0.99) 0 3%, rgba(38, 29, 21, 0.98) 4% 9%, rgba(25, 18, 14, 0.98) 48%, rgba(28, 20, 15, 0.98) 52%, rgba(42, 31, 22, 0.98) 91%, rgba(9, 8, 7, 0.99) 100%),
+    linear-gradient(180deg, rgba(39, 31, 24, 0.98), rgba(15, 13, 11, 0.98));
+  box-shadow:
+    inset 0 0 54px rgba(0, 0, 0, 0.66),
+    inset 0 -22px 40px rgba(0, 0, 0, 0.44),
+    0 22px 38px rgba(0, 0, 0, 0.68);
+}
+
+.journal-book.has-section-nav::before {
+  left: 50%;
+  top: 58px;
+  bottom: 48px;
+  width: 36px;
+  transform: translateX(-50%);
+  background:
+    linear-gradient(90deg, transparent, rgba(10, 7, 5, 0.58), rgba(114, 96, 66, 0.08), rgba(10, 7, 5, 0.58), transparent);
+  pointer-events: none;
+}
+
+.journal-section-nav {
+  gap: 6px;
+  padding: 0 10px 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120, 99, 67, 0.42) rgba(12, 9, 7, 0.62);
+}
+
+.journal-section-nav button {
+  min-height: 30px;
+  padding: 5px 10px;
+  color: rgba(171, 154, 119, 0.78);
+  background:
+    linear-gradient(180deg, rgba(29, 22, 17, 0.95), rgba(17, 13, 10, 0.94));
+  border-color: rgba(23, 17, 13, 0.82);
+  font-size: clamp(11px, 0.82vw, 13px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 242, 198, 0.08),
+    0 3px 8px rgba(0, 0, 0, 0.18);
+}
+
+.journal-section-nav button.is-active {
+  color: rgba(215, 196, 152, 0.86);
+  background:
+    linear-gradient(180deg, rgba(72, 56, 36, 0.96), rgba(41, 30, 20, 0.98));
+}
+
+.journal-book.has-section-nav .journal-page {
+  padding: 56px clamp(26px, 3.2vw, 42px) 34px;
+  color: rgba(44, 37, 30, 0.88);
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.18), transparent 18%, rgba(0, 0, 0, 0.18)),
+    linear-gradient(90deg, rgba(43, 30, 20, 0.2), transparent 6%, transparent 94%, rgba(36, 25, 17, 0.2)),
+    repeating-linear-gradient(180deg, transparent 0 28px, rgba(31, 25, 18, 0.1) 29px 30px),
+    radial-gradient(circle at 17% 22%, rgba(34, 23, 16, 0.16) 0 2px, transparent 9px),
+    radial-gradient(circle at 84% 78%, rgba(25, 18, 13, 0.18) 0 2px, transparent 8px),
+    linear-gradient(180deg, rgba(116, 103, 78, 0.96), rgba(82, 70, 52, 0.97));
+  filter: saturate(0.72) brightness(0.78);
+}
+
+.journal-book.has-section-nav .left-page {
+  box-shadow:
+    inset -34px 0 32px rgba(21, 15, 10, 0.34),
+    inset 0 0 38px rgba(0, 0, 0, 0.14);
+}
+
+.journal-book.has-section-nav .right-page {
+  box-shadow:
+    inset 34px 0 32px rgba(21, 15, 10, 0.34),
+    inset 0 0 38px rgba(0, 0, 0, 0.14);
+}
+
+.journal-page h2 {
+  color: rgba(37, 30, 23, 0.96);
+  font-size: clamp(15px, 1.08vw, 18px);
+}
+
+.journal-page p,
+.journal-page li,
+.journal-page dd,
+.journal-page dt,
+.turn-record-list small {
+  font-size: clamp(11px, 0.86vw, 13px);
+  line-height: 1.56;
+}
+
+.revealed-false-list {
+  display: grid;
+  gap: 7px;
+  padding-left: 0;
+  list-style: none;
+}
+
+.revealed-false-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: baseline;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(65, 43, 25, 0.12);
+}
+
+.revealed-false-list li[data-clue-state="suspect"] {
+  color: rgba(47, 37, 28, 0.84);
+}
+
+.revealed-false-list li[data-clue-state="revealed"] {
+  color: rgba(80, 20, 20, 0.92);
+}
+
+.revealed-false-list em {
+  color: rgba(99, 40, 32, 0.84);
+  font-style: normal;
+  font-size: clamp(10px, 0.76vw, 12px);
+  white-space: nowrap;
+}
+
+.turn-record-list p {
+  margin: 2px 0 0;
+}
+
+.turn-record-list small {
+  color: rgba(49, 39, 30, 0.72);
+}
+
+@media (max-width: 760px) {
+  .ambient-dialogue {
+    top: 31%;
+    width: 40vw;
+  }
+
+  .ambient-dialogue[data-side="ian"] {
+    left: 25%;
+  }
+
+  .ambient-dialogue[data-side="spirit"] {
+    left: 73%;
+  }
+
+  .journal-panel {
+    width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px);
+  }
+
+  .journal-book.has-section-nav {
+    height: min(78vh, 680px);
+    padding: 12px 14px 16px;
+  }
+
+  .journal-book.has-section-nav .journal-page {
+    padding: 42px 20px 30px;
+  }
+}
+
+.game-frame.is-intro-locked .ritual-tools,
+.game-frame.is-intro-locked .seal-invocation,
+.game-frame.is-intro-locked .clue-journal {
+  pointer-events: none;
+  opacity: 0.62;
+  filter: saturate(0.82) brightness(0.82);
 }
