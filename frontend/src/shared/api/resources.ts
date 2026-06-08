@@ -43,11 +43,20 @@ export async function login(body: LoginRequest): Promise<{
     access_expires_in_seconds: number;
   };
 }> {
-  return requestApi("/api/v1/auth/login", {
+  const result = await requestApi<{
+    user: User;
+    profile: ProfileSummary;
+    session: {
+      authenticated: true;
+      access_expires_in_seconds: number;
+    };
+  }>("/api/v1/auth/login", {
     method: "POST",
     body,
     csrf: true,
   });
+  clearCsrfTokenForNewSession();
+  return result;
 }
 
 export async function logout(): Promise<{ logged_out: true }> {

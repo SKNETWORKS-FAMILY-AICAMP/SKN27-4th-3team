@@ -45,6 +45,12 @@ if (missingResources.length > 0) {
   process.exit(1);
 }
 
+const loginFunctionMatch = resourceSource.match(/export async function login[\s\S]*?\n}\n/);
+if (!loginFunctionMatch || !loginFunctionMatch[0].includes("clearCsrfTokenForNewSession();")) {
+  console.error("login must clear cached CSRF token after Django rotates CSRF on successful login.");
+  process.exit(1);
+}
+
 const authScreenSource = readFileSync(resolve("src/features/auth/AuthScreen.tsx"), "utf8");
 for (const snippet of ["login(", "signup(", "ApiClientError", "navigate(\"/lobby\")", "formatFieldErrors(", "error.details"]) {
   if (!authScreenSource.includes(snippet)) {
