@@ -182,6 +182,12 @@ class TurnEffectResult:
     match_outcome: Any
 
 
+@dataclass(frozen=True)
+class PersistedTurnResolutionResult:
+    next_turn: Turn
+    turn_result: dict[str, Any]
+
+
 def get_match_detail(
     *,
     raw_access_token: str | None,
@@ -190,16 +196,36 @@ def get_match_detail(
     session = auth_services.get_current_session(raw_access_token=raw_access_token)
     user_id = _session_user_id(session=session)
     match_id = parse_public_match_id(public_match_id)
-    match = _get_match(match_id=match_id)
-    start_request = (
-        MatchStartRequest.objects.filter(user_id=user_id, match_id=match_id)
-        .order_by("id")
-        .first()
-    )
-    if start_request is None:
-        raise ApiErrorResponseException(
-            "MATCH_ACCESS_DENIED",
-            status_code=HTTP_403_FORBIDDEN,
+
+    with transaction.atomic():
+        now = timezone.now()
+        match = _get_match(match_id=match_id)
+        start_request = (
+            MatchStartRequest.objects.filter(user_id=user_id, match_id=match_id)
+            .order_by("id")
+            .first()
+        )
+        if start_request is None:
+            raise ApiErrorResponseException(
+                "MATCH_ACCESS_DENIED",
+                status_code=HTTP_403_FORBIDDEN,
+            )
+
+        human_participant = _get_participant(
+            match_id=match_id,
+            participant_type=PARTICIPANT_TYPE_HUMAN,
+        )
+        apparition_participant = _get_participant(
+            match_id=match_id,
+            participant_type=PARTICIPANT_TYPE_APPARITION,
+        )
+        current_turn = _resolve_expired_current_turn_if_needed(
+            user_id=user_id,
+            match=match,
+            turn=_get_current_turn(match_id=match_id),
+            human_participant=human_participant,
+            apparition_participant=apparition_participant,
+            now=now,
         )
 
     from backend.apps.story.services import format_match_state
@@ -208,16 +234,10 @@ def get_match_detail(
         match=format_match_state(
             session=session,
             match=match,
-            turn=_get_current_turn(match_id=match_id),
-            human_participant=_get_participant(
-                match_id=match_id,
-                participant_type=PARTICIPANT_TYPE_HUMAN,
-            ),
-            apparition_participant=_get_participant(
-                match_id=match_id,
-                participant_type=PARTICIPANT_TYPE_APPARITION,
-            ),
-            now=timezone.now(),
+            turn=current_turn,
+            human_participant=human_participant,
+            apparition_participant=apparition_participant,
+            now=now,
         )
     )
 
@@ -469,120 +489,202 @@ def submit_match_turn(
                 status_code=HTTP_409_CONFLICT,
             ) from exc
 
-        player_state_before = _resource_state_from_participant(human_participant)
-        resolution = resolve_ai_story_turn(
-            turn_id=_public_id(prefix="turn", value=turn.id),
-            turn_number=turn.turn_number,
-            deadline_at=turn.deadline_at,
-            server_time=now,
-            player_action_code=action_code,
-            opponent_action_code=opponent_action_code,
-            player_timeout_count=human_participant.timeout_count,
-            player_state=player_state_before,
-            seal_condition_met=_seal_condition_met(
-                human_participant=human_participant,
-                case_definition=case_definition,
-            ),
-            curse_marks_loss_triggered=False,
-        )
-
-        effect_result = _apply_turn_effects(
+        persisted_result = _resolve_and_persist_turn(
+            user_id=user_id,
             match=match,
             turn=turn,
-            submission=submission,
-            resolution=resolution,
             human_participant=human_participant,
             apparition_participant=apparition_participant,
-            info_target_key=info_target_key,
             case_id=case_id,
-        )
-        resolution = replace(resolution, match_outcome=effect_result.match_outcome)
-
-        turn.status = resolution.turn_status
-        turn.resolved_at = now
-        turn.save(update_fields=("status", "resolved_at"))
-
-        next_turn = _finish_match_or_create_next_turn(
-            match=match,
-            turn=turn,
-            human_participant=human_participant,
-            resolution=resolution,
+            case_definition=case_definition,
+            player_action_code=action_code,
+            opponent_action_code=opponent_action_code,
+            info_target_key=info_target_key,
             now=now,
         )
-        turn_result = _turn_result_payload(
-            resolution=resolution,
-            info_target_key=info_target_key,
-            state_delta=effect_result.state_delta,
-            clue_delta=effect_result.clue_delta,
-        )
-        TurnResult.objects.create(
-            turn_id=turn.id,
-            result_json={
-                "schema_version": TURN_RESULT_SCHEMA_VERSION,
-                "turn_result": turn_result,
-            },
-            public_log_json={
-                "schema_version": TURN_RESULT_SCHEMA_VERSION,
-                "logs": [turn_result["public_log"]],
-            },
-            private_log_json={
-                "schema_version": TURN_RESULT_SCHEMA_VERSION,
-                "effect_codes": list(resolution.effect_codes),
-            },
-            schema_version=TURN_RESULT_SCHEMA_VERSION,
-        )
-
-        acquired_clue_id, clue_truth_state = _first_clue_event(effect_result.clue_delta)
-        ai_profile_event = ai_profile_services.build_action_event_from_turn_resolution(
-            resolution=resolution,
-            user_id=str(user_id),
-            mode=match.mode,
-            match_id=str(match.id),
-            stage_id=1,
-            info_target_key=info_target_key,
-            decision_duration_ms=_decision_duration_ms(
-                started_at=turn.started_at,
-                submitted_at=now,
-            ),
-            sanity_before=player_state_before.sanity,
-            ritual_power_before=player_state_before.ritual_power,
-            curse_marks_before=player_state_before.curse_marks,
-            result_code=_result_code_from_resolution(resolution),
-            acquired_clue_id=acquired_clue_id,
-            clue_truth_state=clue_truth_state,
-        )
-        ai_profile_services.persist_turn_action_event(ai_profile_event)
-        ai_profile_events = ai_profile_services.list_action_events_for_match(
-            user_id=user_id,
-            match_id=match.id,
-        )
-        ai_profile_services.persist_style_snapshot(
-            snapshot=ai_profile_services.calculate_style_snapshot(
-                user_id=str(user_id),
-                events=ai_profile_events,
-            )
-        )
-        if match.status == MATCH_STATUS_RESOLVED:
-            ai_profile_services.persist_final_style_snapshot(
-                snapshot=ai_profile_services.recalculate_final_style_snapshot(
-                    user_id=str(user_id),
-                    events=ai_profile_events,
-                )
-            )
 
         from backend.apps.story.services import format_match_state
 
         return TurnSubmitResult(
-            turn_result=turn_result,
+            turn_result=persisted_result.turn_result,
             match=format_match_state(
                 session=session,
                 match=match,
-                turn=next_turn,
+                turn=persisted_result.next_turn,
                 human_participant=human_participant,
                 apparition_participant=apparition_participant,
                 now=now,
             ),
         )
+
+
+def _resolve_expired_current_turn_if_needed(
+    *,
+    user_id: int,
+    match: Match,
+    turn: Turn,
+    human_participant: MatchParticipant,
+    apparition_participant: MatchParticipant,
+    now,
+) -> Turn:
+    if match.status != MATCH_STATUS_ACTIVE:
+        return turn
+    if turn.status != TURN_STATUS_AWAITING_PLAYER:
+        return turn
+
+    try:
+        turn = Turn.objects.select_for_update().get(id=turn.id)
+    except Turn.DoesNotExist as exc:
+        raise _match_not_found() from exc
+
+    if turn.status != TURN_STATUS_AWAITING_PLAYER:
+        return _get_current_turn(match_id=match.id)
+    if now <= turn.deadline_at:
+        return turn
+    if ActionSubmission.objects.filter(
+        turn_id=turn.id,
+        participant_id=human_participant.id,
+    ).exists():
+        return _get_current_turn(match_id=match.id)
+
+    case_id = _get_match_case_id(match_id=match.id)
+    case_definition = _story_case_definition(case_id=case_id)
+    persisted_result = _resolve_and_persist_turn(
+        user_id=user_id,
+        match=match,
+        turn=turn,
+        human_participant=human_participant,
+        apparition_participant=apparition_participant,
+        case_id=case_id,
+        case_definition=case_definition,
+        player_action_code=None,
+        opponent_action_code=_choose_apparition_action(
+            match_id=match.id,
+            human_participant=human_participant,
+        ),
+        info_target_key=None,
+        now=now,
+    )
+    return persisted_result.next_turn
+
+
+def _resolve_and_persist_turn(
+    *,
+    user_id: int,
+    match: Match,
+    turn: Turn,
+    human_participant: MatchParticipant,
+    apparition_participant: MatchParticipant,
+    case_id: str,
+    case_definition: Mapping[str, Any],
+    player_action_code: str | None,
+    opponent_action_code: str,
+    info_target_key: str | None,
+    now,
+) -> PersistedTurnResolutionResult:
+    player_state_before = _resource_state_from_participant(human_participant)
+    resolution = resolve_ai_story_turn(
+        turn_id=_public_id(prefix="turn", value=turn.id),
+        turn_number=turn.turn_number,
+        deadline_at=turn.deadline_at,
+        server_time=now,
+        player_action_code=player_action_code,
+        opponent_action_code=opponent_action_code,
+        player_timeout_count=human_participant.timeout_count,
+        player_state=player_state_before,
+        seal_condition_met=_seal_condition_met(
+            human_participant=human_participant,
+            case_definition=case_definition,
+        ),
+        curse_marks_loss_triggered=False,
+    )
+    effect_result = _apply_turn_effects(
+        match=match,
+        turn=turn,
+        resolution=resolution,
+        human_participant=human_participant,
+        apparition_participant=apparition_participant,
+        info_target_key=info_target_key,
+        case_id=case_id,
+    )
+    resolution = replace(resolution, match_outcome=effect_result.match_outcome)
+
+    turn.status = resolution.turn_status
+    turn.resolved_at = now
+    turn.save(update_fields=("status", "resolved_at"))
+
+    next_turn = _finish_match_or_create_next_turn(
+        match=match,
+        turn=turn,
+        human_participant=human_participant,
+        resolution=resolution,
+        now=now,
+    )
+    turn_result = _turn_result_payload(
+        resolution=resolution,
+        info_target_key=info_target_key,
+        state_delta=effect_result.state_delta,
+        clue_delta=effect_result.clue_delta,
+    )
+    TurnResult.objects.create(
+        turn_id=turn.id,
+        result_json={
+            "schema_version": TURN_RESULT_SCHEMA_VERSION,
+            "turn_result": turn_result,
+        },
+        public_log_json={
+            "schema_version": TURN_RESULT_SCHEMA_VERSION,
+            "logs": [turn_result["public_log"]],
+        },
+        private_log_json={
+            "schema_version": TURN_RESULT_SCHEMA_VERSION,
+            "effect_codes": list(resolution.effect_codes),
+        },
+        schema_version=TURN_RESULT_SCHEMA_VERSION,
+    )
+
+    acquired_clue_id, clue_truth_state = _first_clue_event(effect_result.clue_delta)
+    ai_profile_event = ai_profile_services.build_action_event_from_turn_resolution(
+        resolution=resolution,
+        user_id=str(user_id),
+        mode=match.mode,
+        match_id=str(match.id),
+        stage_id=1,
+        info_target_key=info_target_key,
+        decision_duration_ms=_decision_duration_ms(
+            started_at=turn.started_at,
+            submitted_at=now,
+        ),
+        sanity_before=player_state_before.sanity,
+        ritual_power_before=player_state_before.ritual_power,
+        curse_marks_before=player_state_before.curse_marks,
+        result_code=_result_code_from_resolution(resolution),
+        acquired_clue_id=acquired_clue_id,
+        clue_truth_state=clue_truth_state,
+    )
+    ai_profile_services.persist_turn_action_event(ai_profile_event)
+    ai_profile_events = ai_profile_services.list_action_events_for_match(
+        user_id=user_id,
+        match_id=match.id,
+    )
+    ai_profile_services.persist_style_snapshot(
+        snapshot=ai_profile_services.calculate_style_snapshot(
+            user_id=str(user_id),
+            events=ai_profile_events,
+        )
+    )
+    if match.status == MATCH_STATUS_RESOLVED:
+        ai_profile_services.persist_final_style_snapshot(
+            snapshot=ai_profile_services.recalculate_final_style_snapshot(
+                user_id=str(user_id),
+                events=ai_profile_events,
+            )
+        )
+
+    return PersistedTurnResolutionResult(
+        next_turn=next_turn,
+        turn_result=turn_result,
+    )
 
 
 def _match_result(*, match: Match, human_participant: MatchParticipant) -> str:
@@ -1005,7 +1107,6 @@ def _apply_turn_effects(
     *,
     match: Match,
     turn: Turn,
-    submission: ActionSubmission,
     resolution: TurnResolution,
     human_participant: MatchParticipant,
     apparition_participant: MatchParticipant,

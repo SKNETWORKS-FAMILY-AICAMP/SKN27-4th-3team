@@ -183,6 +183,45 @@ def test_match_detail_service_source_uses_public_id_and_start_request_membership
     assert "Match.objects.get(id=match_id)" in services_source
 
 
+def test_match_detail_service_resolves_expired_awaiting_turn_before_formatting():
+    from pathlib import Path
+
+    root_dir = Path(__file__).resolve().parents[3]
+    services_source = (root_dir / "backend" / "apps" / "matches" / "services.py").read_text(
+        encoding="utf-8"
+    )
+    detail_source = services_source.split("def get_match_detail(", maxsplit=1)[1].split(
+        "\n\ndef get_match_result(",
+        maxsplit=1,
+    )[0]
+    assert "def _resolve_expired_current_turn_if_needed(" in services_source
+    assert "def _resolve_and_persist_turn(" in services_source
+    timeout_helper_source = services_source.split(
+        "def _resolve_expired_current_turn_if_needed(",
+        maxsplit=1,
+    )[1].split("\n\ndef ", maxsplit=1)[0]
+    persist_helper_source = services_source.split(
+        "def _resolve_and_persist_turn(",
+        maxsplit=1,
+    )[1].split("\n\ndef ", maxsplit=1)[0]
+    turn_result_payload_source = services_source.split(
+        "def _turn_result_payload(",
+        maxsplit=1,
+    )[1].split("\n\ndef ", maxsplit=1)[0]
+
+    assert "_resolve_expired_current_turn_if_needed(" in detail_source
+    assert detail_source.index("_resolve_expired_current_turn_if_needed(") < (
+        detail_source.index("format_match_state(")
+    )
+    assert "player_action_code=None" in timeout_helper_source
+    assert "ActionSubmission.objects.filter(" in timeout_helper_source
+    assert "_resolve_and_persist_turn(" in timeout_helper_source
+    assert "turn.resolved_at = now" in persist_helper_source
+    assert "_turn_result_payload(" in persist_helper_source
+    assert "TurnResult.objects.create(" in persist_helper_source
+    assert "timeout_applied" in turn_result_payload_source
+
+
 def test_shared_match_state_formatter_uses_persisted_human_resource_fields():
     from backend.apps.matches.constants import (
         MATCH_MODE_AI_STORY,

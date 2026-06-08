@@ -1,7 +1,8 @@
 import { useCallback } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import { RitualDuelScreen, PrototypeTurnRequest } from "../../features/match/RitualDuelScreen";
-import { generateTurnLlmText, submitTurn } from "../../shared/api/resources";
+import { ApiClientError } from "../../shared/api/client";
+import { generateTurnLlmText, getMatchDetail, submitTurn } from "../../shared/api/resources";
 import type { LlmText, MatchState, TurnResult } from "../../shared/types/api";
 
 type MatchRouteState = {
@@ -19,7 +20,20 @@ export function MatchRoute() {
         throw new Error("turnSubmitPayload is required for backend turn submission.");
       }
 
-      const data = await submitTurn(matchId, request.turnSubmitPayload);
+      let data: {
+        turn_result: TurnResult;
+        match: MatchState;
+      };
+      try {
+        data = await submitTurn(matchId, request.turnSubmitPayload);
+      } catch (error) {
+        if (error instanceof ApiClientError && error.code === "TURN_DEADLINE_EXPIRED") {
+          const latest = await getMatchDetail(matchId);
+          return toPrototypeDeadlineExpiredResult(latest.match);
+        }
+        throw error;
+      }
+
       let llmText: LlmText | null = null;
       try {
         const llmResponse = await generateTurnLlmText(
@@ -99,6 +113,51 @@ function toPrototypeStateChanges(turnResult: TurnResult, match: MatchState) {
       .map(toPrototypeClue),
     revealedFalseClues: turnResult.clue_delta.revealed.map(toPrototypeClue),
     turnEvents: [turnResult.public_log.text],
+  };
+}
+
+function toPrototypeDeadlineExpiredResult(match: MatchState) {
+  const latestLog = match.recent_public_logs.at(-1)?.text
+    || "서버 기준 제한 시간이 지나 침묵으로 처리되었습니다.";
+  const resources = match.player.resources;
+
+  return {
+    playerLabel: "침묵",
+    enemy: {
+      key: "silence",
+      label: "침묵",
+      action: "괴이 행동: 침묵",
+      line: latestLog,
+    },
+    briefing: latestLog,
+    delta: "시간초과로 서버 최신 상태를 다시 불러왔습니다.",
+    publicLog: latestLog,
+    stateChanges: {
+      sanity: {
+        before: resources.sanity,
+        after: resources.sanity,
+        delta: 0,
+        max: resources.sanity_max,
+      },
+      curse: {
+        before: resources.curse_marks,
+        after: resources.curse_marks,
+        delta: 0,
+        max: resources.curse_marks_max,
+      },
+      shield: resources.shield,
+      partialTrueName: resources.incomplete_true_name_fragments ?? 0,
+      trueNamePieces: resources.true_name_fragments,
+      suspicion: resources.suspicion,
+      clues: [],
+      suspectClues: [],
+      revealedFalseClues: [],
+      turnEvents: [latestLog],
+    },
+    patternHint: "",
+    seal: null,
+    llm_text: null,
+    llm_ui_texts: [],
   };
 }
 

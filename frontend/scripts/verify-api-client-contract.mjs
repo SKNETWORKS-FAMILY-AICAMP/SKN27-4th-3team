@@ -67,7 +67,7 @@ const duelSource = readFileSync(resolve("src/features/match/RitualDuelScreen.tsx
 for (const [name, source, snippets] of [
   ["StoryCasesScreen", storySource, ["listStoryCases(", "navigate(\"/prologue\""]],
   ["PrologueScreen", prologueSource, ["startStoryMatch(", "client_request_id", "crypto.randomUUID"]],
-  ["MatchRoute", matchRouteSource, ["submitTurn(", "generateTurnLlmText("]],
+  ["MatchRoute", matchRouteSource, ["submitTurn(", "generateTurnLlmText(", "ApiClientError", "getMatchDetail(", "TURN_DEADLINE_EXPIRED"]],
   ["RitualDuelScreen", duelSource, ["turnSubmitPayload", "llm_text"]],
 ]) {
   for (const snippet of snippets) {
