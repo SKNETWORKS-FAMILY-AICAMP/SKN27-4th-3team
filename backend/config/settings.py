@@ -38,6 +38,7 @@ DEBUG = _bool_env("DJANGO_DEBUG", default=False)
 ALLOWED_HOSTS = _csv_env("DJANGO_ALLOWED_HOSTS", default=("localhost", "127.0.0.1"))
 CSRF_TRUSTED_ORIGINS = _origin_allowlist_env("DJANGO_CSRF_TRUSTED_ORIGINS")
 CORS_ALLOWED_ORIGINS = _origin_allowlist_env("DJANGO_CORS_ALLOWED_ORIGINS")
+DJANGO_TRUSTED_PROXY_IPS = tuple(_csv_env("DJANGO_TRUSTED_PROXY_IPS"))
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -58,6 +59,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "backend.apps.common.request_ids.RequestIdMiddleware",
+    "backend.apps.common.trusted_proxy.TrustedProxyMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -88,7 +90,8 @@ LANGUAGE_CODE = "ko-kr"
 TIME_ZONE = "Asia/Seoul"
 USE_I18N = True
 USE_TZ = True
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
+STATIC_ROOT = PROJECT_ROOT / "staticfiles"
 
 TEMPLATES = [
     {

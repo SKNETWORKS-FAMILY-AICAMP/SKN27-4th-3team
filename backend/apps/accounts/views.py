@@ -21,6 +21,7 @@ from backend.apps.accounts.serializers import (
 from backend.apps.common.exceptions import ApiErrorResponseException
 from backend.apps.common.request_ids import get_request_id
 from backend.apps.common.runtime import api_error_response, api_success_response
+from backend.apps.common.trusted_proxy import get_client_ip
 
 class AuthCookieMixin:
     def set_access_cookie(self, response, value: str) -> None:
@@ -211,4 +212,4 @@ class MeView(APIView):
 
 
 def _server_observed_client_ip(request) -> str:
-    return request.META.get("REMOTE_ADDR") or "0.0.0.0"
+    return get_client_ip(request)
