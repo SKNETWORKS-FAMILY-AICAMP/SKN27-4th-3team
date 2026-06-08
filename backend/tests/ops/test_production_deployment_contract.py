@@ -8,6 +8,20 @@ def _read(path: str) -> str:
     return (ROOT / path).read_text(encoding="utf-8")
 
 
+def _service_block(source: str, service_name: str) -> str:
+    lines = source.splitlines()
+    start = lines.index(f"  {service_name}:")
+    end = len(lines)
+
+    for index in range(start + 1, len(lines)):
+        line = lines[index]
+        if line.startswith("  ") and not line.startswith("    ") and line.endswith(":"):
+            end = index
+            break
+
+    return "\n".join(lines[start:end])
+
+
 def test_requirements_include_gunicorn_for_production_wsgi():
     assert "gunicorn==" in _read("requirements.txt")
 
@@ -45,6 +59,14 @@ def test_production_compose_exposes_only_web_ports_and_keeps_api_db_internal():
     assert "5432:5432" not in source
     assert "172.28.0.2" in source
     assert "DJANGO_TRUSTED_PROXY_IPS=172.28.0.2" in source
+
+
+def test_production_compose_reserves_caddy_proxy_ip_when_db_starts_first():
+    source = _read("ops/docker/docker-compose.production.yml")
+
+    assert "ipv4_address: 172.28.0.2" in _service_block(source, "web")
+    assert "ipv4_address: 172.28.0.10" in _service_block(source, "api")
+    assert "ipv4_address: 172.28.0.11" in _service_block(source, "postgres")
 
 
 def test_production_env_template_has_no_real_secret_values():

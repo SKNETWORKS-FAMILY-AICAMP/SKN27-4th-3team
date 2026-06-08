@@ -11,6 +11,7 @@ REQUIREMENTS_FILE = ROOT_DIR / "requirements.txt"
 EXPECTED_REQUIREMENTS = {
     "Django": "5.2.14",
     "djangorestframework": "3.17.1",
+    "gunicorn": "23.0.0",
     "PyJWT": "2.13.0",
     "jsonschema": "4.26.0",
     "pgvector": "0.4.2",

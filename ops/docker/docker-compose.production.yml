@@ -27,7 +27,8 @@ services:
     depends_on:
       - postgres
     networks:
-      - production_net
+      production_net:
+        ipv4_address: 172.28.0.10
 
   postgres:
     image: pgvector/pgvector:pg17
@@ -36,7 +37,8 @@ services:
     volumes:
       - skn27_postgres_data:/var/lib/postgresql/data
     networks:
-      - production_net
+      production_net:
+        ipv4_address: 172.28.0.11
 
 volumes:
   skn27_postgres_data:

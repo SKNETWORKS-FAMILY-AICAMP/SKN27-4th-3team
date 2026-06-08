@@ -44,11 +44,12 @@ def test_request_id_middleware_ignores_external_header_and_sets_response_header(
     assert response[REQUEST_ID_RESPONSE_HEADER] == captured_request_id
 
 
-def test_request_id_middleware_runs_before_security_middleware():
+def test_request_id_middleware_runs_before_proxy_and_security_middleware():
     from backend.config import settings
 
     assert settings.MIDDLEWARE[0] == "backend.apps.common.request_ids.RequestIdMiddleware"
-    assert settings.MIDDLEWARE[1] == "django.middleware.security.SecurityMiddleware"
+    assert settings.MIDDLEWARE[1] == "backend.apps.common.trusted_proxy.TrustedProxyMiddleware"
+    assert settings.MIDDLEWARE[2] == "django.middleware.security.SecurityMiddleware"
 
 
 def test_get_request_id_uses_existing_request_value_or_creates_fallback():
