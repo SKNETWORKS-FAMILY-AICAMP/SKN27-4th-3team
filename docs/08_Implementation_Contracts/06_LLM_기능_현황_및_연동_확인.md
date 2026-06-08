@@ -13,6 +13,19 @@ updated: "2026-06-06"
 
 현재 문서는 구현 착수 기준이 아니라 결정 전 검토안이다.
 
+## 최신성 메모
+
+이 문서는 [[09_Approved_Contracts/25_LLM_Runtime_통합_계약]] 승인 이전의 검토안이다.
+
+현재 구현 기준은 아래 문서를 우선한다.
+
+- [[09_Approved_Contracts/25_LLM_Runtime_통합_계약]]
+- [[09_Approved_Contracts/26_무명의_저주_사건_계약]]
+- [[09_Approved_Contracts/27_플레이어_이름_무명의_저주_결전_RAG_계약]]
+- [[08_Implementation_Contracts/08_LLM_Runtime_구현_대조_보고]]
+
+따라서 이 문서의 `아직 백엔드에 없는 것`, `현재 백엔드와 연결할 때 필요한 결정` 섹션은 당시 검토 이력으로만 본다.
+
 ## 승인된 경계
 
 LLM 도입 기준은 [[09_Approved_Contracts/08_LLM_도입_기준]]을 따른다.
@@ -74,19 +87,19 @@ provider 오류, timeout, 응답 파싱 실패, guardrail 위반은 `failed`와 
 - 플레이어 성격 낙인
 - 프론트 표시 길이를 넘는 턴 연출 문구
 
-## 아직 백엔드에 없는 것
+## 이전 검토 시점에서 백엔드에 없던 것
 
 | 항목 | 현재 상태 |
 |---|---|
-| `backend/apps/llm` 앱 구현 | `.gitkeep`만 존재 |
-| Django `INSTALLED_APPS` 등록 | 없음 |
-| LLM generation result 저장 모델 | 없음 |
-| LLM 호출 서비스 경계 | 없음 |
-| `matches.result` 응답 내 실제 LLM 호출 | 없음 |
-| `turn_flavor_text` API 응답 위치 | 미확정 |
-| generation log 보존 기간 | 미확정 |
-| 기본 Groq model id | 미확정 |
-| 실제 API key 운용 방식 | `.env` 주입 원칙만 존재 |
+| `backend/apps/llm` 앱 구현 | 이전 검토 시점에는 `.gitkeep`만 존재. 현재는 [[08_Implementation_Contracts/08_LLM_Runtime_구현_대조_보고]]를 따른다. |
+| Django `INSTALLED_APPS` 등록 | 이전 검토 시점에는 없음. 현재는 [[09_Approved_Contracts/25_LLM_Runtime_통합_계약]] 이후 backend LLM 앱을 사용한다. |
+| LLM generation result 저장 모델 | 이전 검토 시점에는 없음. 현재는 `llm_generations` 기준이다. |
+| LLM 호출 서비스 경계 | 이전 검토 시점에는 없음. 현재는 `backend/apps/llm` 서비스 경계를 사용한다. |
+| `matches.result` 응답 내 실제 LLM 호출 | 이전 검토 시점에는 없음. 현재는 서버 결과 payload 이후 `result_summary`를 시도할 수 있다. |
+| `turn_flavor_text` API 응답 위치 | 이전 검토 시점에는 미확정. 현재는 별도 endpoint 기준이다. |
+| generation log 보존 기간 | 현재도 운영 보존 정책은 별도 확정 필요. |
+| 기본 Groq model id | 현재는 purpose별 기본값을 [[09_Approved_Contracts/25_LLM_Runtime_통합_계약]]에서 정한다. |
+| 실제 API key 운용 방식 | `.env` 주입 원칙을 유지하며 실제 key는 코드와 문서에 저장하지 않는다. |
 
 따라서 현재 LLM 기능은 독립 실험 및 계약 테스트 단계다.
 

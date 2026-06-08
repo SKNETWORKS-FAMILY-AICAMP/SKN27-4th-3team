@@ -13,6 +13,18 @@ updated: "2026-06-04"
 
 현재 상태는 `needs-decision`이다. [[01_MVP/04_MVP_확정_필요_항목]]이 확정되기 전까지 구현 기준으로 사용하지 않는다.
 
+## 최신성 메모
+
+이 문서는 `needs-decision` 상태이므로 현재 구현 기준으로 단독 사용하지 않는다.
+
+현재 승인된 최신 구현 기준은 [[09_Approved_Contracts/00_승인본_목차]]와 해당 승인본을 우선한다.
+
+- LLM runtime 범위는 [[09_Approved_Contracts/25_LLM_Runtime_통합_계약]]을 따른다.
+- `nameless_curse` 별도 사건과 피티 공식화 기준은 [[09_Approved_Contracts/26_무명의_저주_사건_계약]]을 따른다.
+- 플레이어 표시 이름, 사건별 결전 조건, RAG source plan은 [[09_Approved_Contracts/27_플레이어_이름_무명의_저주_결전_RAG_계약]]을 따른다.
+
+따라서 아래의 `프론트엔드 구현과 LLM generation 구현은 별도 팀 범위로 분리한다` 문장은 초기 백엔드/RAG/AI Profile 구현 범위에 대한 이력으로 보고, 현재 LLM runtime 구현 범위 판단에는 승인본 25를 우선한다.
+
 프론트엔드 구현과 LLM generation 구현은 별도 팀 범위로 분리한다.
 
 RAG는 제외하지 않는다. 1차 MVP에서는 [[09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약]]에 따라 `retrieval` 앱, 문서 chunk, embedding, 검색, query log 구조를 구현 준비 범위에 포함한다.

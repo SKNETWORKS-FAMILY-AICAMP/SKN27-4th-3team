@@ -1,6 +1,6 @@
 # SKN27-4th-3team
 
-초자연 공포 스릴러 미스터리 기반 1대1 턴제 심리전 웹 게임 MVP 프로젝트입니다. 플레이어는 첫 괴이 `거울 속의 손님`과 의식 결투를 진행하며, 서버가 턴 판정과 승패를 최종 결정합니다.
+초자연 공포 스릴러 미스터리 기반 1대1 턴제 심리전 웹 게임 MVP 프로젝트입니다. 플레이어는 승인된 사건(`mirror_guest`, `nameless_curse`)에서 괴이와 의식 결투를 진행하며, 서버가 턴 판정과 승패를 최종 결정합니다.
 
 이 README는 `docs/`의 Obsidian 문서와 승인 계약을 기준으로 현재 쓰는 것, 계약만 있는 것, 후순위로 보류한 것을 구분해 정리합니다.
 
@@ -8,9 +8,10 @@
 
 | 구분 | 항목 | 상태 |
 |---|---|---|
-| 현재 사용/구현 준비 | Django, Django REST Framework, PostgreSQL 기준 RDB 모델, `retrieval` 앱, PostgreSQL `pgvector` 준비, AI Profile 지표, 공식 API schema, pytest 계약 테스트, 로컬 Docker Compose, 백엔드 Dockerfile | 1차 MVP 백엔드/RAG/AI Profile 구현 준비 범위 |
-| 계약은 있으나 현재 저장소 구현 없음 | React/TypeScript/Vite 프론트엔드, 프론트 route/API 연결 기준 | 승인 계약은 있으나 실제 프론트 구현은 현재 저장소에 없음 |
-| 후순위/미사용 | 실제 LLM provider/prompt/generation, KAG 구현, GraphDB, Redis/Channels/WebSocket, PvP 모드, 운영 배포 자동화 | 1차 MVP 제외 또는 도입 대상 아님 |
+| 현재 사용/구현 | Django, Django REST Framework, PostgreSQL 기준 RDB 모델, `retrieval` 앱, PostgreSQL `pgvector` 준비, AI Profile 지표, 공식 API schema, pytest 계약 테스트, 로컬 Docker Compose, 백엔드 Dockerfile | 1차 MVP 백엔드/RAG/AI Profile 중심 구현 범위 |
+| 현재 사용/부분 구현 | React/TypeScript/Vite 프론트엔드, route 기반 화면, prototype 의식 결투 화면, 공식 enum 계약 검증 | 화면/프로토타입 구현은 있으나 Django API 전면 연결은 아직 제한적 |
+| 현재 사용/부분 구현 | LLM runtime 앱, `llm_generations`, 턴 연출 문구, 결과 요약, 결전 대화 endpoint, Groq 호환 adapter | LLM은 판정 권위 없이 보조 문장만 담당하며 실제 provider 호출은 환경변수와 API key에 의존 |
+| 후순위/미사용 | KAG 구현, GraphDB, Redis/Channels/WebSocket, PvP 모드, 운영 배포 자동화 | 1차 MVP 제외 또는 도입 대상 아님 |
 
 GraphDB는 사용하지 않습니다. KAG도 1차 MVP 구현 범위가 아니며, 후속 도입 시에도 현재 문서 기준은 별도 GraphDB가 아니라 RDB 기반 후보 구조입니다.
 
@@ -41,20 +42,22 @@ GraphDB는 사용하지 않습니다. KAG도 1차 MVP 구현 범위가 아니며
 | 영역 | 사용 기술 | 현재 범위 |
 |---|---|---|
 | Backend | Django, Django REST Framework, ASGI/WSGI | 1차 MVP 백엔드 scaffold와 도메인 골격 |
+| Frontend | React, TypeScript, Vite, React Router | route 기반 화면과 prototype 의식 결투 화면. Django API 전면 연결은 후속 작업 |
 | Auth | Django custom user, JWT access/refresh token, HttpOnly cookie, CSRF | 인증 API scaffold와 refresh token 보안 모델 |
 | RDB | PostgreSQL 기준 Django model | Auth, Profile, Match, Story, AI Profile 저장 구조 |
 | RAG 저장/검색 준비 | PostgreSQL + `pgvector`, `retrieval` 앱 | 문서/chunk/embedding/query log 구조 |
+| LLM runtime | backend `llm` 앱, top-level `llm/generation` adapter | 판정 이후 보조 텍스트 생성과 생성 로그 저장 |
 | JSON 검증 | `jsonschema` | JSONField payload 검증 경계 |
 | API 계약 | official JSONC/JSON schema | 프론트와 백엔드가 공유할 endpoint/response shape |
-| 테스트 | pytest | 승인 계약 기반 백엔드 테스트 |
+| 테스트 | pytest, frontend contract script, Vite build | 승인 계약 기반 백엔드/LLM 테스트와 프론트 enum/build 검증 |
 | Docker 실행 준비 | Docker Compose, backend Dockerfile | 로컬/dev 실행과 이미지 빌드 준비. production 배포는 후속 계약 필요 |
 
-## 현재 사용하지 않는 기술
+## 현재 제한 또는 후순위 기술
 
 | 항목 | 문서상 상태 | README 반영 기준 |
 |---|---|---|
-| Frontend 구현 | 프론트 기술 계약은 승인됨 | 실제 저장소 구현은 아직 없으므로 현재 사용 기술로 쓰지 않음 |
-| LLM generation | `docs/07_Deferred/04_LLM_후순위_설계.md` 기준 후순위 | provider, prompt, generation 구현 없음 |
+| Frontend API 전면 연결 | 프론트 기술 계약은 승인됨 | 현재 저장소에는 화면/프로토타입 구현이 있으나 공식 API 전면 연결은 후속 작업 |
+| LLM provider 운영 연결 | LLM runtime 계약은 승인됨 | adapter와 backend 기록 구조는 있으나 실제 호출은 `LLM_API_KEY`, `LLM_MODEL_ID` 등 환경 설정 필요 |
 | KAG | 1차 MVP 제외 | 구현하지 않음 |
 | GraphDB | 사용하지 않음 | 도입 대상 아님 |
 | Redis/Channels/WebSocket | PvP 모드 없음, realtime 구현 없음 | 1차 MVP 로컬 실행 구성에서 제외 |
@@ -79,9 +82,10 @@ docker compose -f ops/docker/docker-compose.yml build api
 
 ### 포함
 
-- 회원가입, 로그인, 로그아웃, 기본 프로필
+- 회원가입, 로그인, 로그아웃 계약, 기본 프로필
 - AI 사건 선택
 - `거울 속의 손님` 브리핑과 의식 결투
+- `무명(無名)의 저주` 사건 seed, 정보 대상, 결전 조건
 - 턴 제출, 서버 판정, 턴 결과 저장
 - 승패 처리, 결과/로그 조회
 - 행동 이벤트 저장과 스타일 지표 계산
@@ -89,42 +93,46 @@ docker compose -f ops/docker/docker-compose.yml build api
 - RAG 문서 chunk 저장, query log 저장
 - PostgreSQL `pgvector` 기반 검색 준비
 - AI 스토리 기준 Auth/Match/Participant/Turn 구조
+- LLM 결과 요약, 턴 연출 문구, 결전 대화 보조 텍스트와 생성 로그
+- React/Vite 기반 화면과 prototype 의식 결투 화면
 
 ### 제외
 
 - `우물 밑의 목소리`, `문밖의 어머니` 구현
-- 프론트엔드 실제 구현
+- 프론트엔드 공식 API 전면 연결 완료
 - PvP 모드, 매칭 대기열, WebSocket 대전
 - KAG 구현
 - GraphDB 도입
-- 실제 LLM provider/prompt/generation 구현
+- LLM이 승패, 행동 성공/실패, 자원, 진명 조각, 거짓 단서, 괴이 행동 선택을 결정하는 기능
+- LLM provider 운영 호출 보장
 - 랭크 시스템, cosmetic 보상
 - 운영 배포 자동화
 
 ## 시스템 구조
 
-프로젝트는 Monorepo + 팀별 경계 분리 구조를 기준으로 합니다. 다만 실제 구현 상태는 백엔드와 문서/API 계약 중심입니다.
+프로젝트는 Monorepo + 팀별 경계 분리 구조를 기준으로 합니다. 현재 구현 상태는 백엔드/API 계약 중심에 프론트 prototype 화면과 LLM runtime 연결이 추가된 형태입니다.
 
 ```text
 backend/   Django API, DB 모델, 서버 판정, Auth, RAG, AI Profile
+frontend/  React/Vite 화면, route 구성, prototype 의식 결투 화면, frontend 계약 검증
+llm/       Groq 호환 LLM generation adapter, guardrail, 설정/연동 문서
 api-spec/  공식 API schema와 draft 명세
 docs/      Obsidian 승인 문서, 설계 문서, 후순위 문서
 tools/     문서 생성, 검증, 개발 보조 스크립트 후보
 output/    문서/이미지/PDF 산출물
 ops/       Docker Compose, env template, 운영 후보
-
-frontend/  승인 계약상 프론트 구현 경계. 현재 저장소 구현 없음
-llm/       승인 전 prompt/generation 실험 경계. 현재 MVP 구현 없음
 ```
 
 ```mermaid
 flowchart LR
-    Client["API Client 또는 후속 Frontend"] --> API["Django API"]
+    Client["React/Vite Frontend 또는 API Client"] --> API["Django API"]
     API --> Rules["game_rules 결정적 룰 엔진"]
     API --> RDB["PostgreSQL RDB"]
     API --> Retrieval["retrieval RAG 앱"]
     Retrieval --> Vector["PostgreSQL pgvector"]
     API --> Profile["AI Profile 지표 계산"]
+    API --> LLMRuntime["backend llm runtime"]
+    LLMRuntime --> LLMAdapter["llm/generation adapter"]
     Docs["Obsidian 승인 문서"] --> Retrieval
     Docs --> APIContract["official API schema"]
     APIContract --> API
@@ -384,23 +392,23 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 
 ## 화면 설계 상태
 
-프론트엔드 실제 구현은 현재 저장소에 없습니다.
+프론트엔드 실제 구현은 현재 저장소에 있습니다. 다만 현재 구현은 React/Vite route 기반 화면과 prototype 의식 결투 화면 중심이며, Django official API와의 전면 연결은 아직 완료 상태로 보지 않습니다.
 
-다만 `docs/09_Approved_Contracts/15_프론트_기술_계약_오너_확정안.md`에는 프론트 기술 스택, route, API client, cookie/CSRF 연결, endpoint 사용 기준이 승인되어 있습니다. `docs/04_Frontend/*` 문서는 화면 기획 참고 문서로 볼 수 있지만, 현재 README에서는 실제 구현 완료 항목으로 취급하지 않습니다.
+`docs/09_Approved_Contracts/15_프론트_기술_계약_오너_확정안.md`에는 프론트 기술 스택, route, API client, cookie/CSRF 연결, endpoint 사용 기준이 승인되어 있습니다. `docs/04_Frontend/*` 문서는 화면 기획 참고 문서입니다.
 
 | 화면 | 문서상 목적 | 현재 상태 |
 |---|---|---|
-| 로그인/회원가입 | 인증 | API 계약 존재, 프론트 구현 없음 |
-| 로비 | 모드 선택 | API 계약 존재, 프론트 구현 없음 |
-| AI 사건 선택/브리핑 | `거울 속의 손님` 진입 | API 계약 존재, 프론트 구현 없음 |
-| 의식 결투 | 턴 상태 조회와 행동 제출 | API 계약 존재, 프론트 구현 없음 |
-| 결과 | 승패, 로그, 스타일 요약 조회 | API 계약 존재, 프론트 구현 없음 |
-| 프로필 | 내 프로필과 전적 요약 조회 | API 계약 존재, 프론트 구현 없음 |
+| 로그인/회원가입 | 인증 | React 화면 존재. official auth API 연결은 후속 검증 필요 |
+| 로비 | 모드 선택 | React 화면 존재 |
+| AI 사건 선택/브리핑 | 승인된 사건 진입 | React 화면 존재. 정적/prototype 흐름 중심 |
+| 의식 결투 | 턴 상태 조회와 행동 제출 | prototype HTML/CSS/JS를 React route에서 로드 |
+| 결과 | 승패, 로그, 스타일 요약 조회 | React 화면 존재. 실제 result API 연결은 후속 검증 필요 |
+| 프로필 | 내 프로필과 전적 요약 조회 | React 화면 존재. `GET /api/v1/profile/me` 연결은 후속 작업 |
 | PvP 매칭 | 실시간 상대 찾기 | 도입 대상 아님 |
 
 ## 테스트 시나리오와 결과
 
-현재 백엔드 테스트는 승인 계약 기반 테스트를 중심으로 구성되어 있습니다.
+현재 테스트는 승인 계약 기반 백엔드/LLM 테스트와 프론트 계약/build 검증을 중심으로 구성되어 있습니다.
 
 | 영역 | 주요 검증 |
 |---|---|
@@ -412,12 +420,22 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 | story | story case, apparition, stage, clue 저장 구조 |
 | ai_profile | 행동 이벤트, 스타일 지표 계산 |
 | retrieval | RAG 문서/chunk/embedding/query log 구조와 allowlist |
+| llm | LLM runtime, 생성 로그, guardrail/fallback |
+| frontend contracts | official enum과 prototype payload 매핑 |
 
 최근 검증 결과:
 
 ```text
-명령: C:\Python314\python.exe -m pytest backend\tests -v
-결과: 88 passed
+명령: C:\Python314\python.exe -m pytest backend\tests llm\tests -v
+결과: 197 passed, 4 subtests passed
+
+명령: npm run test:contracts
+위치: frontend
+결과: passed
+
+명령: npm run build
+위치: frontend
+결과: passed
 ```
 
 구현 리포트:
@@ -464,11 +482,12 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
    - RAG 검색
 8. 화면 설계 상태
    - 프론트 API 연결 계약은 존재
-   - 실제 프론트 구현은 현재 저장소에 없음
+   - React/Vite 화면과 prototype 의식 결투 화면은 존재
+   - Django official API 전면 연결은 후속 검증 필요
    - `docs/04_Frontend/*`는 화면 기획 참고 문서
 9. 테스트 시나리오와 결과
-   - 계약 테스트 범위
-   - `88 passed`
+   - 백엔드/LLM 계약 테스트 범위
+   - 프론트 enum 계약과 build 검증
 10. 팀원별 느낀점
    - 현재 저장소 문서에 팀원별 회고 내용이 없으므로 임의 작성하지 않음
 
@@ -476,17 +495,20 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 
 현재 상태:
 
-- 백엔드 scaffold와 도메인 모델/서비스 골격 구현
+- 백엔드 도메인 모델/서비스/API runtime 구현
 - 공식 API schema와 계약 테스트 정리
 - RAG 구조, chunking, allowlist, 검색 기본값 구현 준비
-- 백엔드 테스트 88개 통과 기록
+- LLM runtime, 생성 로그, 보조 텍스트 endpoint 구현
+- React/Vite 화면과 prototype 의식 결투 화면 구현
+- 백엔드/LLM 테스트와 프론트 계약/build 검증 통과 기록
 
 남은 리스크:
 
-- 실제 DB migration과 PostgreSQL 연결 검증은 별도 필요합니다.
-- `story/cases`, `matches`, `profile` 등 전체 official endpoint runtime 연결은 계속 구현 대상입니다.
-- 프론트엔드 실제 구현은 현재 저장소에 아직 없습니다.
-- LLM generation, KAG, WebSocket, PvP 모드는 1차 MVP 제외 또는 도입 대상이 아닙니다.
+- 실제 PostgreSQL runtime migration과 Docker 기반 통합 실행 검증은 별도 필요합니다.
+- `auth.logout`은 계약상 endpoint가 있으나 현재 501 상태를 유지합니다.
+- 프론트엔드 화면은 있으나 Django official API 전면 연결은 완료 상태가 아닙니다.
+- 실제 LLM provider 호출은 환경변수, API key, model id, 네트워크 조건 검증이 필요합니다.
+- KAG, WebSocket, PvP 모드는 1차 MVP 제외 또는 도입 대상이 아닙니다.
 - 사용자 화면에서 RAG 출처를 어떻게 표시할지는 프론트 구현 단계에서 확정이 필요합니다.
 - 발표용 시각적 ERD 산출물은 아직 없습니다.
 

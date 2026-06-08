@@ -13,6 +13,14 @@ updated: "2026-06-06"
 
 이 문서는 프론트엔드 구현을 제외하고, 현재 백엔드/LLM/RAG 구현이 승인 문서 의도와 얼마나 맞는지 대조한 결과다.
 
+## 최신성 메모
+
+이 문서는 [[09_Approved_Contracts/25_LLM_Runtime_통합_계약]], [[09_Approved_Contracts/26_무명의_저주_사건_계약]], [[09_Approved_Contracts/27_플레이어_이름_무명의_저주_결전_RAG_계약]] 승인 이전의 중간 대조 보고다.
+
+LLM runtime, `nameless_curse`, 플레이어 표시 이름, 결전 LLM payload, RAG source plan의 최신 구현 대조는 [[08_Implementation_Contracts/08_LLM_Runtime_구현_대조_보고]]를 우선한다.
+
+따라서 이 문서의 LLM generation log, `turn_flavor_text` endpoint, AI Profile 연동, `무명의 저주` 분리 여부 관련 보류/결정 필요 항목은 현재 기준에서는 이후 승인본과 구현 대조 보고로 해소된 이력으로 본다.
+
 ## 이번 반영
 
 | 영역 | 반영 |
@@ -71,10 +79,15 @@ updated: "2026-06-06"
 | `.\.venv\Scripts\python.exe -m unittest discover llm\tests -v` | PASS, 8 tests OK |
 | `$env:POSTGRES_HOST='127.0.0.1'; $env:POSTGRES_PORT='5432'; $env:POSTGRES_PASSWORD='change-me-local-db-password'; .\.venv\Scripts\python.exe backend\manage.py migrate --check` | PASS, exit code 0 |
 
-## 다음 결정 필요
+## 최신 기준에서 해소/남은 결정
 
-1. `turn_flavor_text`를 official API 어디에 둘지 결정해야 한다.
-2. LLM generation log 저장 테이블과 보존 기간을 결정해야 한다.
-3. AI Profile의 `stage_id` 출처와 `decision_duration_ms` 계산 기준을 결정해야 한다.
-4. RAG ingest 실행 방식과 embedding provider 연결 시점을 결정해야 한다.
-5. `무명의 저주`를 `거울 속의 손님`에 통합할지 별도 사건으로 분리할지 결정해야 한다.
+이 섹션은 위 검증 기록 작성 이후의 승인본을 반영해 갱신한다.
+
+| 항목 | 현재 상태 | 기준 |
+|---|---|---|
+| `turn_flavor_text` 위치 | 해소. 별도 endpoint `POST /api/v1/matches/{match_id}/turns/{turn_id}/llm-text`를 사용한다. | [[09_Approved_Contracts/25_LLM_Runtime_통합_계약]] |
+| LLM generation log 저장 테이블 | 해소. `llm_generations`를 사용한다. | [[09_Approved_Contracts/25_LLM_Runtime_통합_계약]] |
+| LLM generation log 보존 기간 | 남음. 별도 운영/보존 정책 계약이 필요하다. | 운영 정책 미확정 |
+| AI Profile `stage_id`, `decision_duration_ms` | 해소. MVP `stage_id`는 `1`, `decision_duration_ms`는 `Turn.started_at` 기준으로 계산한다. | [[09_Approved_Contracts/25_LLM_Runtime_통합_계약]] |
+| RAG ingest 실행 방식과 embedding provider 연결 시점 | 남음. RAG는 자동 ingest하지 않고, embedding provider/ingest 실행 방식은 후속 구현 계약이 필요하다. | [[09_Approved_Contracts/25_LLM_Runtime_통합_계약]] |
+| `무명의 저주` 사건 처리 | 해소. `nameless_curse` 별도 사건으로 둔다. | [[09_Approved_Contracts/26_무명의_저주_사건_계약]] |
