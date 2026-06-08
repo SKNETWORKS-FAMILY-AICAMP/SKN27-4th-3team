@@ -162,10 +162,47 @@ function formatAuthError(error: unknown): string {
       return "이메일 또는 비밀번호가 올바르지 않습니다.";
     }
     if (error.code === "VALIDATION_ERROR") {
-      return "입력값을 다시 확인해주세요.";
+      return formatFieldErrors(error.details) || "입력값을 다시 확인해주세요.";
     }
     return error.message || error.code;
   }
 
   return "요청 처리 중 문제가 발생했습니다.";
+}
+
+function formatFieldErrors(details: Record<string, unknown>): string {
+  const messages = Object.entries(details)
+    .flatMap(([field, value]) => formatFieldErrorValue(field, value))
+    .filter((message) => message.length > 0);
+
+  return messages.join(" ");
+}
+
+function formatFieldErrorValue(field: string, value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => formatFieldErrorValue(field, item));
+  }
+
+  if (typeof value === "string") {
+    return [`${formatFieldLabel(field)}: ${value}`];
+  }
+
+  if (value && typeof value === "object") {
+    return Object.entries(value as Record<string, unknown>).flatMap(([nestedField, nestedValue]) =>
+      formatFieldErrorValue(nestedField, nestedValue),
+    );
+  }
+
+  return [];
+}
+
+function formatFieldLabel(field: string): string {
+  const labels: Record<string, string> = {
+    email: "이메일",
+    nickname: "닉네임",
+    password: "비밀번호",
+    non_field_errors: "입력값",
+  };
+
+  return labels[field] ?? field;
 }
