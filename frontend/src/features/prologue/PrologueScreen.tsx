@@ -8,7 +8,7 @@ import { prologueScenes } from "./prologueScenes";
 const DETAIL_REVEAL_DELAY_MS = 260;
 const NEXT_SCENE_FADE_MS = 880;
 const MATCH_FADE_MS = 1850;
-const DEFAULT_CASE_ID = "mirror_guest";
+const DEFAULT_CASE_ID = "nameless_curse";
 
 type PrologueRouteState = {
   caseId?: string;

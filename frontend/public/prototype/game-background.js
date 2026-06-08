@@ -15,6 +15,9 @@ if (shouldBootPrototype) {
 window.__mirrorGuestPrototypeCleanup?.();
 
 const prototypeManagedEvents = [];
+const DEFAULT_PLAYER_DISPLAY_NAME = "나";
+const MASKED_APPARITION_DISPLAY_NAME = "거울 속 목소리";
+const DEFAULT_TRUE_NAME_FRAGMENTS_REQUIRED = 2;
 
 function addPrototypeEvent(target, type, handler, options) {
   if (!target) return;
@@ -44,7 +47,7 @@ const GAME_RULES = {
   startingSoulfire: 3,
   startingCurse: 0,
   turnStartSoulfireRecovery: 2,
-  sealRequiredTrueNamePieces: 3
+  sealRequiredTrueNamePieces: DEFAULT_TRUE_NAME_FRAGMENTS_REQUIRED
 };
 
 const RESULT_SCENE = {
@@ -77,10 +80,13 @@ const OFFICIAL_ACTION_CODE_BY_UI_ACTION = {
 
 const OFFICIAL_INFO_TARGET_KEY_BY_UI_TARGET = {
   attic_diary: "mirror_back",
-  truth_mirror: "mirror_surface",
+  truth_mirror: "truth_mirror",
   stitched_mouth: "missing_child_voice",
   bloodied_teddy: "forgotten_room",
   ian_reflection: "self_reflection",
+  family_journal: "family_journal",
+  nameless_thread: "nameless_thread",
+  basement_wall: "basement_wall",
   mirror_back: "mirror_back",
   mirror_surface: "mirror_surface",
   missing_child_voice: "missing_child_voice",
@@ -97,7 +103,7 @@ const INTERACTION_CUE_TEXT = "클릭 또는 Enter로 계속";
 const AMBIENT_DIALOGUE_LINES = [
   {
     side: "ian",
-    speaker: "이안",
+    speaker: DEFAULT_PLAYER_DISPLAY_NAME,
     text: "여기까지 왔어. 네 이름이 왜 기록에서 지워졌는지 확인하려고."
   },
   {
@@ -107,7 +113,7 @@ const AMBIENT_DIALOGUE_LINES = [
   },
   {
     side: "ian",
-    speaker: "이안",
+    speaker: DEFAULT_PLAYER_DISPLAY_NAME,
     text: "그 문이 널 가둔 거잖아. 나는 깨뜨리러 온 게 아니라 사실을 보러 왔어."
   },
   {
@@ -117,7 +123,7 @@ const AMBIENT_DIALOGUE_LINES = [
   },
   {
     side: "ian",
-    speaker: "이안",
+    speaker: DEFAULT_PLAYER_DISPLAY_NAME,
     text: "그래도 거짓말 위에 널 그대로 둘 수는 없어. 천천히 확인할게."
   },
   {
@@ -137,7 +143,7 @@ const ACTION_CARDS = {
     image: "assets/action-card-silence.png",
     desc: "거울 안쪽의 속삭임을 끊고 다음 턴 의식력을 1 회복한다.",
     playerLine: "초를 낮춘다. 먼저 방 안의 소리를 줄여야 한다.",
-    briefing: "검은 초가 낮게 타오른다. 거울 안쪽에서 번지던 속삭임이 잠시 멀어지고, 이안은 자신의 숨소리를 되찾는다."
+    briefing: "검은 초가 낮게 타오른다. 거울 안쪽에서 번지던 속삭임이 잠시 멀어지고, 나는 내 숨소리를 되찾는다."
   },
   guard: {
     title: "수호",
@@ -181,7 +187,7 @@ const ACTION_CARDS = {
     image: "assets/action-card-insight.png",
     desc: "단서의 진위 또는 괴이의 공개된 반응 징후를 확인한다.",
     playerLine: "유리 조각을 들어 균열을 살핀다. 진짜 단서와 거짓을 가른다.",
-    briefing: "깨진 유리 조각이 차갑게 빛난다. 이안의 얼굴 뒤편으로 설명할 수 없는 그림자가 겹쳐진다."
+    briefing: "깨진 유리 조각이 차갑게 빛난다. 비친 얼굴 뒤편으로 설명할 수 없는 그림자가 겹쳐진다."
   },
   deceive: {
     title: "속임수",
@@ -201,7 +207,7 @@ const ACTION_CARDS = {
     type: "조건부",
     symbol: "명",
     image: "assets/seal-card.png",
-    desc: "진명 조각 3개가 모였을 때 마지막 이름을 선언한다.",
+    desc: "진명 조각이 충분히 모였을 때 숨겨진 이름을 되찾게 하는 선언을 시도한다.",
     playerLine: "모은 이름을 거울 앞에 둔다. 이제 끝낼 수 있는지 확인한다.",
     briefing: "이름이 거울 앞에 떨어진다. 검은 실이 재처럼 풀리고, 은빛 표면 전체에 거미줄 같은 금이 번진다."
   }
@@ -401,76 +407,76 @@ function getCompatibilityPublicLog(playerAction, enemyAction) {
 
 const FALSE_CLUE_RULES = [
   {
-    id: "burn_teddy",
-    text: "곰 인형을 태우면 저주는 사라진다.",
-    targets: ["bloodied_teddy", "attic_diary"]
+    id: "false_clue_1",
+    text: "거울을 깨면 끝난다.",
+    targets: ["truth_mirror", "self_reflection"]
   },
   {
-    id: "break_mirror",
-    text: "거울을 깨면 더는 보지 않아도 된다.",
-    targets: ["truth_mirror"]
+    id: "false_clue_2",
+    text: "피티는 플레이어의 이름을 빼앗으려 한다.",
+    targets: ["nameless_thread", "self_reflection"]
   },
   {
-    id: "revenge_justice",
-    text: "그들이 사라져야 네가 조용해진다.",
-    targets: ["stitched_mouth", "ian_reflection"],
+    id: "false_clue_3",
+    text: "피티를 처치해야 저주가 끝난다.",
+    targets: ["basement_wall", "family_journal"],
     requiresTrueNamePieces: 2
   }
 ];
 
 const INFO_TARGETS = [
   {
-    key: "attic_diary",
-    label: "다락방의 낡은 일기장",
-    note: "기록 계열 대상. 계약은 진명 조각 후보를 찾고, 간파는 단서의 신뢰도를 확인한다."
-  },
-  {
     key: "truth_mirror",
-    label: "안방의 은도금 거울",
+    label: "진실의 거울",
     note: "거울 계열 대상. 계약은 이름의 흔적을 더듬고, 간파는 거짓 단서 여부를 가른다."
   },
   {
-    key: "stitched_mouth",
-    label: "닫힌 입가의 형상",
-    note: "침묵 계열 대상. 계약은 말하지 못한 이름에 접근하고, 간파는 다음 징후를 좁힌다."
+    key: "family_journal",
+    label: "가죽 장정 일기장",
+    note: "기록 계열 대상. 간파는 지워진 이름의 첫 획을 확인한다."
   },
   {
-    key: "bloodied_teddy",
-    label: "피 묻은 곰 인형",
-    note: "사건 흔적 대상. 간파는 단서처럼 보이는 흔적이 봉인에 도움이 되는지 판별한다."
+    key: "nameless_thread",
+    label: "무명실",
+    note: "이름과 목소리를 빼앗긴 존재의 상징. 계약은 마지막 목소리를 되돌린다."
   },
   {
-    key: "ian_reflection",
-    label: "이안의 일그러진 반사",
+    key: "basement_wall",
+    label: "지하실 벽",
+    note: "상처 계열 대상. 잘못 읽으면 거울 속 목소리를 처치 대상으로 단정하는 거짓 단서가 남는다."
+  },
+  {
+    key: "self_reflection",
+    label: "플레이어의 비친 얼굴",
     note: "자기 인식 대상. 반복 조사하면 금기 위반과 거짓 단서 위험이 커진다."
   }
 ];
 
 const OFFICIAL_ENDING_TEXT = {
-  win: "사건 종료 기록.\n이안은 거울 앞에서 감춰진 이름을 불렀다. 엘리자베스를 붙잡던 검은 실은 재가 되어 흩어졌고, 진실의 거울은 산산조각 나며 저주를 놓아주었다.",
-  loseSanity: "사건 종료 기록.\n이안은 끝내 자신의 목소리를 지키지 못했다. 거울 속 미소가 현실의 얼굴이 되었고, 안쪽의 것은 다시 이안의 손을 빌려 움직이기 시작했다.",
-  loseCurse: "사건 종료 기록.\n저주 흔적이 손목을 넘어 온몸으로 번졌다. 검은 실은 이안의 의지를 묶었고, 거울은 더 이상 인간의 얼굴을 비추지 않았다.",
-  loseTurns: "사건 종료 기록.\n자정이 지나도록 마지막 빈칸은 채워지지 못했다. 다락방의 기록은 다시 닫혔고, 안쪽의 것은 이안의 안에서 조용히 눈을 떴다."
+  win: "사건 종료 기록.\n피티의 이름이 진실의 거울 앞에서 완성되자, 무명실은 더는 입술을 묶지 못했다.",
+  loseSanity: "사건 종료 기록.\n거울은 플레이어의 이름과 피티의 이름을 같은 숨결로 겹쳐 놓았다.",
+  loseCurse: "사건 종료 기록.\n저주의 흔적은 살갗이 아니라 이름의 가장자리에 붙어 번졌다.",
+  loseTurns: "사건 종료 기록.\n자정의 마지막 소리가 지나가자 진실의 거울은 은빛 표면을 닫았다."
 };
 
 const TRUTH_PIECES = [
   {
-    id: "attic_diary",
-    title: "다락방 기록의 첫 번째 공백",
-    source: "attic_diary",
-    reveal: "일기장은 오래 숨겨진 가족사의 공백을 가리킨다. 아직 누구의 이야기인지는 분명하지 않다."
+    id: "true_name_fragment_1",
+    title: "일기장에 남은 지워진 이름의 첫 획",
+    source: "family_journal",
+    reveal: "가죽 장정 일기장은 지워진 이름의 첫 획을 남기고 있다."
   },
   {
-    id: "truth_mirror",
-    title: "거짓 얼굴을 벗기는 은도금 거울",
+    id: "true_name_fragment_2",
+    title: "무명실 너머에서 되돌아온 마지막 목소리",
+    source: "nameless_thread",
+    reveal: "무명실 너머에서 피티의 마지막 목소리가 되돌아온다."
+  },
+  {
+    id: "true_name_fragment_3",
+    title: "진실의 거울이 되돌려 준 피티의 이름",
     source: "truth_mirror",
-    reveal: "자정의 거울은 사람의 얼굴 뒤에 붙은 거짓된 표정을 억지로 벗긴다."
-  },
-  {
-    id: "stitched_mouth",
-    title: "닫힌 입가와 마지막 빈칸",
-    source: "stitched_mouth",
-    reveal: "닫힌 입가에는 말하지 못한 흔적이 남아 있다. 마지막 빈칸은 선언의 순간에만 입 밖으로 낼 수 있다."
+    reveal: "진실의 거울은 감춰진 이름이 피티였음을 되비춘다."
   }
 ];
 
@@ -557,6 +563,11 @@ const dom = {
 
 const state = {
   turn: 1,
+  caseId: "nameless_curse",
+  caseTitle: "무명(無名)의 저주",
+  playerDisplayName: DEFAULT_PLAYER_DISPLAY_NAME,
+  apparitionDisplayName: MASKED_APPARITION_DISPLAY_NAME,
+  isApparitionNameRevealed: false,
   phase: "ready",
   sanity: GAME_RULES.startingSanity,
   soulfire: GAME_RULES.startingSoulfire,
@@ -616,6 +627,32 @@ function clamp(value, min, max) {
 
 function formatTwoDigits(value) {
   return String(value).padStart(2, "0");
+}
+
+function getRequiredTrueNamePieces() {
+  return clamp(
+    GAME_RULES.sealRequiredTrueNamePieces,
+    1,
+    Math.max(1, TRUTH_PIECES.length)
+  );
+}
+
+function formatTrueNameProgress(value = state.trueNamePieces) {
+  const required = getRequiredTrueNamePieces();
+  return `${Math.min(value, required)}/${required}`;
+}
+
+function getPlayerDisplayName() {
+  return state.playerDisplayName || DEFAULT_PLAYER_DISPLAY_NAME;
+}
+
+function getApparitionDisplayName() {
+  if (!state.isApparitionNameRevealed) return MASKED_APPARITION_DISPLAY_NAME;
+  return state.apparitionDisplayName || MASKED_APPARITION_DISPLAY_NAME;
+}
+
+function revealApparitionName() {
+  state.isApparitionNameRevealed = true;
 }
 
 function normalizeLlmText(text) {
@@ -772,12 +809,16 @@ function renderHud() {
   setToken(dom.soulfireToken, state.soulfire, GAME_RULES.maxSoulfire);
   setToken(dom.sanityToken, state.sanity, GAME_RULES.maxSanity);
   setToken(dom.curseToken, state.curse, 5);
+  if (dom.sanityToken) {
+    dom.sanityToken.dataset.tooltip = `이성: 0이 되면 ${getPlayerDisplayName()}은 자기 이름과 ${getApparitionDisplayName()}의 이름을 구분하지 못한다.`;
+  }
   renderLanternHud();
   renderSanityGauge();
 
   if (dom.frame) {
     dom.frame.dataset.sanityStage = String(getSanityStage());
-    dom.frame.dataset.sealReady = String(state.trueNamePieces >= GAME_RULES.sealRequiredTrueNamePieces);
+    dom.frame.dataset.sealReady = String(state.trueNamePieces >= getRequiredTrueNamePieces());
+    dom.frame.setAttribute("aria-label", `${state.caseTitle || "무명의 저주"} 의식 결투 화면`);
   }
 
   if (dom.turnCount) {
@@ -786,7 +827,8 @@ function renderHud() {
 }
 
 function renderSealState() {
-  const isReady = state.trueNamePieces >= GAME_RULES.sealRequiredTrueNamePieces;
+  const required = getRequiredTrueNamePieces();
+  const isReady = state.trueNamePieces >= required;
 
   if (dom.sealInvocation) {
     dom.sealInvocation.classList.toggle("is-locked", !isReady);
@@ -794,17 +836,18 @@ function renderSealState() {
   }
 
   if (dom.sealReason) {
-    dom.sealReason.textContent = isReady ? "사용 가능" : `진명 ${state.trueNamePieces}/3`;
+    dom.sealReason.textContent = isReady ? "사용 가능" : `진명 ${formatTrueNameProgress()} 필요`;
   }
 
   dom.sealProgressDots.forEach((dot, index) => {
     dot.classList.toggle("is-filled", index < state.trueNamePieces);
+    dot.hidden = index >= required;
   });
 }
 
 function renderJournal() {
-  if (dom.journalCount) dom.journalCount.textContent = `${state.trueNamePieces}/3`;
-  if (dom.truthProgress) dom.truthProgress.textContent = `${state.trueNamePieces}/3`;
+  if (dom.journalCount) dom.journalCount.textContent = formatTrueNameProgress();
+  if (dom.truthProgress) dom.truthProgress.textContent = formatTrueNameProgress();
   if (dom.shield) dom.shield.textContent = `${state.shield}/1`;
   if (dom.partial) dom.partial.textContent = `${state.partialTrueName}/2`;
   if (dom.suspicion) dom.suspicion.textContent = String(state.suspicion);
@@ -848,7 +891,7 @@ function renderJournal() {
 
   if (dom.timeoutPolicy) {
     const capped = Math.min(state.timeoutCount, 3);
-    dom.timeoutPolicy.textContent = `누적 침묵 ${capped}/3. ${state.timeoutCount >= 3 ? "침묵이 습관이 되자 안쪽의 것도 그 틈을 파고들기 시작했다." : "아직은 이안의 망설임으로 기록된다."}`;
+    dom.timeoutPolicy.textContent = `누적 침묵 ${capped}/3. ${state.timeoutCount >= 3 ? "침묵이 습관이 되자 안쪽의 것도 그 틈을 파고들기 시작했다." : `아직은 ${getPlayerDisplayName()}의 망설임으로 기록된다.`}`;
   }
 
   if (dom.turnRecords) {
@@ -881,7 +924,7 @@ function applyJournalRecord(record = {}) {
     }
   */
   if (Array.isArray(record.trueNamePieceIds)) {
-    state.trueNamePieceIds = record.trueNamePieceIds.slice(0, GAME_RULES.sealRequiredTrueNamePieces);
+    state.trueNamePieceIds = record.trueNamePieceIds.slice(0, TRUTH_PIECES.length);
     state.trueNamePieces = state.trueNamePieceIds.length;
   }
   if (Array.isArray(record.acquiredClues)) state.acquiredClues = [...record.acquiredClues];
@@ -895,6 +938,101 @@ function applyJournalRecord(record = {}) {
   if (typeof record.lastInvestigation === "string") state.lastInvestigation = record.lastInvestigation;
 
   renderAll();
+}
+
+function actionCodeToUiAction(code) {
+  return code === "trick" ? "deceive" : code;
+}
+
+function getNumeric(value, fallback) {
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function toTrueNamePieceIds(count) {
+  const safeCount = clamp(count, 0, TRUTH_PIECES.length);
+  return TRUTH_PIECES.slice(0, safeCount).map((piece) => piece.id);
+}
+
+function normalizePrototypeClue(clue) {
+  return {
+    id: clue?.clue_id || clue?.id || "",
+    text: clue?.text || "",
+    source: clue?.clue_id || clue?.source || ""
+  };
+}
+
+function isTrueNameClue(clue) {
+  return clue?.truth_state === "true_revealed" || String(clue?.clue_id || "").startsWith("true_name_fragment");
+}
+
+function isFalseClue(clue) {
+  return clue?.truth_state === "false_revealed" || String(clue?.clue_id || "").startsWith("false_clue");
+}
+
+function applyMatchState(match) {
+  if (!match || typeof match !== "object") return;
+
+  const resources = match.player?.resources || {};
+  const required = getNumeric(
+    resources.true_name_fragments_required,
+    getNumeric(match.opponent?.public_state?.true_name_fragments_required, DEFAULT_TRUE_NAME_FRAGMENTS_REQUIRED)
+  );
+  GAME_RULES.sealRequiredTrueNamePieces = clamp(required, 1, TRUTH_PIECES.length);
+  GAME_RULES.maxTurn = getNumeric(match.turn?.max_turns, GAME_RULES.maxTurn);
+
+  state.caseId = match.case?.case_id || state.caseId;
+  state.caseTitle = match.case?.title || state.caseTitle;
+  state.playerDisplayName = match.player?.display_name || DEFAULT_PLAYER_DISPLAY_NAME;
+  state.apparitionDisplayName = match.opponent?.display_name || state.apparitionDisplayName || MASKED_APPARITION_DISPLAY_NAME;
+  state.turn = clamp(match.turn?.turn_number || state.turn, 1, GAME_RULES.maxTurn);
+  state.sanity = clamp(getNumeric(resources.sanity, state.sanity), 0, getNumeric(resources.sanity_max, GAME_RULES.maxSanity));
+  state.soulfire = clamp(getNumeric(resources.ritual_power, state.soulfire), 0, getNumeric(resources.ritual_power_max, GAME_RULES.maxSoulfire));
+  state.curse = clamp(getNumeric(resources.curse_marks, state.curse), 0, getNumeric(resources.curse_marks_max, GAME_RULES.maxCurseTrace));
+  state.shield = clamp(getNumeric(resources.shield, state.shield), 0, getNumeric(resources.shield_max, 1));
+  state.partialTrueName = clamp(getNumeric(resources.incomplete_true_name_fragments, state.partialTrueName), 0, 2);
+  state.suspicion = clamp(getNumeric(resources.suspicion, state.suspicion), 0, getNumeric(resources.suspicion_max, 3));
+  state.timeoutCount = clamp(getNumeric(resources.timeout_count, state.timeoutCount), 0, 99);
+  state.trueNamePieceIds = toTrueNamePieceIds(getNumeric(resources.true_name_fragments, state.trueNamePieces));
+  state.trueNamePieces = state.trueNamePieceIds.length;
+  state.remainingSeconds = clamp(
+    getNumeric(match.turn?.remaining_seconds, state.remainingSeconds),
+    0,
+    GAME_RULES.timerSeconds
+  );
+  state.allowedActions = Array.isArray(match.available_actions)
+    ? match.available_actions
+      .filter((action) => action.enabled)
+      .map((action) => actionCodeToUiAction(action.code))
+    : state.allowedActions;
+
+  const clues = Array.isArray(match.clues) ? match.clues : [];
+  state.acquiredClues = clues.filter(isTrueNameClue).map((clue) => clue.text).filter(Boolean);
+  state.suspectClues = clues
+    .filter((clue) => isFalseClue(clue) && clue.truth_state !== "false_revealed")
+    .map(normalizePrototypeClue)
+    .filter((clue) => clue.id && clue.text);
+  state.falseClues = clues
+    .filter(isFalseClue)
+    .map(normalizePrototypeClue)
+    .filter((clue) => clue.id && clue.text);
+  state.revealedFalseClues = clues
+    .filter((clue) => clue.truth_state === "false_revealed")
+    .map(normalizePrototypeClue)
+    .filter((clue) => clue.id && clue.text);
+
+  if (Array.isArray(match.recent_public_logs) && match.recent_public_logs.length) {
+    state.turnRecords = match.recent_public_logs.map((log) => ({
+      turn: log.turn_number,
+      journalEntry: log.text,
+      journalEntrySource: "server",
+      practicalSummary: "",
+      changesSummary: "",
+      events: []
+    }));
+  }
+
+  renderAll();
+  renderClock();
 }
 
 function clearAmbientDialogueTimer() {
@@ -1139,8 +1277,8 @@ function getActionValidation(actionKey) {
   if (state.allowedActions && !state.allowedActions.includes(actionKey)) {
     return { canUse: false, reason: "이전 턴 효과로 이번 행동 후보에서 제외되었다." };
   }
-  if (actionKey === "seal" && state.trueNamePieces < GAME_RULES.sealRequiredTrueNamePieces) {
-    return { canUse: false, reason: `진명 조각 3/3 필요. 현재 ${state.trueNamePieces}/3.` };
+  if (actionKey === "seal" && state.trueNamePieces < getRequiredTrueNamePieces()) {
+    return { canUse: false, reason: `진명 조각 ${getRequiredTrueNamePieces()}개 필요. 현재 ${formatTrueNameProgress()}.` };
   }
   if ((actionKey === "insight" || actionKey === "contract") && !state.selectedInfoTargetKey) {
     return { canUse: false, reason: "조사 대상을 먼저 선택해야 한다." };
@@ -1467,7 +1605,7 @@ function showEnemyVoice(enemy) {
   dom.enemyText.textContent = display.text;
   state.logAwaitingAdvance = true;
   showInteractionCue();
-  pushDialogueLog("spirit", "???", display.text, display.source === "llm" ? "llm" : "spirit");
+  pushDialogueLog("spirit", getApparitionDisplayName(), display.text, display.source === "llm" ? "llm" : "spirit");
   dom.enemyVoice.hidden = true;
 }
 
@@ -1535,7 +1673,7 @@ function openEndingScreen(outcome, reason) {
     outcome,
     reason,
     turn: String(Math.min(state.turn, GAME_RULES.maxTurn)),
-    truth: `${state.trueNamePieces}/${GAME_RULES.sealRequiredTrueNamePieces}`,
+    truth: formatTrueNameProgress(),
     sanity: `${state.sanity}/${GAME_RULES.maxSanity}`,
     curse: `${state.curse}/${GAME_RULES.maxCurseTrace}`,
     log: state.turnRecords.slice(-4).map(formatTurnRecordLine).join(" | ")
@@ -1634,8 +1772,8 @@ function getInfoTargetKey(playerAction) {
   }
 
   if (playerAction === "deceive") {
-    if (state.trueNamePieces >= 2) return "forgotten_room";
-    return state.lastInfoTargetKey || "mirror_back";
+    if (state.trueNamePieces >= 2) return "basement_wall";
+    return state.lastInfoTargetKey || "truth_mirror";
   }
 
   return "";
@@ -1704,7 +1842,7 @@ function resolveTableStateChanges(playerAction, enemy, isTimeout) {
   let probabilityCheck = null;
   let diceCheck = null;
 
-  const addFalseClueFromRule = (source, target = infoTargetKey || "mirror_back") => {
+  const addFalseClueFromRule = (source, target = infoTargetKey || "truth_mirror") => {
     const clue = addSuspectClue(pickFalseClue(target), source);
     if (clue) suspectClues.push(clue);
     return clue;
@@ -1712,7 +1850,7 @@ function resolveTableStateChanges(playerAction, enemy, isTimeout) {
 
   const addPartialPiece = () => {
     partialAfter = clamp(partialAfter + 1, 0, 2);
-    if (partialAfter >= 2 && trueNamePieceIds.length < GAME_RULES.sealRequiredTrueNamePieces) {
+    if (partialAfter >= 2 && trueNamePieceIds.length < getRequiredTrueNamePieces()) {
       const nextPiece = TRUTH_PIECES.find((piece) => !trueNamePieceIds.includes(piece.id));
       if (nextPiece) {
         trueNamePieceIds.push(nextPiece.id);
@@ -1948,7 +2086,7 @@ function getPatternHint(playerAction) {
   const recent = state.playerActionHistory.slice(-3);
   const repeated = recent.filter((action) => action === playerAction).length;
   if (state.turn < 4 || repeated < 2) return "";
-  return "거울 안쪽의 것은 이안의 반복된 의식에 반응하기 시작했다. 같은 선택의 틈을 기억한다.";
+  return `거울 안쪽의 것은 ${getPlayerDisplayName()}의 반복된 의식에 반응하기 시작했다. 같은 선택의 틈을 기억한다.`;
 }
 
 function createPrototypeTurnResult(playerAction, { timeout = false, enemyActionKey = null } = {}) {
@@ -1973,7 +2111,7 @@ function createPrototypeTurnResult(playerAction, { timeout = false, enemyActionK
     enemy,
     publicLog: getCompatibilityPublicLog(playerAction, enemy.key),
     briefing: seal
-      ? (seal.success ? "세 조각의 기록이 맞물리고, 이안은 마침내 감춰진 이름을 부른다." : "거울 안쪽의 저항이 진명 선언을 찢어 놓았다.")
+      ? (seal.success ? "기록이 맞물리고, 피티의 이름이 마침내 진실의 거울 앞에서 완성된다." : "거울 안쪽의 저항이 진명 선언을 찢어 놓았다.")
       : card.briefing,
     delta: seal ? (seal.success ? "진명 선언 성공" : "진명 선언 실패") : card.desc,
     stateChanges: changes,
@@ -2016,6 +2154,7 @@ function resolveTurnResult(playerAction, options = {}) {
 
 function applyTurnStateChanges(changes = {}, result = null) {
   const applied = {};
+  if (result?.seal?.success) revealApparitionName();
 
   if (changes.sanity) {
     state.sanity = changes.sanity.after;
@@ -2033,6 +2172,9 @@ function applyTurnStateChanges(changes = {}, result = null) {
   state.enemyActionCandidates = Array.isArray(changes.nextEnemyCandidates)
     ? [...changes.nextEnemyCandidates]
     : null;
+  if (Array.isArray(changes.allowedActions)) {
+    state.allowedActions = [...changes.allowedActions];
+  }
   if (Number.isFinite(changes.partialTrueName)) state.partialTrueName = changes.partialTrueName;
   if (Number.isFinite(changes.suspicion)) state.suspicion = changes.suspicion;
   if (Number.isFinite(changes.trueNamePieces)) state.trueNamePieces = changes.trueNamePieces;
@@ -2119,7 +2261,7 @@ function formatResourceChanges(changes = {}) {
     lines.push(`진명 진척 ${changes.partialTrueName}/2`);
   }
   if (Number.isFinite(changes.trueNamePieces) && changes.trueNamePieces > 0) {
-    lines.push(`진명 조각 ${changes.trueNamePieces}/3`);
+    lines.push(`진명 조각 ${formatTrueNameProgress(changes.trueNamePieces)}`);
   }
   return lines.length ? lines.join(" / ") : "변화 없음";
 }
@@ -2165,7 +2307,7 @@ function formatResourceChangesReadable(changes = {}) {
     && Number.isFinite(changes.trueNamePiecesBefore)
     && changes.trueNamePieces !== changes.trueNamePiecesBefore
   ) {
-    lines.push(`진명 조각 ${changes.trueNamePiecesBefore}->${changes.trueNamePieces}/3`);
+    lines.push(`진명 조각 ${changes.trueNamePiecesBefore}->${formatTrueNameProgress(changes.trueNamePieces)}`);
   }
   if (Array.isArray(changes.suspectClues) && changes.suspectClues.length) {
     lines.push(`거짓 단서 +${changes.suspectClues.length}`);
@@ -2186,7 +2328,7 @@ function formatResourceChangesReadable(changes = {}) {
   }
   if (changes.diceCheck?.type === "curse_clash") {
     const check = changes.diceCheck;
-    const winner = check.winner === "tie" ? "동률" : (check.winner === "player" ? "이안 우세" : "괴이 우세");
+    const winner = check.winner === "tie" ? "동률" : (check.winner === "player" ? `${getPlayerDisplayName()} 우세` : `${getApparitionDisplayName()} 우세`);
     lines.push(`저주 주사위 ${check.playerRoll}:${check.enemyRoll} ${winner}`);
   }
   return lines.length ? lines.join(" / ") : "변화 없음";
@@ -2200,7 +2342,7 @@ function formatJournalPracticalSummary(result = {}, changes = {}) {
   const playerAction = result?.playerAction || "";
   const enemyAction = result?.enemy?.key || "";
   const parts = [
-    `행동: 이안 ${getActionDisplayName(playerAction, result?.playerLabel || "알 수 없음")}, 괴이 ${getActionDisplayName(enemyAction, result?.enemy?.label || "알 수 없음")}`
+    `행동: ${getPlayerDisplayName()} ${getActionDisplayName(playerAction, result?.playerLabel || "알 수 없음")}, ${getApparitionDisplayName()} ${getActionDisplayName(enemyAction, result?.enemy?.label || "알 수 없음")}`
   ];
 
   if (changes.lastInfoTargetKey) {
@@ -2231,7 +2373,7 @@ function formatJournalPracticalSummary(result = {}, changes = {}) {
   }
 
   if (changes.trueNamePieces > changes.trueNamePiecesBefore) {
-    parts.push(`봉인 준비: 진명 ${changes.trueNamePieces}/${GAME_RULES.sealRequiredTrueNamePieces}`);
+    parts.push(`봉인 준비: 진명 ${formatTrueNameProgress(changes.trueNamePieces)}`);
   }
 
   return parts.join(" · ");
@@ -2267,7 +2409,7 @@ function formatTurnBriefingReadable(result, applied) {
   const enemyActionName = ACTION_CARDS[result.enemy?.key]?.title || result.enemy?.key || "알 수 없음";
   if (result.publicLog) {
     const lines = [
-      `이안: ${result.playerLabel}, ??: ${enemyActionName}`,
+      `${getPlayerDisplayName()}: ${result.playerLabel}, ${getApparitionDisplayName()}: ${enemyActionName}`,
       result.publicLog
     ];
     const resourceChanges = formatResourceChangesReadable(result.stateChanges);
@@ -2364,7 +2506,30 @@ async function runTurnSequence(actionKey, options = {}) {
   await waitForAdvance();
   hidePlayerLog();
 
-  const result = await resolveTurnResult(actionKey, options);
+  setProgressOverlay("결과 처리 중...", "서버 판정을 기다리고 있습니다.");
+  scheduleServerWaitHint();
+
+  let result;
+  try {
+    result = await resolveTurnResult(actionKey, options);
+  } catch (error) {
+    console.error("Failed to resolve turn result.", error);
+    clearProgressOverlay();
+    state.phase = "ready";
+    state.isSubmitting = false;
+    showPlayerLog(
+      "서버 응답을 처리하지 못했습니다. 최신 상태를 확인한 뒤 다시 시도해 주세요.",
+      { allowCorruption: false, channel: "system" }
+    );
+    await waitForAdvance();
+    hidePlayerLog();
+    renderAll();
+    resetClock();
+    setTurnState("");
+    return;
+  }
+
+  clearProgressOverlay();
   if (Array.isArray(result.llm_ui_texts)) applyLlmUiTexts(result.llm_ui_texts);
   if (Array.isArray(result.llmUiTexts)) applyLlmUiTexts(result.llmUiTexts);
   const applied = applyTurnStateChanges(result.stateChanges, result);
@@ -2512,7 +2677,7 @@ function bindEvents() {
   });
 
   addPrototypeEvent(dom.sealInvocation, "click", () => {
-    if (state.trueNamePieces >= GAME_RULES.sealRequiredTrueNamePieces) {
+    if (state.trueNamePieces >= getRequiredTrueNamePieces()) {
       openActionCard("seal", dom.sealInvocation);
     }
   });
@@ -2582,8 +2747,12 @@ function bindEvents() {
 
 function resetDemoGame() {
   clearAmbientDialogueTimer();
+  clearProgressOverlay();
+  hideInteractionCue();
   Object.assign(state, {
     turn: 1,
+    apparitionDisplayName: MASKED_APPARITION_DISPLAY_NAME,
+    isApparitionNameRevealed: false,
     phase: "intro",
     sanity: GAME_RULES.startingSanity,
     soulfire: GAME_RULES.startingSoulfire,
@@ -2630,7 +2799,8 @@ function resetDemoGame() {
     pendingEnding: null,
     isSubmitting: false,
     remainingSeconds: GAME_RULES.timerSeconds,
-    advanceResolver: null
+    advanceResolver: null,
+    progressHintTimer: null
   });
   hideActionCard();
   clearDialogueLogs();
@@ -2667,12 +2837,12 @@ function testEnding(kind) {
   const key = String(kind || "").toLowerCase();
 
   if (key === "clear" || key === "win" || key === "seal") {
-    window.gamePrototypeState.setTrueNamePieces(3);
+    window.gamePrototypeState.setTrueNamePieces(getRequiredTrueNamePieces());
     return runTurnSequence("seal", { enemyActionKey: "guard" });
   }
 
   if (key === "seal-fail" || key === "sealfail") {
-    window.gamePrototypeState.setTrueNamePieces(3);
+    window.gamePrototypeState.setTrueNamePieces(getRequiredTrueNamePieces());
     return runTurnSequence("seal", { enemyActionKey: "deceive" });
   }
 
@@ -2710,7 +2880,7 @@ window.gamePrototypeState = {
     renderAll();
   },
   setTrueNamePieces(value) {
-    const count = clamp(value, 0, 3);
+    const count = clamp(value, 0, TRUTH_PIECES.length);
     state.trueNamePieceIds = TRUTH_PIECES.slice(0, count).map((piece) => piece.id);
     state.trueNamePieces = state.trueNamePieceIds.length;
     renderAll();
@@ -2746,6 +2916,7 @@ window.gamePrototypeState = {
   },
   testEnding,
   applyJournalRecord,
+  applyMatchState,
   applyTurnStateChanges,
   buildTurnSubmitPayload,
   runTurnSequence,
@@ -2756,4 +2927,5 @@ window.gamePrototypeState = {
 
 bindEvents();
 resetDemoGame();
+applyMatchState(window.gamePrototypeBridge?.initialMatchState);
 }

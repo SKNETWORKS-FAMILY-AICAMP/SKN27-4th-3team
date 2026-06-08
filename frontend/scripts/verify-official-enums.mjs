@@ -7,7 +7,10 @@ const source = readFileSync(sourcePath, "utf8");
 const requiredSnippets = [
   'deceive: "trick"',
   'attic_diary: "mirror_back"',
-  'truth_mirror: "mirror_surface"',
+  'truth_mirror: "truth_mirror"',
+  'family_journal: "family_journal"',
+  'nameless_thread: "nameless_thread"',
+  'basement_wall: "basement_wall"',
   'stitched_mouth: "missing_child_voice"',
   'bloodied_teddy: "forgotten_room"',
   'ian_reflection: "self_reflection"',

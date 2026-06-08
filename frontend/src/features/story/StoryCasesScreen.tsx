@@ -92,9 +92,9 @@ export function StoryCasesScreen() {
 }
 
 const fallbackStoryCase: StoryCaseSummary = {
-  case_id: "mirror_guest",
-  title: "거울 속의 손님",
-  summary: "오래된 방의 거울은 얼굴을 비추지 않는다. 그 안에는 잊힌 기억, 사라진 목소리, 그리고 잃어버린 방 번호가 남아 있다.",
+  case_id: "nameless_curse",
+  title: "무명(無名)의 저주",
+  summary: "이름을 빼앗긴 원혼과 진실의 거울을 마주하는 사건.",
   difficulty: "MVP",
   mvp_available: true,
   estimated_turns: 12,

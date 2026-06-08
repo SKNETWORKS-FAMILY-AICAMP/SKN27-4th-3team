@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test:contracts": "node scripts/verify-official-enums.mjs",
-    "test:api-client": "node scripts/verify-api-client-contract.mjs"
+    "test:api-client": "node scripts/verify-api-client-contract.mjs",
+    "test:nameless-flow": "node scripts/verify-nameless-curse-flow-contract.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

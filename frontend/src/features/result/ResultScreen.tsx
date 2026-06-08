@@ -10,7 +10,7 @@ const RESULT_COPY = {
     kicker: "사건 종료 기록",
     title: "봉인 성공",
     outcome: "클리어",
-    summary: "진명 조각이 맞물렸고, 거울 속의 손님은 더는 이안의 기억을 붙잡지 못했다.",
+    summary: "숨겨진 이름이 진실의 거울 앞에서 완성되었고, 무명실은 더는 입술을 묶지 못했다.",
     style: "단서를 모아 봉인 조건을 완성한 플레이 기록입니다.",
   },
   player_loss: {
@@ -18,7 +18,7 @@ const RESULT_COPY = {
       kicker: "사건 종료 기록",
       title: "이성 붕괴",
       outcome: "게임 오버",
-      summary: "이안의 정신이 버티지 못했고, 거울은 남은 기억을 삼켰다.",
+      summary: "플레이어의 이름과 숨겨진 이름이 같은 숨결로 겹쳐졌다.",
       style: "이성 손실을 감수하며 의식을 밀어붙인 플레이 기록입니다.",
     },
     curse_marks_loss: {

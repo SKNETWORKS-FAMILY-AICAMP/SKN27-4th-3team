@@ -386,6 +386,7 @@ def test_nameless_curse_match_state_enables_seal_after_two_true_name_fragments()
     seal_action = next(action for action in state["available_actions"] if action["code"] == "seal")
 
     assert state["player"]["resources"]["true_name_fragments_required"] == 2
+    assert state["opponent"]["display_name"] == "거울 속 목소리"
     assert state["opponent"]["public_state"]["true_name_fragments_required"] == 2
     assert state["opponent"]["public_state"]["seal_available"] is True
     assert seal_action["enabled"] is True

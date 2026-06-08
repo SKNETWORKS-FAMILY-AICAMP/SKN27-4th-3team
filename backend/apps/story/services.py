@@ -385,7 +385,7 @@ def format_match_state(
         "opponent": {
             "participant_id": _public_id(prefix="participant", value=apparition_participant.id),
             "participant_type": PARTICIPANT_TYPE_APPARITION,
-            "display_name": case_definition["apparition_alias"],
+            "display_name": case_definition["public_apparition_display_name"],
             "public_state": {
                 "true_name_fragments_revealed": player_state.true_name_fragments,
                 "true_name_fragments_required": required_true_name_fragments,

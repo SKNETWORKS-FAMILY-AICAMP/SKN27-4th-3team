@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import { RitualDuelScreen, PrototypeTurnRequest } from "../../features/match/RitualDuelScreen";
 import { ApiClientError } from "../../shared/api/client";
@@ -14,6 +14,26 @@ export function MatchRoute() {
   const location = useLocation();
   const { matchId = "prototype-mirror-guest" } = useParams();
   const state = location.state as MatchRouteState | null;
+  const [initialMatchState, setInitialMatchState] = useState<MatchState | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadMatchState() {
+      try {
+        const latest = await getMatchDetail(matchId);
+        if (!cancelled) setInitialMatchState(latest.match);
+      } catch (error) {
+        if (!cancelled) setInitialMatchState(null);
+      }
+    }
+
+    loadMatchState();
+    return () => {
+      cancelled = true;
+    };
+  }, [matchId]);
+
   const turnResultProvider = useCallback(
     async (request: PrototypeTurnRequest) => {
       if (!request.turnSubmitPayload) {
@@ -55,6 +75,7 @@ export function MatchRoute() {
     <RitualDuelScreen
       matchId={matchId}
       fadeIn={Boolean(state?.fromLobbyTransition || state?.fromPrologueTransition)}
+      initialMatchState={initialMatchState}
       turnResultProvider={turnResultProvider}
     />
   );
@@ -93,6 +114,12 @@ function toPrototypeActionKey(actionCode: string): string {
   return actionCode === "trick" ? "deceive" : actionCode;
 }
 
+function toPrototypeAllowedActions(match: MatchState): string[] {
+  return match.available_actions
+    .filter((action) => action.enabled)
+    .map((action) => toPrototypeActionKey(action.code));
+}
+
 function toPrototypeStateChanges(turnResult: TurnResult, match: MatchState) {
   const stateDelta = turnResult.state_delta;
   const resources = match.player.resources;
@@ -105,13 +132,17 @@ function toPrototypeStateChanges(turnResult: TurnResult, match: MatchState) {
     partialTrueName: resources.incomplete_true_name_fragments ?? 0,
     trueNamePieces: resources.true_name_fragments,
     suspicion: resources.suspicion,
+    allowedActions: toPrototypeAllowedActions(match),
     clues: turnResult.clue_delta.added
-      .filter((clue) => clue.truth_state === "true_revealed")
+      .filter(isTrueNameClue)
       .map(toPrototypeClue),
     suspectClues: turnResult.clue_delta.added
-      .filter((clue) => clue.truth_state === "false_revealed")
+      .filter((clue) => isFalseClue(clue) && clue.truth_state !== "false_revealed")
       .map(toPrototypeClue),
-    revealedFalseClues: turnResult.clue_delta.revealed.map(toPrototypeClue),
+    revealedFalseClues: [
+      ...turnResult.clue_delta.added.filter((clue) => clue.truth_state === "false_revealed"),
+      ...turnResult.clue_delta.revealed,
+    ].map(toPrototypeClue),
     turnEvents: [turnResult.public_log.text],
   };
 }
@@ -149,6 +180,7 @@ function toPrototypeDeadlineExpiredResult(match: MatchState) {
       partialTrueName: resources.incomplete_true_name_fragments ?? 0,
       trueNamePieces: resources.true_name_fragments,
       suspicion: resources.suspicion,
+      allowedActions: toPrototypeAllowedActions(match),
       clues: [],
       suspectClues: [],
       revealedFalseClues: [],
@@ -185,6 +217,14 @@ function toPrototypeClue(clue: { clue_id: string; text: string }) {
     text: clue.text,
     source: clue.clue_id,
   };
+}
+
+function isTrueNameClue(clue: { clue_id: string; truth_state: string }): boolean {
+  return clue.truth_state === "true_revealed" || clue.clue_id.startsWith("true_name_fragment");
+}
+
+function isFalseClue(clue: { clue_id: string; truth_state: string }): boolean {
+  return clue.truth_state === "false_revealed" || clue.clue_id.startsWith("false_clue");
 }
 
 function formatStateDelta(turnResult: TurnResult): string {

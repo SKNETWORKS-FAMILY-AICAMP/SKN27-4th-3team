@@ -25,7 +25,7 @@ EXPECTED_APPROVED_CASES = [
     {
         "case_id": "nameless_curse",
         "title": "무명(無名)의 저주",
-        "summary": "이름을 빼앗긴 원혼 피티와 진실의 거울을 마주하는 사건.",
+        "summary": "이름을 빼앗긴 원혼과 진실의 거울을 마주하는 사건.",
         "difficulty": "mvp_02",
         "mvp_available": True,
         "estimated_turns": 12,

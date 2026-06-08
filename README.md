@@ -8,7 +8,7 @@
 
 | 구분 | 항목 | 상태 |
 |---|---|---|
-| 현재 사용/구현 | Django, Django REST Framework, PostgreSQL 기준 RDB 모델, `retrieval` 앱, PostgreSQL `pgvector` 준비, AI Profile 지표, 공식 API schema, pytest 계약 테스트, 로컬 Docker Compose, 백엔드 Dockerfile | 1차 MVP 백엔드/RAG/AI Profile 중심 구현 범위 |
+| 현재 사용/구현 | Django, Django REST Framework, PostgreSQL 기준 RDB 모델, `retrieval` 앱, PostgreSQL `pgvector` 준비, AI Profile 지표, 공식 API schema, pytest 계약 테스트, local/dev Compose, AC-2A production Compose, Gunicorn, Caddy | 1차 MVP 백엔드/RAG/AI Profile과 수동 production 배포 후보 구성 |
 | 현재 사용/부분 구현 | React/TypeScript/Vite 프론트엔드, route 기반 화면, prototype 의식 결투 화면, 공식 enum 계약 검증 | 화면/프로토타입 구현은 있으나 Django API 전면 연결은 아직 제한적 |
 | 현재 사용/부분 구현 | LLM runtime 앱, `llm_generations`, 턴 연출 문구, 결과 요약, 결전 대화 endpoint, Groq 호환 adapter | LLM은 판정 권위 없이 보조 문장만 담당하며 실제 provider 호출은 환경변수와 API key에 의존 |
 | 후순위/미사용 | KAG 구현, GraphDB, Redis/Channels/WebSocket, PvP 모드, 운영 배포 자동화 | 1차 MVP 제외 또는 도입 대상 아님 |
@@ -27,6 +27,9 @@ GraphDB는 사용하지 않습니다. KAG도 1차 MVP 구현 범위가 아니며
 | MVP 범위 | [`docs/01_MVP/02_MVP_포함_제외_범위.md`](docs/01_MVP/02_MVP_%ED%8F%AC%ED%95%A8_%EC%A0%9C%EC%99%B8_%EB%B2%94%EC%9C%84.md) | 1차 MVP 포함/제외 범위 |
 | 백엔드/RAG/AI Profile 계약 | [`docs/09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약.md`](docs/09_Approved_Contracts/17_%EB%B0%B1%EC%97%94%EB%93%9C_RAG_AI_Profile_%EA%B5%AC%ED%98%84_%EA%B3%84%EC%95%BD.md) | 프론트/LLM 제외 백엔드 구현 기준 |
 | 프로젝트 폴더 구조 계약 | [`docs/09_Approved_Contracts/23_프로젝트_폴더_구조_계약.md`](docs/09_Approved_Contracts/23_%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8_%ED%8F%B4%EB%8D%94_%EA%B5%AC%EC%A1%B0_%EA%B3%84%EC%95%BD.md) | 최상위 폴더와 팀별 경계 |
+| 무명의 저주 사건 계약 | [`docs/09_Approved_Contracts/26_무명의_저주_사건_계약.md`](docs/09_Approved_Contracts/26_%EB%AC%B4%EB%AA%85%EC%9D%98_%EC%A0%80%EC%A3%BC_%EC%82%AC%EA%B1%B4_%EA%B3%84%EC%95%BD.md) | `nameless_curse` 사건 seed와 피티 공식 진명 기준 |
+| 플레이어 이름/결전/RAG 계약 | [`docs/09_Approved_Contracts/27_플레이어_이름_무명의_저주_결전_RAG_계약.md`](docs/09_Approved_Contracts/27_%ED%94%8C%EB%A0%88%EC%9D%B4%EC%96%B4_%EC%9D%B4%EB%A6%84_%EB%AC%B4%EB%AA%85%EC%9D%98_%EC%A0%80%EC%A3%BC_%EA%B2%B0%EC%A0%84_RAG_%EA%B3%84%EC%95%BD.md) | 플레이어 표시 이름, 진명 조각 2개 결전, RAG source plan |
+| Production 배포 계약 | [`docs/09_Approved_Contracts/28_Production_배포_계약.md`](docs/09_Approved_Contracts/28_Production_%EB%B0%B0%ED%8F%AC_%EA%B3%84%EC%95%BD.md) | AC-2A 단일 VM + Docker Compose + Gunicorn + Caddy + PostgreSQL 기준 |
 | 공식 API 스키마 | [`api-spec/pilot-mvp-api.official.jsonc`](api-spec/pilot-mvp-api.official.jsonc) | 사람이 읽는 공식 API 계약 |
 | 도구용 API 스키마 | [`api-spec/pilot-mvp-api.official.json`](api-spec/pilot-mvp-api.official.json) | strict JSON 생성본 |
 
@@ -50,7 +53,7 @@ GraphDB는 사용하지 않습니다. KAG도 1차 MVP 구현 범위가 아니며
 | JSON 검증 | `jsonschema` | JSONField payload 검증 경계 |
 | API 계약 | official JSONC/JSON schema | 프론트와 백엔드가 공유할 endpoint/response shape |
 | 테스트 | pytest, frontend contract script, Vite build | 승인 계약 기반 백엔드/LLM 테스트와 프론트 enum/build 검증 |
-| Docker 실행 준비 | Docker Compose, backend Dockerfile | 로컬/dev 실행과 이미지 빌드 준비. production 배포는 후속 계약 필요 |
+| Docker 실행 준비 | Docker Compose, backend Dockerfile, production Dockerfile, Caddy | 로컬/dev 실행과 AC-2A production 수동 배포 후보 구성 |
 
 ## 현재 제한 또는 후순위 기술
 
@@ -65,18 +68,93 @@ GraphDB는 사용하지 않습니다. KAG도 1차 MVP 구현 범위가 아니며
 
 ## Docker와 배포 상태
 
-현재 `ops/docker/backend.Dockerfile`은 백엔드 이미지 빌드의 시작점입니다.
+Docker 구성은 local/dev와 production을 분리합니다.
 
-다만 현재 entrypoint는 로컬/dev 기준 Django `runserver`이며 production 배포 entrypoint로 확정하지 않습니다.
+| 구분 | 주요 파일 | 기준 |
+|---|---|---|
+| local/dev | `ops/docker/docker-compose.yml`, `ops/docker/backend.Dockerfile`, `ops/env/backend.env.example` | Django `runserver`, API `8000`, PostgreSQL `5432`를 로컬 개발용으로 사용 |
+| production | `ops/docker/docker-compose.production.yml`, `ops/docker/backend.production.Dockerfile`, `ops/docker/web.production.Dockerfile`, `ops/docker/Caddyfile.production`, `ops/env/production.env.example` | AC-2A 기준. `web`만 `80/443`을 노출하고, `api`와 `postgres`는 Docker 내부 네트워크에서만 사용 |
 
-후속 작업에서 먼저 검증할 명령 후보는 아래와 같습니다.
+production backend runtime은 Gunicorn WSGI입니다. production에서 Django `runserver`를 사용하지 않습니다.
 
-```powershell
-docker build -f ops/docker/backend.Dockerfile -t skn27-backend:local .
-docker compose -f ops/docker/docker-compose.yml build api
+```text
+gunicorn backend.config.wsgi:application --bind 0.0.0.0:8000
 ```
 
-실제 Django production 배포를 진행하려면 배포 대상, WSGI/ASGI server, static/media 처리, secret/env 주입, migration 실행, health check, reverse proxy/TLS, image registry/tag, CI/CD 또는 수동 배포 절차를 별도 계약으로 확정해야 합니다.
+### Local/dev 실행 순서
+
+저장소 루트에서 실행합니다.
+
+```powershell
+docker compose -f ops\docker\docker-compose.yml build api
+docker compose -f ops\docker\docker-compose.yml up -d postgres
+docker compose -f ops\docker\docker-compose.yml up -d api
+docker compose -f ops\docker\docker-compose.yml exec api python backend/manage.py migrate --noinput
+
+Invoke-RestMethod http://localhost:8000/healthz
+Invoke-RestMethod http://localhost:8000/api/v1/auth/csrf
+```
+
+프론트엔드 개발 서버는 별도 터미널에서 실행합니다.
+
+```powershell
+cd frontend
+npm ci
+npm run dev -- --host 127.0.0.1 --port 5173
+```
+
+브라우저에서는 `http://127.0.0.1:5173`으로 진입합니다.
+
+### Production 실행 순서
+
+첫 production 배포는 수동 절차입니다. 실제 secret 값은 repository에 저장하지 않고 VM의 `ops/env/production.env`에만 둡니다.
+
+```powershell
+Copy-Item ops\env\production.env.example ops\env\production.env
+```
+
+`ops/env/production.env`에서 최소한 아래 값을 실제 환경에 맞게 바꿉니다.
+
+| 변수 | 기준 |
+|---|---|
+| `APP_DOMAIN` | 실제 도메인. 예시 도메인은 DNS가 없으면 동작하지 않음 |
+| `CADDY_ACME_EMAIL` | Caddy TLS 인증서 발급 연락처 |
+| `SKN27_IMAGE_TAG` | git short SHA 또는 `YYYYMMDDHHMM` 배포 태그 |
+| `DJANGO_SECRET_KEY` | production secret. repository 저장 금지 |
+| `DJANGO_ALLOWED_HOSTS` | 실제 도메인과 필요한 host allowlist |
+| `DJANGO_CSRF_TRUSTED_ORIGINS` | `https://<APP_DOMAIN>` 기준 |
+| `DJANGO_CORS_ALLOWED_ORIGINS` | 같은 origin이면 `https://<APP_DOMAIN>` 기준 |
+| `POSTGRES_PASSWORD` | production DB password. repository 저장 금지 |
+| `LLM_API_KEY` | 실제 LLM provider 호출을 사용할 때만 주입 |
+
+저장소 루트에서 실행합니다.
+
+```powershell
+$env:SKN27_PRODUCTION_ENV_FILE="../env/production.env"
+
+docker compose -f ops\docker\docker-compose.production.yml --env-file ops\env\production.env build
+docker compose -f ops\docker\docker-compose.production.yml --env-file ops\env\production.env up -d postgres
+docker compose -f ops\docker\docker-compose.production.yml --env-file ops\env\production.env run --rm api python backend/manage.py migrate --plan
+docker compose -f ops\docker\docker-compose.production.yml --env-file ops\env\production.env run --rm api python backend/manage.py migrate --noinput
+docker compose -f ops\docker\docker-compose.production.yml --env-file ops\env\production.env up -d api web
+
+Invoke-RestMethod http://localhost/healthz
+Invoke-RestMethod http://localhost/api/v1/auth/csrf
+```
+
+이미 `api` 서비스가 떠 있는 상태에서 migration을 다시 적용해야 하면 `run --rm api` 대신 실행 중인 컨테이너에 `exec`를 사용합니다. 고정 IP를 쓰는 production 네트워크에서 `api` 컨테이너와 `run --rm api` 컨테이너를 동시에 띄우면 주소 충돌이 날 수 있습니다.
+
+```powershell
+docker compose -f ops\docker\docker-compose.production.yml --env-file ops\env\production.env exec api python backend/manage.py migrate --plan
+docker compose -f ops\docker\docker-compose.production.yml --env-file ops\env\production.env exec api python backend/manage.py migrate --noinput
+```
+
+VM에서 실제 도메인과 TLS가 연결된 뒤에는 아래처럼 확인합니다.
+
+```powershell
+Invoke-RestMethod https://<APP_DOMAIN>/healthz
+Invoke-RestMethod https://<APP_DOMAIN>/api/v1/auth/csrf
+```
 
 ## MVP 범위
 
@@ -86,6 +164,7 @@ docker compose -f ops/docker/docker-compose.yml build api
 - AI 사건 선택
 - `거울 속의 손님` 브리핑과 의식 결투
 - `무명(無名)의 저주` 사건 seed, 정보 대상, 결전 조건
+- `무명(無名)의 저주` 초기 공개명 마스킹과 공식 진명 공개 경계
 - 턴 제출, 서버 판정, 턴 결과 저장
 - 승패 처리, 결과/로그 조회
 - 행동 이벤트 저장과 스타일 지표 계산
@@ -95,6 +174,7 @@ docker compose -f ops/docker/docker-compose.yml build api
 - AI 스토리 기준 Auth/Match/Participant/Turn 구조
 - LLM 결과 요약, 턴 연출 문구, 결전 대화 보조 텍스트와 생성 로그
 - React/Vite 기반 화면과 prototype 의식 결투 화면
+- AC-2A 기준 수동 production 배포 후보 구성
 
 ### 제외
 
@@ -120,7 +200,7 @@ api-spec/  공식 API schema와 draft 명세
 docs/      Obsidian 승인 문서, 설계 문서, 후순위 문서
 tools/     문서 생성, 검증, 개발 보조 스크립트 후보
 output/    문서/이미지/PDF 산출물
-ops/       Docker Compose, env template, 운영 후보
+ops/       Docker Compose, env template, production Dockerfile, Caddy 설정
 ```
 
 ```mermaid
@@ -421,15 +501,24 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 | ai_profile | 행동 이벤트, 스타일 지표 계산 |
 | retrieval | RAG 문서/chunk/embedding/query log 구조와 allowlist |
 | llm | LLM runtime, 생성 로그, guardrail/fallback |
-| frontend contracts | official enum과 prototype payload 매핑 |
+| frontend contracts | official enum, API client, `nameless_curse` 공개명/결전 흐름 |
 
 최근 검증 결과:
 
 ```text
-명령: C:\Python314\python.exe -m pytest backend\tests llm\tests -v
-결과: 197 passed, 4 subtests passed
+명령: C:\Python314\python.exe -m pytest backend\tests -q
+위치: 저장소 루트
+결과: 210 passed
 
 명령: npm run test:contracts
+위치: frontend
+결과: passed
+
+명령: npm run test:api-client
+위치: frontend
+결과: passed
+
+명령: npm run test:nameless-flow
 위치: frontend
 결과: passed
 
@@ -449,7 +538,7 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 1. 프로젝트 개요
    - 장르: 초자연 공포 스릴러 미스터리
    - 핵심 플레이: 괴이의 진명을 파헤치는 1대1 턴제 심리전
-   - 1차 MVP 대상: `거울 속의 손님`
+   - 1차 MVP 대상: `거울 속의 손님`, `무명(無名)의 저주`
 2. Obsidian 문서 기반 기획
    - 승인 문서, draft, deferred 문서 구분
    - official API schema 관리
@@ -500,11 +589,15 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 - RAG 구조, chunking, allowlist, 검색 기본값 구현 준비
 - LLM runtime, 생성 로그, 보조 텍스트 endpoint 구현
 - React/Vite 화면과 prototype 의식 결투 화면 구현
+- `nameless_curse` 초기 공개명은 `거울 속 목소리`로 마스킹하고, `피티`는 공식 진명/결과/진명 단서 맥락에서만 사용
+- AC-2A 기준 production Compose, Gunicorn backend runtime, Caddy reverse proxy, `/healthz`, production env template 구성
 - 백엔드/LLM 테스트와 프론트 계약/build 검증 통과 기록
 
 남은 리스크:
 
-- 실제 PostgreSQL runtime migration과 Docker 기반 통합 실행 검증은 별도 필요합니다.
+- 실제 VM 도메인, DNS, Caddy TLS 발급은 배포 환경에서 별도 확인이 필요합니다.
+- production secret과 DB password는 VM 전용 env 파일에만 저장해야 하며 repository에 커밋하지 않습니다.
+- production DB backup 자동화와 monitoring/alerting platform은 이번 범위에 포함하지 않습니다.
 - `auth.logout`은 계약상 endpoint가 있으나 현재 501 상태를 유지합니다.
 - 프론트엔드 화면은 있으나 Django official API 전면 연결은 완료 상태가 아닙니다.
 - 실제 LLM provider 호출은 환경변수, API key, model id, 네트워크 조건 검증이 필요합니다.

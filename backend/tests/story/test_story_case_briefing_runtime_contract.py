@@ -46,12 +46,12 @@ EXPECTED_MIRROR_GUEST_BRIEFING = {
 EXPECTED_NAMELESS_CURSE_BRIEFING = {
     "case_id": "nameless_curse",
     "title": "무명(無名)의 저주",
-    "apparition_alias": "피티",
+    "apparition_alias": "거울 속 목소리",
     "briefing_text": [
         "사건 파일 02. 무명(無名)의 저주.",
         "안개가 걷히지 않는 저택에는 이름을 빼앗긴 목소리가 남아 있다.",
         "진실의 거울은 얼굴이 아니라, 숨겨진 이름과 상처를 되비춘다.",
-        "피티를 처치 대상으로 단정하지 마라.",
+        "거울 속 목소리를 처치 대상으로 단정하지 마라.",
         "그 이름을 되찾게 해야 저주의 사슬을 끊을 수 있다.",
     ],
     "taboo": {

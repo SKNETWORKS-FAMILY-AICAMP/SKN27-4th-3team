@@ -12,8 +12,9 @@ MIRROR_GUEST_APPARITION_ID = 1
 
 NAMELESS_CURSE_CASE_ID = "nameless_curse"
 NAMELESS_CURSE_TITLE = "무명(無名)의 저주"
-NAMELESS_CURSE_SUMMARY = "이름을 빼앗긴 원혼 피티와 진실의 거울을 마주하는 사건."
+NAMELESS_CURSE_SUMMARY = "이름을 빼앗긴 원혼과 진실의 거울을 마주하는 사건."
 NAMELESS_CURSE_APPARITION_ALIAS = "피티"
+NAMELESS_CURSE_PUBLIC_APPARITION_DISPLAY_NAME = "거울 속 목소리"
 NAMELESS_CURSE_APPARITION_ID = 2
 
 APPROVED_MVP_STORY_CASE_SUMMARIES = (
@@ -66,12 +67,12 @@ APPROVED_MIRROR_GUEST_BRIEFING = {
 APPROVED_NAMELESS_CURSE_BRIEFING = {
     "case_id": NAMELESS_CURSE_CASE_ID,
     "title": NAMELESS_CURSE_TITLE,
-    "apparition_alias": NAMELESS_CURSE_APPARITION_ALIAS,
+    "apparition_alias": NAMELESS_CURSE_PUBLIC_APPARITION_DISPLAY_NAME,
     "briefing_text": [
         "사건 파일 02. 무명(無名)의 저주.",
         "안개가 걷히지 않는 저택에는 이름을 빼앗긴 목소리가 남아 있다.",
         "진실의 거울은 얼굴이 아니라, 숨겨진 이름과 상처를 되비춘다.",
-        "피티를 처치 대상으로 단정하지 마라.",
+        "거울 속 목소리를 처치 대상으로 단정하지 마라.",
         "그 이름을 되찾게 해야 저주의 사슬을 끊을 수 있다.",
     ],
     "taboo": {
@@ -253,6 +254,7 @@ APPROVED_STORY_CASE_DEFINITIONS = {
         "case_id": MIRROR_GUEST_CASE_ID,
         "title": MIRROR_GUEST_TITLE,
         "apparition_alias": MIRROR_GUEST_TITLE,
+        "public_apparition_display_name": MIRROR_GUEST_TITLE,
         "apparition_id": MIRROR_GUEST_APPARITION_ID,
         "info_target_keys": APPROVED_MIRROR_GUEST_INFO_TARGET_KEYS,
         "true_name_fragments": APPROVED_MIRROR_GUEST_TRUE_NAME_FRAGMENTS,
@@ -265,6 +267,7 @@ APPROVED_STORY_CASE_DEFINITIONS = {
         "case_id": NAMELESS_CURSE_CASE_ID,
         "title": NAMELESS_CURSE_TITLE,
         "apparition_alias": NAMELESS_CURSE_APPARITION_ALIAS,
+        "public_apparition_display_name": NAMELESS_CURSE_PUBLIC_APPARITION_DISPLAY_NAME,
         "apparition_id": NAMELESS_CURSE_APPARITION_ID,
         "info_target_keys": APPROVED_NAMELESS_CURSE_INFO_TARGET_KEYS,
         "true_name_fragments": APPROVED_NAMELESS_CURSE_TRUE_NAME_FRAGMENTS,
