@@ -44,3 +44,11 @@ if (missingResources.length > 0) {
   for (const snippet of missingResources) console.error(`- ${snippet}`);
   process.exit(1);
 }
+
+const authScreenSource = readFileSync(resolve("src/features/auth/AuthScreen.tsx"), "utf8");
+for (const snippet of ["login(", "signup(", "ApiClientError", "navigate(\"/lobby\")"]) {
+  if (!authScreenSource.includes(snippet)) {
+    console.error(`AuthScreen missing API snippet: ${snippet}`);
+    process.exit(1);
+  }
+}

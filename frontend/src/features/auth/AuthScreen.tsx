@@ -1,5 +1,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { ApiClientError } from "../../shared/api/client";
+import { login, signup } from "../../shared/api/resources";
 import styles from "./AuthScreen.module.css";
 
 type AuthMode = "login" | "signup" | "password-reset";
@@ -12,16 +14,16 @@ const copyByMode = {
   login: {
     kicker: "계정 확인",
     title: "로그인",
-    description: "의식 기록은 Spring Boot 인증 API가 연결되면 계정에 보관됩니다.",
+    description: "의식 기록은 HttpOnly cookie 기반 Django 인증 세션에 보관됩니다.",
     submitLabel: "로그인",
-    notice: "로그인 API 연결 전 임시 화면입니다.",
+    notice: "로그인 정보를 확인하고 있습니다.",
   },
   signup: {
     kicker: "새 기록 생성",
     title: "회원가입",
-    description: "HttpOnly cookie 기반 인증 연결 전까지는 화면 흐름만 확인합니다.",
+    description: "가입 후 로그인 화면에서 새 세션을 시작합니다.",
     submitLabel: "회원가입",
-    notice: "회원가입 API 연결 전 임시 화면입니다.",
+    notice: "회원가입 정보를 확인하고 있습니다.",
   },
   "password-reset": {
     kicker: "계정 복구",
@@ -35,6 +37,7 @@ const copyByMode = {
 export function AuthScreen({ mode }: AuthScreenProps) {
   const navigate = useNavigate();
   const [notice, setNotice] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const copy = copyByMode[mode];
   const isSignup = mode === "signup";
   const isPasswordReset = mode === "password-reset";
@@ -62,9 +65,46 @@ export function AuthScreen({ mode }: AuthScreenProps) {
     ];
   }, [isPasswordReset, isSignup]);
 
-  const submitForm = (event: FormEvent<HTMLFormElement>) => {
+  const submitForm = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const form = new FormData(event.currentTarget);
+
+    if (isPasswordReset) {
+      setNotice(copy.notice);
+      return;
+    }
+
+    setIsSubmitting(true);
     setNotice(copy.notice);
+
+    try {
+      const email = getRequiredFormString(form, "email");
+      const password = getRequiredFormString(form, "password");
+
+      if (isSignup) {
+        const passwordConfirm = getRequiredFormString(form, "password-confirm");
+        if (password !== passwordConfirm) {
+          setNotice("비밀번호 확인이 일치하지 않습니다.");
+          return;
+        }
+
+        await signup({
+          email,
+          nickname: getRequiredFormString(form, "nickname"),
+          password,
+        });
+        setNotice("회원가입이 완료되었습니다. 로그인해주세요.");
+        navigate("/login");
+        return;
+      }
+
+      await login({ email, password });
+      navigate("/lobby");
+    } catch (error) {
+      setNotice(formatAuthError(error));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -85,8 +125,8 @@ export function AuthScreen({ mode }: AuthScreenProps) {
             </label>
           ))}
 
-          <button className={styles.submitButton} type="submit">
-            {copy.submitLabel}
+          <button className={styles.submitButton} type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "처리 중" : copy.submitLabel}
           </button>
         </form>
 
@@ -106,4 +146,26 @@ export function AuthScreen({ mode }: AuthScreenProps) {
       </section>
     </main>
   );
+}
+
+function getRequiredFormString(form: FormData, key: string): string {
+  const value = form.get(key);
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function formatAuthError(error: unknown): string {
+  if (error instanceof ApiClientError) {
+    if (error.code === "LOGIN_RATE_LIMITED") {
+      return "로그인 실패가 반복되어 잠시 후 다시 시도해야 합니다.";
+    }
+    if (error.code === "INVALID_CREDENTIALS") {
+      return "이메일 또는 비밀번호가 올바르지 않습니다.";
+    }
+    if (error.code === "VALIDATION_ERROR") {
+      return "입력값을 다시 확인해주세요.";
+    }
+    return error.message || error.code;
+  }
+
+  return "요청 처리 중 문제가 발생했습니다.";
 }
