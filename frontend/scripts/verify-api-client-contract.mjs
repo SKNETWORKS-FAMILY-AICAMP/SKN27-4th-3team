@@ -71,3 +71,18 @@ for (const [name, source, snippets] of [
     }
   }
 }
+
+const resultSource = readFileSync(resolve("src/features/result/ResultScreen.tsx"), "utf8");
+const profileSource = readFileSync(resolve("src/features/profile/ProfileSummaryScreen.tsx"), "utf8");
+
+for (const [name, source, snippets] of [
+  ["ResultScreen", resultSource, ["getMatchResult(", "llm_summary", "story_result_text"]],
+  ["ProfileSummaryScreen", profileSource, ["getProfileMe(", "style_summary", "public_record"]],
+]) {
+  for (const snippet of snippets) {
+    if (!source.includes(snippet)) {
+      console.error(`${name} missing API snippet: ${snippet}`);
+      process.exit(1);
+    }
+  }
+}
