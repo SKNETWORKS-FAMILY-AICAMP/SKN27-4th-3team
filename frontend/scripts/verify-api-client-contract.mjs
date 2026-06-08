@@ -52,3 +52,22 @@ for (const snippet of ["login(", "signup(", "ApiClientError", "navigate(\"/lobby
     process.exit(1);
   }
 }
+
+const storySource = readFileSync(resolve("src/features/story/StoryCasesScreen.tsx"), "utf8");
+const prologueSource = readFileSync(resolve("src/features/prologue/PrologueScreen.tsx"), "utf8");
+const matchRouteSource = readFileSync(resolve("src/routes/match/MatchRoute.tsx"), "utf8");
+const duelSource = readFileSync(resolve("src/features/match/RitualDuelScreen.tsx"), "utf8");
+
+for (const [name, source, snippets] of [
+  ["StoryCasesScreen", storySource, ["listStoryCases(", "navigate(\"/prologue\""]],
+  ["PrologueScreen", prologueSource, ["startStoryMatch(", "client_request_id", "crypto.randomUUID"]],
+  ["MatchRoute", matchRouteSource, ["submitTurn(", "generateTurnLlmText("]],
+  ["RitualDuelScreen", duelSource, ["turnSubmitPayload", "llm_text"]],
+]) {
+  for (const snippet of snippets) {
+    if (!source.includes(snippet)) {
+      console.error(`${name} missing API snippet: ${snippet}`);
+      process.exit(1);
+    }
+  }
+}

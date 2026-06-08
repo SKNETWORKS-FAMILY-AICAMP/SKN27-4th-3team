@@ -9,8 +9,13 @@ const PROTOTYPE_SCRIPT_ID = "mirror-guest-prototype-script";
 
 type PrototypeEndingPayload = Record<string, string | number | boolean | null | undefined>;
 
-type PrototypeTurnRequest = {
+export type PrototypeTurnRequest = {
   playerAction: string;
+  turnSubmitPayload?: {
+    action_code: string;
+    info_target_key?: string | null;
+    client_nonce: string;
+  };
   options: Record<string, unknown>;
   state: {
     turn: number;
@@ -22,7 +27,17 @@ type PrototypeTurnRequest = {
   };
 };
 
-type PrototypeTurnResultProvider = (request: PrototypeTurnRequest) => Promise<unknown> | unknown;
+type PrototypeLlmTextPayload = {
+  llm_text?: {
+    enabled: boolean;
+    text: string | null;
+    display_slot: string | null;
+  };
+};
+
+export type PrototypeTurnResultProvider = (
+  request: PrototypeTurnRequest,
+) => Promise<(Record<string, unknown> & PrototypeLlmTextPayload) | unknown> | (Record<string, unknown> & PrototypeLlmTextPayload) | unknown;
 
 type RitualDuelScreenProps = {
   fadeIn?: boolean;

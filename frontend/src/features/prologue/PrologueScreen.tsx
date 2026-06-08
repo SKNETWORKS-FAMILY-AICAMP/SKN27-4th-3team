@@ -1,11 +1,18 @@
 import { CSSProperties, MouseEvent, useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { ApiClientError } from "../../shared/api/client";
+import { startStoryMatch } from "../../shared/api/resources";
 import styles from "./PrologueScreen.module.css";
 import { prologueScenes } from "./prologueScenes";
 
 const DETAIL_REVEAL_DELAY_MS = 260;
 const NEXT_SCENE_FADE_MS = 880;
 const MATCH_FADE_MS = 1850;
+const DEFAULT_CASE_ID = "mirror_guest";
+
+type PrologueRouteState = {
+  caseId?: string;
+};
 
 function getTypingDelay(previousCharacter: string) {
   if (previousCharacter === "\n") {
@@ -21,11 +28,16 @@ function getTypingDelay(previousCharacter: string) {
 
 export function PrologueScreen() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const routeState = location.state as PrologueRouteState | null;
+  const caseId = routeState?.caseId || DEFAULT_CASE_ID;
   const transitionTimerRef = useRef<number | null>(null);
   const [sceneIndex, setSceneIndex] = useState(0);
   const [visibleCharacters, setVisibleCharacters] = useState(0);
   const [isDetailVisible, setIsDetailVisible] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
+  const [isStartingMatch, setIsStartingMatch] = useState(false);
+  const [startError, setStartError] = useState("");
 
   const scene = prologueScenes[sceneIndex];
   const isFinalScene = sceneIndex === prologueScenes.length - 1;
@@ -73,8 +85,26 @@ export function PrologueScreen() {
     return undefined;
   }, [isDetailVisible, isLeaving, isMainComplete, scene.main, visibleCharacters]);
 
+  const startMatchAndNavigate = useCallback(async () => {
+    setIsStartingMatch(true);
+    setStartError("");
+
+    try {
+      const data = await startStoryMatch(caseId, {
+        client_request_id: createClientRequestId(),
+        player_display_name: null,
+      });
+      navigate(`/matches/${data.match.match_id}`, { state: { fromPrologueTransition: true } });
+    } catch (error) {
+      setIsLeaving(false);
+      setStartError(formatStartMatchError(error));
+    } finally {
+      setIsStartingMatch(false);
+    }
+  }, [caseId, navigate]);
+
   const advanceScene = useCallback(() => {
-    if (isLeaving) {
+    if (isLeaving || isStartingMatch) {
       return;
     }
 
@@ -87,7 +117,7 @@ export function PrologueScreen() {
     setIsLeaving(true);
     transitionTimerRef.current = window.setTimeout(() => {
       if (isFinalScene) {
-        navigate("/matches/prototype-mirror-guest", { state: { fromPrologueTransition: true } });
+        void startMatchAndNavigate();
         return;
       }
 
@@ -96,11 +126,11 @@ export function PrologueScreen() {
       setIsLeaving(false);
       setSceneIndex((current) => Math.min(current + 1, prologueScenes.length - 1));
     }, isFinalScene ? MATCH_FADE_MS : NEXT_SCENE_FADE_MS);
-  }, [isFinalScene, isLeaving, isSceneComplete, navigate, scene.main.length]);
+  }, [isFinalScene, isLeaving, isSceneComplete, isStartingMatch, scene.main.length, startMatchAndNavigate]);
 
   const skipPrologue = useCallback((event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
-    if (isLeaving) {
+    if (isLeaving || isStartingMatch) {
       return;
     }
 
@@ -110,9 +140,9 @@ export function PrologueScreen() {
 
     setIsLeaving(true);
     transitionTimerRef.current = window.setTimeout(() => {
-      navigate("/matches/prototype-mirror-guest", { state: { fromPrologueTransition: true } });
+      void startMatchAndNavigate();
     }, 720);
-  }, [isLeaving, navigate]);
+  }, [isLeaving, isStartingMatch, startMatchAndNavigate]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -147,17 +177,36 @@ export function PrologueScreen() {
       <div className={styles.noise} aria-hidden="true" />
 
       <button className={styles.skipButton} type="button" onClick={skipPrologue}>
-        전체 건너뛰기
+        {isStartingMatch ? "사건 준비 중" : "전체 건너뛰기"}
       </button>
 
       <section className={styles.textPanel} aria-live="polite">
         <p className={styles.mainText}>{visibleMain}</p>
         <p className={`${styles.detailText} ${isDetailVisible ? styles.isVisible : ""}`}>
-          {scene.detail}
+          {startError || scene.detail}
         </p>
       </section>
 
       <div className={`${styles.continueMark} ${isSceneComplete ? styles.isVisible : ""}`} aria-hidden="true" />
     </main>
   );
+}
+
+function createClientRequestId(): string {
+  if (window.crypto?.randomUUID) {
+    return window.crypto.randomUUID();
+  }
+
+  return `story-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function formatStartMatchError(error: unknown): string {
+  if (error instanceof ApiClientError) {
+    if (error.code === "AUTH_REQUIRED" || error.code === "SESSION_EXPIRED") {
+      return "로그인 후 사건을 시작할 수 있습니다.";
+    }
+    return error.message || error.code;
+  }
+
+  return "사건을 시작하지 못했습니다.";
 }
