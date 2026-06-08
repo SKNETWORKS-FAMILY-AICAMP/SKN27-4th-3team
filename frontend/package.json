@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test:contracts": "node scripts/verify-official-enums.mjs",
     "test:api-client": "node scripts/verify-api-client-contract.mjs",
-    "test:nameless-flow": "node scripts/verify-nameless-curse-flow-contract.mjs"
+    "test:nameless-flow": "node scripts/verify-nameless-curse-flow-contract.mjs",
+    "test:realtime-contract": "node scripts/verify-realtime-contract.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

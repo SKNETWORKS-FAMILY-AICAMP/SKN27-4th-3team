@@ -216,6 +216,9 @@ def test_match_detail_service_resolves_expired_awaiting_turn_before_formatting()
     assert "player_action_code=None" in timeout_helper_source
     assert "ActionSubmission.objects.filter(" in timeout_helper_source
     assert "_resolve_and_persist_turn(" in timeout_helper_source
+    assert "turn_result" in timeout_helper_source
+    assert "current_turn_resolution.turn_result is not None" in detail_source
+    assert "realtime.publish_turn_resolved(" in detail_source
     assert "turn.resolved_at = now" in persist_helper_source
     assert "_turn_result_payload(" in persist_helper_source
     assert "TurnResult.objects.create(" in persist_helper_source

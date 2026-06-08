@@ -13,7 +13,7 @@ updated: "2026-06-08"
 
 AC-2A를 production 배포 방향으로 확정한다.
 
-확정된 방향은 단일 VM + Docker Compose + Gunicorn + Caddy reverse proxy + PostgreSQL이다.
+확정된 방향은 단일 VM + Docker Compose + Gunicorn ASGI worker + Caddy reverse proxy + PostgreSQL + Redis이다.
 
 이 결정은 MVP runtime 완성 범위와 production 배포 준비 범위를 함께 다룬다. 프론트엔드는 official API와 연결하고, 백엔드는 production container runtime을 준비하며, 배포는 단일 VM에서 재현 가능한 수동 절차로 시작한다.
 
@@ -32,14 +32,14 @@ AC-2A를 production 배포 방향으로 확정한다.
 - official API 외 endpoint를 임의로 추가하지 않는다. 예외는 운영 health check인 `GET /healthz`뿐이며, 이 endpoint는 product API envelope와 분리한다.
 - frontend는 access token과 refresh token을 localStorage/sessionStorage에 저장하지 않는다.
 - frontend API 호출은 HttpOnly cookie와 CSRF 정책을 전제로 `credentials: "include"`를 사용한다.
-- production Django entrypoint는 `gunicorn backend.config.wsgi:application`이다.
+- production Django entrypoint는 `gunicorn backend.config.asgi:application --worker-class uvicorn_worker.UvicornWorker`이다.
 - Django `runserver`는 local/dev 전용이며 production entrypoint로 사용하지 않는다.
 - Caddy만 VM 외부 포트 `80`과 `443`에 노출한다.
-- Django API `8000`과 PostgreSQL `5432`는 Docker 내부 네트워크에서만 사용한다.
+- Django API `8000`, PostgreSQL `5432`, Redis `6379`는 Docker 내부 네트워크에서만 사용한다.
 - migration은 컨테이너 시작 시 자동 실행하지 않는다. 배포 절차의 명시 단계에서 실행한다.
 - 실제 secret 값을 repository에 저장하지 않는다. repository에는 `.env.production.example`만 둔다.
 - Caddy에서 온 요청만 trusted proxy로 취급한다. 임의 client가 보낸 `X-Forwarded-*` header는 신뢰하지 않는다.
-- RAG 자동 ingest, KAG, PvP, WebSocket, Redis, Kubernetes, CI/CD 자동화, registry push, managed DB 전환은 이번 구현 범위에서 제외한다.
+- RAG 자동 ingest, KAG, PvP, Redis matchmaking, WebSocket action submit, Kubernetes, CI/CD 자동화, registry push, managed DB 전환은 이번 구현 범위에서 제외한다.
 
 ## 아키텍처
 
@@ -52,20 +52,21 @@ Caddy web container
   |-- serves frontend dist
   |-- reverse_proxy /api/* -> api:8000
   |-- reverse_proxy /healthz -> api:8000
+  |-- reverse_proxy /ws/* -> api:8000
   v
-Gunicorn Django api container
-  |
-  v
-PostgreSQL pgvector container
+Gunicorn ASGI Django api container
+  |-- PostgreSQL pgvector container
+  |-- Redis channel layer container
 ```
 
 ## 서비스 구성
 
 | 서비스 | 이미지/런타임 | 책임 |
 |---|---|---|
-| `web` | Caddy final image | HTTPS, frontend 정적 파일 서빙, `/api/*`와 `/healthz` reverse proxy |
-| `api` | Python slim + Gunicorn | Django API, Auth, Match, Story, LLM runtime boundary |
+| `web` | Caddy final image | HTTPS, frontend 정적 파일 서빙, `/api/*`, `/healthz`, `/ws/*` reverse proxy |
+| `api` | Python slim + Gunicorn ASGI worker | Django API, Auth, Match, Story, LLM runtime boundary, WebSocket endpoint |
 | `postgres` | `pgvector/pgvector:pg17` | PostgreSQL DB와 pgvector extension 기반 저장소 |
+| `redis` | official Redis image | Django Channels channel layer |
 
 production image tag는 VM 내부 local image tag로 시작한다.
 
@@ -88,9 +89,9 @@ Django static/media public serving은 이번 MVP production 구현 범위에서 
 
 `api` 이미지는 backend runtime용으로 구성한다.
 
-- `requirements.txt`에 `gunicorn`을 추가한다.
-- production command는 `gunicorn backend.config.wsgi:application --bind 0.0.0.0:8000`이다.
-- local/dev compose는 기존처럼 command override로 `runserver`를 사용할 수 있다.
+- `requirements.txt`에 `gunicorn`, `uvicorn-worker`, `channels`, `channels_redis`를 추가한다.
+- production command는 `gunicorn backend.config.asgi:application --worker-class uvicorn_worker.UvicornWorker --bind 0.0.0.0:8000`이다.
+- local/dev compose는 개발용 uvicorn ASGI runtime을 사용할 수 있다.
 - API response envelope와 Auth cookie/CSRF 정책은 기존 official contract를 따른다.
 
 ## Env와 Secret
@@ -112,6 +113,10 @@ production env template은 `ops/env/production.env.example`에 둔다.
 - `POSTGRES_PASSWORD`
 - `POSTGRES_HOST=postgres`
 - `POSTGRES_PORT=5432`
+- `REDIS_URL`
+- `REDIS_PASSWORD`
+- `WEBSOCKET_HEARTBEAT_SECONDS`
+- `WEBSOCKET_CONNECT_TIMEOUT_SECONDS`
 - `DJANGO_TRUSTED_PROXY_IPS`
 
 `LLM_API_KEY`는 실제 provider 호출이 필요할 때만 주입한다. 값이 없으면 승인된 LLM fallback 정책을 따른다.
@@ -157,7 +162,7 @@ docker compose -f ops/docker/docker-compose.production.yml run --rm api python b
 1. VM에 repository와 Docker Compose 환경을 준비한다.
 2. 실제 production env 파일을 VM에만 배치한다.
 3. production image를 build한다.
-4. PostgreSQL을 기동한다.
+4. PostgreSQL과 Redis를 기동한다.
 5. migration을 명시적으로 실행한다.
 6. `web`과 `api`를 기동한다.
 7. `/healthz`와 핵심 API smoke check를 수행한다.
@@ -176,6 +181,7 @@ CI/CD 자동화와 image registry push는 이번 범위에서 제외한다.
 - production compose 기동 통과
 - production migration apply 통과
 - `/healthz` 200 확인
+- authenticated `/ws/matches/{match_id}` snapshot smoke 확인
 - frontend route와 `/api/v1` proxy smoke 확인
 
 ## 남은 운영 리스크

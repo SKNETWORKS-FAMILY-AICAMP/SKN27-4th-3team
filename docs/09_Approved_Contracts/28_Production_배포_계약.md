@@ -19,10 +19,11 @@ AC-2A를 production 배포 기준으로 사용한다.
 |---|---|
 | 배포 형태 | 단일 VM |
 | 실행 구성 | Docker Compose |
-| Backend runtime | Django + Gunicorn WSGI |
+| Backend runtime | Django + Gunicorn ASGI worker |
 | Reverse proxy | Caddy |
 | TLS | Caddy 자동 HTTPS |
 | DB | Compose 내부 PostgreSQL `pgvector/pgvector:pg17` |
+| Redis | Compose 내부 Redis channel layer |
 | Frontend | Vite build 결과를 Caddy가 정적 서빙 |
 | image tag | VM 내부 local image tag |
 | 배포 절차 | 수동 배포 우선 |
@@ -38,12 +39,13 @@ production Compose는 아래 서비스를 가진다.
 | 서비스 | 책임 |
 |---|---|
 | `web` | Caddy reverse proxy, HTTPS, frontend 정적 파일 서빙 |
-| `api` | Gunicorn 기반 Django API |
+| `api` | Gunicorn ASGI worker 기반 Django API/WebSocket |
 | `postgres` | PostgreSQL + pgvector 저장소 |
+| `redis` | Django Channels channel layer |
 
 `web`만 VM 외부 포트 `80`, `443`에 노출한다.
 
-`api:8000`과 `postgres:5432`는 Docker 내부 네트워크에서만 접근한다.
+`api:8000`, `postgres:5432`, `redis:6379`는 Docker 내부 네트워크에서만 접근한다.
 
 production image tag는 아래 기준을 따른다.
 
@@ -61,12 +63,14 @@ registry push는 이번 구현 범위에서 제외한다.
 production backend entrypoint는 아래 기준을 따른다.
 
 ```text
-gunicorn backend.config.wsgi:application --bind 0.0.0.0:8000
+gunicorn backend.config.asgi:application --worker-class uvicorn_worker.UvicornWorker --bind 0.0.0.0:8000
 ```
 
 `runserver`는 local/dev 전용이다.
 
 production에서 `runserver`를 사용하지 않는다.
+
+WebSocket을 지원하기 위해 WSGI application이 아니라 ASGI application을 실행한다.
 
 ## Reverse proxy와 TLS
 
@@ -76,6 +80,7 @@ Caddy는 아래 책임을 가진다.
 - TLS 인증서 자동 발급과 갱신
 - frontend 정적 파일 서빙
 - `/api/*`를 Django API container로 proxy
+- `/ws/*`를 Django API container로 proxy
 - `/healthz`를 Django API container로 proxy
 
 domain은 실제 VM 환경변수로 주입한다.
@@ -115,6 +120,10 @@ repository에는 production env template만 저장한다.
 | `POSTGRES_PASSWORD` | production DB password, repository 저장 금지 |
 | `POSTGRES_HOST` | `postgres` |
 | `POSTGRES_PORT` | `5432` |
+| `REDIS_URL` | `redis://redis:6379/0` 또는 password 포함 URL |
+| `REDIS_PASSWORD` | production Redis password, repository 저장 금지 |
+| `WEBSOCKET_HEARTBEAT_SECONDS` | WebSocket heartbeat 주기 |
+| `WEBSOCKET_CONNECT_TIMEOUT_SECONDS` | 프론트 WebSocket 연결 대기 시간 |
 | `DJANGO_TRUSTED_PROXY_IPS` | Caddy internal proxy IP allowlist |
 
 `LLM_API_KEY`는 실제 LLM provider 호출을 사용할 때만 VM 환경에 주입한다.
@@ -199,9 +208,10 @@ application log는 stdout/stderr를 기본으로 한다.
 5. PostgreSQL container를 기동한다.
 6. migration plan을 확인한다.
 7. migration을 명시적으로 실행한다.
-8. `api`와 `web` 서비스를 기동한다.
-9. `/healthz`를 확인한다.
-10. `/api/v1/auth/csrf`와 frontend route smoke check를 수행한다.
+8. `redis`를 기동한다.
+9. `api`와 `web` 서비스를 기동한다.
+10. `/healthz`를 확인한다.
+11. `/api/v1/auth/csrf`, `/ws/matches/{match_id}`, frontend route smoke check를 수행한다.
 
 ## Rollback
 
@@ -221,12 +231,14 @@ DB schema rollback 자동화는 이번 범위에 포함하지 않는다.
 - production Compose 파일
 - Caddy 설정
 - frontend build를 포함한 web image
-- Gunicorn backend runtime
+- Gunicorn ASGI worker backend runtime
 - production env template
 - health check endpoint
 - trusted proxy allowlist 처리
 - production 배포 문서
 - MVP frontend official API 연결
+- Redis service
+- WebSocket reverse proxy
 
 이번 AC-2A 구현에서 제외한다.
 
@@ -236,8 +248,6 @@ DB schema rollback 자동화는 이번 범위에 포함하지 않는다.
 - CI/CD 자동 배포
 - backup 자동화
 - monitoring/alerting platform
-- WebSocket
-- Redis
 - PvP
 - KAG
 - RAG 서버 시작 자동 ingest
@@ -251,3 +261,5 @@ DB schema rollback 자동화는 이번 범위에 포함하지 않는다.
 - `X-Forwarded-*` header를 allowlist 없이 신뢰하지 않는다.
 - frontend에 access token 또는 refresh token 저장소를 만들지 않는다.
 - RAG, LLM, KAG가 룰, 승패, 인증, 권한, 공식 단서를 바꾸게 하지 않는다.
+- Redis를 PostgreSQL 대체 저장소나 token 저장소로 사용하지 않는다.
+- WebSocket으로 authoritative action submit을 처리하지 않는다.

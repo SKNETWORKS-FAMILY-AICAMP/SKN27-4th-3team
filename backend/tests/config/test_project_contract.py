@@ -12,6 +12,11 @@ EXPECTED_REQUIREMENTS = {
     "Django": "5.2.14",
     "djangorestframework": "3.17.1",
     "gunicorn": "23.0.0",
+    "uvicorn": "0.49.0",
+    "uvicorn-worker": "0.4.0",
+    "websockets": "16.0",
+    "channels": "4.3.2",
+    "channels_redis": "4.3.0",
     "PyJWT": "2.13.0",
     "jsonschema": "4.26.0",
     "pgvector": "0.4.2",
@@ -32,8 +37,6 @@ EXPECTED_PROJECT_APPS = {
 FORBIDDEN_APP_FRAGMENTS = (
     "backend.apps.realtime",
     "backend.apps.knowledge",
-    "channels",
-    "redis",
     "corsheaders",
 )
 
@@ -147,8 +150,40 @@ def test_settings_install_only_in_scope_mvp_apps():
     installed_apps = set(settings.INSTALLED_APPS)
 
     assert EXPECTED_PROJECT_APPS.issubset(installed_apps)
+    assert "channels" in installed_apps
     for forbidden_fragment in FORBIDDEN_APP_FRAGMENTS:
         assert not any(forbidden_fragment in app for app in installed_apps)
+
+
+def test_settings_configure_redis_channel_layer_from_env(monkeypatch):
+    monkeypatch.setenv("REDIS_URL", "redis://contract-redis:6379/7")
+
+    settings = _reload_settings_module()
+
+    assert settings.REDIS_URL == "redis://contract-redis:6379/7"
+    assert settings.CHANNEL_LAYERS == {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {"hosts": ["redis://contract-redis:6379/7"]},
+        }
+    }
+
+    monkeypatch.delenv("REDIS_URL", raising=False)
+    _reload_settings_module()
+
+
+def test_settings_configure_websocket_runtime_timeouts_from_env(monkeypatch):
+    monkeypatch.setenv("WEBSOCKET_HEARTBEAT_SECONDS", "31")
+    monkeypatch.setenv("WEBSOCKET_CONNECT_TIMEOUT_SECONDS", "9")
+
+    settings = _reload_settings_module()
+
+    assert settings.WEBSOCKET_HEARTBEAT_SECONDS == 31
+    assert settings.WEBSOCKET_CONNECT_TIMEOUT_SECONDS == 9
+
+    monkeypatch.delenv("WEBSOCKET_HEARTBEAT_SECONDS", raising=False)
+    monkeypatch.delenv("WEBSOCKET_CONNECT_TIMEOUT_SECONDS", raising=False)
+    _reload_settings_module()
 
 
 def test_out_of_scope_realtime_app_scaffold_does_not_exist():

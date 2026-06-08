@@ -4,15 +4,16 @@
 
 **Goal:** AC-2A 계약에 맞춰 MVP frontend API runtime과 단일 VM production Docker Compose 배포 구성을 구현한다.
 
-**Architecture:** Backend는 Django/Gunicorn API container와 Caddy reverse proxy를 분리하고, Caddy만 외부 `80/443`을 노출한다. Frontend는 기존 prototype wrapper를 유지하되 shared API client를 통해 official `/api/v1` endpoint와 연결한다. Production 운영 endpoint인 `/healthz`만 official API envelope 밖에 둔다.
+**Architecture:** Backend는 Django/Gunicorn API container와 Caddy reverse proxy를 분리하고, Caddy만 외부 `80/443`을 노출한다. Frontend는 기존 prototype wrapper를 유지하되 shared API client를 통해 official `/api/v1` endpoint와 연결한다. Production 운영 endpoint인 `/healthz`만 official API envelope 밖에 둔다. Redis/Channels/WebSocket 포함 범위는 후속 승인본인 `29_MVP_Realtime_Redis_WebSocket_계약`이 이 계획의 오래된 제외 메모를 supersede한다.
 
-**Tech Stack:** Django 5.2, DRF, Gunicorn, PostgreSQL pgvector, Docker Compose, Caddy, React 18, TypeScript, Vite.
+**Tech Stack:** Django 5.2, DRF, Gunicorn, PostgreSQL pgvector, Redis, Channels, Docker Compose, Caddy, React 18, TypeScript, Vite.
 
 ---
 
 ## Source Of Truth
 
 - `docs/09_Approved_Contracts/28_Production_배포_계약.md`
+- `docs/09_Approved_Contracts/29_MVP_Realtime_Redis_WebSocket_계약.md`
 - `docs/superpowers/specs/2026-06-08-ac-2a-production-deployment-design.md`
 - `api-spec/pilot-mvp-api.official.json`
 - `docs/09_Approved_Contracts/20_Django_Auth_보안_계약.md`
@@ -939,6 +940,6 @@ Expected: containers stop. Named volume remains unless explicitly removed.
 ## Plan Self-Review
 
 - Spec coverage: AC-2A backend runtime, Caddy, frontend static serving, production env, trusted proxy, health check, migration, frontend official API connection, and verification are covered.
-- Deliberate exclusions: Kubernetes, managed DB, registry push, CI/CD, backup automation, monitoring platform, WebSocket, Redis, PvP, KAG, RAG auto ingest.
+- Deliberate exclusions: Kubernetes, managed DB, registry push, CI/CD, backup automation, monitoring platform, PvP WebSocket, Redis matchmaking, KAG, RAG auto ingest.
 - Type consistency: frontend wrappers use official endpoint names and screen tasks consume those wrappers.
 - Safety: no actual secret values are written. Production env uses `change-me` placeholders only.

@@ -30,6 +30,19 @@ def _origin_allowlist_env(name: str) -> list[str]:
     return origins
 
 
+def _positive_int_env(name: str, *, default: int) -> int:
+    raw_value = os.getenv(name)
+    if raw_value is None:
+        return default
+    try:
+        value = int(raw_value)
+    except ValueError as exc:
+        raise RuntimeError(f"{name} must be a positive integer") from exc
+    if value <= 0:
+        raise RuntimeError(f"{name} must be a positive integer")
+    return value
+
+
 if ENVIRONMENT == "production" and not os.getenv("DJANGO_SECRET_KEY"):
     raise RuntimeError("DJANGO_SECRET_KEY is required in production")
 
@@ -47,6 +60,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "channels",
     "backend.apps.accounts.apps.AccountsConfig",
     "backend.apps.profiles.apps.ProfilesConfig",
     "backend.apps.game_rules.apps.GameRulesConfig",
@@ -153,3 +167,16 @@ AUTH_PASSWORD_VALIDATORS = [
 RAG_EMBEDDING_MODEL_ID = os.getenv("RAG_EMBEDDING_MODEL_ID")
 RAG_DEFAULT_TOP_K = 6
 RAG_DEFAULT_SCORE_THRESHOLD = 0.72
+
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+WEBSOCKET_HEARTBEAT_SECONDS = _positive_int_env("WEBSOCKET_HEARTBEAT_SECONDS", default=25)
+WEBSOCKET_CONNECT_TIMEOUT_SECONDS = _positive_int_env(
+    "WEBSOCKET_CONNECT_TIMEOUT_SECONDS",
+    default=6,
+)
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {"hosts": [REDIS_URL]},
+    }
+}

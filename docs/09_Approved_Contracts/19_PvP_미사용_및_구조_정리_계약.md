@@ -22,9 +22,9 @@ PvP 모드는 없다.
 
 - 실시간 PvP 매치
 - PvP 매칭 대기열
-- WebSocket room
+- PvP WebSocket room
 - Redis 기반 matchmaking
-- reconnect window
+- PvP reconnect window
 - PvP ranking
 - PvP abuse/cheat 운영 대응 자동화
 - human vs human match 확장 전제
@@ -38,7 +38,7 @@ PvP 모드는 없다.
 | Turn | player submission과 apparition/server action을 기준으로 resolve한다. |
 | Action Submission | MVP에서는 player participant의 제출 중복 방지에 집중한다. |
 | Auth | PvP 전제가 아니라 일반 웹 서비스 보안 기준으로 보수적으로 유지한다. |
-| Realtime | 1차 MVP와 후속 범위 모두 구현하지 않는다. |
+| Realtime | PvP realtime은 구현하지 않는다. AI 스토리 상태 동기화 realtime은 [[09_Approved_Contracts/29_MVP_Realtime_Redis_WebSocket_계약]]만 따른다. |
 | Redis/Channels/WebSocket | PvP 목적으로 도입하지 않는다. |
 
 ## 유지할 보안 기준

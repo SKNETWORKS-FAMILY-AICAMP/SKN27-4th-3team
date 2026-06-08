@@ -24,6 +24,7 @@ updated: "2026-06-04"
 - 로컬 실행 구성
 - AI Profile 행동 이벤트와 스타일 지표 계산 기준
 - RAG 검색용 `retrieval` 앱, 문서/청크/검색 로그 구조
+- AI 스토리 매치 상태 동기화를 위한 Redis/Channels/WebSocket runtime
 
 프로젝트 최상위 폴더 구조는 [[09_Approved_Contracts/23_프로젝트_폴더_구조_계약]]을 따른다.
 
@@ -33,8 +34,10 @@ updated: "2026-06-04"
 - LLM provider, prompt, generation 구현
 - LLM 생성 문장 품질 정책
 - KAG 구현
-- WebSocket/PvP/realtime 구현
+- PvP realtime 구현
 - 운영 배포 자동화
+
+AI 스토리 매치 상태 동기화를 위한 Redis/Channels/WebSocket 구현은 [[09_Approved_Contracts/29_MVP_Realtime_Redis_WebSocket_계약]]을 따른다.
 
 단, Dockerfile을 이용한 백엔드 이미지 빌드와 Django 배포 준비는 후속 작업 후보로 둔다.
 
@@ -54,6 +57,8 @@ production 배포 구현은 아래 항목이 별도 계약으로 확정되기 �
 - health check 기준
 - reverse proxy, TLS, domain 구성
 - CI/CD 또는 운영 배포 자동화 방식
+
+위 production 배포 기준은 [[09_Approved_Contracts/28_Production_배포_계약]]과 [[09_Approved_Contracts/29_MVP_Realtime_Redis_WebSocket_계약]]에서 확정되었다.
 
 PvP 모드는 없다.
 
@@ -152,17 +157,16 @@ official 명세는 [[09_Approved_Contracts/05_API_명세_관리_기준]], [[09_A
 - Django API
 - PostgreSQL
 - PostgreSQL `pgvector`
+- Redis channel layer
 
 아래 컨테이너는 1차 MVP 로컬 실행 구성에서 제외한다.
 
-- Redis
-- WebSocket/Channels 전용 worker
 - LLM provider emulator
 - KAG 전용 저장소
 
 `ops/docker/backend.Dockerfile`은 백엔드 이미지 빌드의 시작점으로 둘 수 있다.
 
-다만 현재 로컬/dev 기준 entrypoint는 Django `runserver`이며, production 배포 entrypoint로 확정하지 않는다.
+다만 현재 로컬/dev 기준 entrypoint는 WebSocket을 처리할 수 있는 Django ASGI runtime이며, production 배포 entrypoint는 [[09_Approved_Contracts/28_Production_배포_계약]]과 [[09_Approved_Contracts/29_MVP_Realtime_Redis_WebSocket_계약]]을 따른다.
 
 production 배포용 이미지는 별도 배포 계약에서 WSGI/ASGI server, process model, static 처리, health check, migration 전략을 확정한 뒤 조정한다.
 

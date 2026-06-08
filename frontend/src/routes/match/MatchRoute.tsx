@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import { RitualDuelScreen, PrototypeTurnRequest } from "../../features/match/RitualDuelScreen";
 import { ApiClientError } from "../../shared/api/client";
+import { connectMatchRealtime, type MatchRealtimeEvent } from "../../shared/api/realtime";
 import { generateTurnLlmText, getMatchDetail, submitTurn } from "../../shared/api/resources";
 import type { LlmText, MatchState, TurnResult } from "../../shared/types/api";
 
@@ -31,6 +32,44 @@ export function MatchRoute() {
     loadMatchState();
     return () => {
       cancelled = true;
+    };
+  }, [matchId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function refreshFromRest() {
+      try {
+        const latest = await getMatchDetail(matchId);
+        if (!cancelled) setInitialMatchState(latest.match);
+      } catch {
+        if (!cancelled) setInitialMatchState((current) => current);
+      }
+    }
+
+    const connection = connectMatchRealtime(matchId, {
+      onEvent(event: MatchRealtimeEvent) {
+        if (cancelled) return;
+        if (event.type === "match.snapshot" || event.type === "turn.resolved") {
+          setInitialMatchState(event.match);
+          return;
+        }
+        if (event.type === "result.ready") {
+          setInitialMatchState(event.match);
+          return;
+        }
+        if (event.type === "llm.text.ready") {
+          return;
+        }
+      },
+      onError() {
+        void refreshFromRest();
+      },
+    });
+
+    return () => {
+      cancelled = true;
+      connection.close();
     };
   }, [matchId]);
 

@@ -14,6 +14,10 @@
     reverse_proxy api:8000
   }
 
+  handle /ws/* {
+    reverse_proxy api:8000
+  }
+
   handle {
     try_files {path} /index.html
     file_server

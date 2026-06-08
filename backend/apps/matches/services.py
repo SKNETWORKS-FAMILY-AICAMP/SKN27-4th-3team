@@ -188,6 +188,12 @@ class PersistedTurnResolutionResult:
     turn_result: dict[str, Any]
 
 
+@dataclass(frozen=True)
+class CurrentTurnResolutionResult:
+    turn: Turn
+    turn_result: dict[str, Any] | None = None
+
+
 def get_match_detail(
     *,
     raw_access_token: str | None,
@@ -219,7 +225,7 @@ def get_match_detail(
             match_id=match_id,
             participant_type=PARTICIPANT_TYPE_APPARITION,
         )
-        current_turn = _resolve_expired_current_turn_if_needed(
+        current_turn_resolution = _resolve_expired_current_turn_if_needed(
             user_id=user_id,
             match=match,
             turn=_get_current_turn(match_id=match_id),
@@ -230,16 +236,24 @@ def get_match_detail(
 
     from backend.apps.story.services import format_match_state
 
-    return MatchDetailResult(
-        match=format_match_state(
-            session=session,
-            match=match,
-            turn=current_turn,
-            human_participant=human_participant,
-            apparition_participant=apparition_participant,
-            now=now,
-        )
+    match_payload = format_match_state(
+        session=session,
+        match=match,
+        turn=current_turn_resolution.turn,
+        human_participant=human_participant,
+        apparition_participant=apparition_participant,
+        now=now,
     )
+    if current_turn_resolution.turn_result is not None:
+        from backend.apps.matches import realtime
+
+        realtime.publish_turn_resolved(
+            match_id=public_match_id,
+            turn_result=current_turn_resolution.turn_result,
+            match=match_payload,
+        )
+
+    return MatchDetailResult(match=match_payload)
 
 
 def get_match_result(
@@ -334,6 +348,13 @@ def generate_turn_llm_text(
         user_id=user_id,
         display_slot=display_slot or DEFAULT_TURN_LLM_DISPLAY_SLOT,
         apparition_alias=case_definition["apparition_alias"],
+    )
+    from backend.apps.matches import realtime
+
+    realtime.publish_llm_text_ready(
+        match_id=public_match_id,
+        turn_id=public_turn_id,
+        llm_text=llm_text,
     )
     return TurnLlmTextResult(llm_text=llm_text)
 
@@ -505,17 +526,27 @@ def submit_match_turn(
 
         from backend.apps.story.services import format_match_state
 
-        return TurnSubmitResult(
-            turn_result=persisted_result.turn_result,
-            match=format_match_state(
-                session=session,
-                match=match,
-                turn=persisted_result.next_turn,
-                human_participant=human_participant,
-                apparition_participant=apparition_participant,
-                now=now,
-            ),
+        match_payload = format_match_state(
+            session=session,
+            match=match,
+            turn=persisted_result.next_turn,
+            human_participant=human_participant,
+            apparition_participant=apparition_participant,
+            now=now,
         )
+        submit_result = TurnSubmitResult(
+            turn_result=persisted_result.turn_result,
+            match=match_payload,
+        )
+
+        from backend.apps.matches import realtime
+
+        realtime.publish_turn_resolved(
+            match_id=public_match_id,
+            turn_result=submit_result.turn_result,
+            match=submit_result.match,
+        )
+        return submit_result
 
 
 def _resolve_expired_current_turn_if_needed(
@@ -526,11 +557,11 @@ def _resolve_expired_current_turn_if_needed(
     human_participant: MatchParticipant,
     apparition_participant: MatchParticipant,
     now,
-) -> Turn:
+) -> CurrentTurnResolutionResult:
     if match.status != MATCH_STATUS_ACTIVE:
-        return turn
+        return CurrentTurnResolutionResult(turn=turn)
     if turn.status != TURN_STATUS_AWAITING_PLAYER:
-        return turn
+        return CurrentTurnResolutionResult(turn=turn)
 
     try:
         turn = Turn.objects.select_for_update().get(id=turn.id)
@@ -538,14 +569,14 @@ def _resolve_expired_current_turn_if_needed(
         raise _match_not_found() from exc
 
     if turn.status != TURN_STATUS_AWAITING_PLAYER:
-        return _get_current_turn(match_id=match.id)
+        return CurrentTurnResolutionResult(turn=_get_current_turn(match_id=match.id))
     if now <= turn.deadline_at:
-        return turn
+        return CurrentTurnResolutionResult(turn=turn)
     if ActionSubmission.objects.filter(
         turn_id=turn.id,
         participant_id=human_participant.id,
     ).exists():
-        return _get_current_turn(match_id=match.id)
+        return CurrentTurnResolutionResult(turn=_get_current_turn(match_id=match.id))
 
     case_id = _get_match_case_id(match_id=match.id)
     case_definition = _story_case_definition(case_id=case_id)
@@ -565,7 +596,10 @@ def _resolve_expired_current_turn_if_needed(
         info_target_key=None,
         now=now,
     )
-    return persisted_result.next_turn
+    return CurrentTurnResolutionResult(
+        turn=persisted_result.next_turn,
+        turn_result=persisted_result.turn_result,
+    )
 
 
 def _resolve_and_persist_turn(

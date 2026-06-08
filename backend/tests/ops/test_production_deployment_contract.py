@@ -22,15 +22,24 @@ def _service_block(source: str, service_name: str) -> str:
     return "\n".join(lines[start:end])
 
 
-def test_requirements_include_gunicorn_for_production_wsgi():
-    assert "gunicorn==" in _read("requirements.txt")
+def test_requirements_include_asgi_runtime_for_production_websocket():
+    source = _read("requirements.txt")
+
+    assert "gunicorn==" in source
+    assert "uvicorn==" in source
+    assert "uvicorn-worker==" in source
+    assert "websockets==" in source
+    assert "channels==" in source
+    assert "channels_redis==" in source
 
 
-def test_backend_production_dockerfile_uses_gunicorn_not_runserver():
+def test_backend_production_dockerfile_uses_gunicorn_asgi_worker_not_runserver():
     source = _read("ops/docker/backend.production.Dockerfile")
 
     assert "gunicorn" in source
-    assert "backend.config.wsgi:application" in source
+    assert "backend.config.asgi:application" in source
+    assert "uvicorn_worker.UvicornWorker" in source
+    assert "backend.config.wsgi:application" not in source
     assert "runserver" not in source
 
 
@@ -47,6 +56,7 @@ def test_caddyfile_proxies_api_and_healthz_to_internal_api():
 
     assert "reverse_proxy api:8000" in source
     assert "handle_path /api/*" in source or "handle /api/*" in source
+    assert "handle /ws/*" in source
     assert "handle /healthz" in source
 
 
@@ -57,8 +67,12 @@ def test_production_compose_exposes_only_web_ports_and_keeps_api_db_internal():
     assert "443:443" in source
     assert "8000:8000" not in source
     assert "5432:5432" not in source
+    assert "6379:6379" not in source
     assert "172.28.0.2" in source
     assert "DJANGO_TRUSTED_PROXY_IPS=172.28.0.2" in source
+    assert "REDIS_URL=" in source
+    assert "redis:6379/0" in source
+    assert "REDIS_PASSWORD" in source
 
 
 def test_production_compose_reserves_caddy_proxy_ip_when_db_starts_first():
@@ -67,6 +81,7 @@ def test_production_compose_reserves_caddy_proxy_ip_when_db_starts_first():
     assert "ipv4_address: 172.28.0.2" in _service_block(source, "web")
     assert "ipv4_address: 172.28.0.10" in _service_block(source, "api")
     assert "ipv4_address: 172.28.0.11" in _service_block(source, "postgres")
+    assert "ipv4_address: 172.28.0.12" in _service_block(source, "redis")
 
 
 def test_production_env_template_has_no_real_secret_values():
@@ -75,5 +90,9 @@ def test_production_env_template_has_no_real_secret_values():
     assert "DJANGO_ENV=production" in source
     assert "DJANGO_DEBUG=false" in source
     assert "DJANGO_SECURE_COOKIES=true" in source
+    assert "REDIS_URL=redis://:change-me-production-redis-password@redis:6379/0" in source
+    assert "REDIS_PASSWORD=change-me-production-redis-password" in source
+    assert "WEBSOCKET_HEARTBEAT_SECONDS=25" in source
+    assert "WEBSOCKET_CONNECT_TIMEOUT_SECONDS=6" in source
     assert "change-me" in source
     assert "actual-secret" not in source

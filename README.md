@@ -8,10 +8,10 @@
 
 | 구분 | 항목 | 상태 |
 |---|---|---|
-| 현재 사용/구현 | Django, Django REST Framework, PostgreSQL 기준 RDB 모델, `retrieval` 앱, PostgreSQL `pgvector` 준비, AI Profile 지표, 공식 API schema, pytest 계약 테스트, local/dev Compose, AC-2A production Compose, Gunicorn, Caddy | 1차 MVP 백엔드/RAG/AI Profile과 수동 production 배포 후보 구성 |
-| 현재 사용/부분 구현 | React/TypeScript/Vite 프론트엔드, route 기반 화면, prototype 의식 결투 화면, 공식 enum 계약 검증 | 화면/프로토타입 구현은 있으나 Django API 전면 연결은 아직 제한적 |
+| 현재 사용/구현 | Django, Django REST Framework, PostgreSQL 기준 RDB 모델, `retrieval` 앱, PostgreSQL `pgvector` 준비, AI Profile 지표, Redis/Channels/WebSocket 상태 동기화, 공식 API schema, pytest 계약 테스트, local/dev Compose, AC-2A production Compose, Gunicorn ASGI worker, Caddy | 1차 MVP 백엔드/RAG/AI Profile/realtime과 수동 production 배포 후보 구성 |
+| 현재 사용/구현 | React/TypeScript/Vite 프론트엔드, route 기반 화면, prototype 의식 결투 화면, 공식 API client, 공식 enum/API/realtime 계약 검증 | 승인된 official API 기준 주요 사용자 흐름 연결 |
 | 현재 사용/부분 구현 | LLM runtime 앱, `llm_generations`, 턴 연출 문구, 결과 요약, 결전 대화 endpoint, Groq 호환 adapter | LLM은 판정 권위 없이 보조 문장만 담당하며 실제 provider 호출은 환경변수와 API key에 의존 |
-| 후순위/미사용 | KAG 구현, GraphDB, Redis/Channels/WebSocket, PvP 모드, 운영 배포 자동화 | 1차 MVP 제외 또는 도입 대상 아님 |
+| 후순위/미사용 | KAG 구현, GraphDB, PvP 모드, Redis matchmaking, WebSocket action submit, 운영 배포 자동화 | 1차 MVP 제외 또는 도입 대상 아님 |
 
 GraphDB는 사용하지 않습니다. KAG도 1차 MVP 구현 범위가 아니며, 후속 도입 시에도 현재 문서 기준은 별도 GraphDB가 아니라 RDB 기반 후보 구조입니다.
 
@@ -29,7 +29,8 @@ GraphDB는 사용하지 않습니다. KAG도 1차 MVP 구현 범위가 아니며
 | 프로젝트 폴더 구조 계약 | [`docs/09_Approved_Contracts/23_프로젝트_폴더_구조_계약.md`](docs/09_Approved_Contracts/23_%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8_%ED%8F%B4%EB%8D%94_%EA%B5%AC%EC%A1%B0_%EA%B3%84%EC%95%BD.md) | 최상위 폴더와 팀별 경계 |
 | 무명의 저주 사건 계약 | [`docs/09_Approved_Contracts/26_무명의_저주_사건_계약.md`](docs/09_Approved_Contracts/26_%EB%AC%B4%EB%AA%85%EC%9D%98_%EC%A0%80%EC%A3%BC_%EC%82%AC%EA%B1%B4_%EA%B3%84%EC%95%BD.md) | `nameless_curse` 사건 seed와 피티 공식 진명 기준 |
 | 플레이어 이름/결전/RAG 계약 | [`docs/09_Approved_Contracts/27_플레이어_이름_무명의_저주_결전_RAG_계약.md`](docs/09_Approved_Contracts/27_%ED%94%8C%EB%A0%88%EC%9D%B4%EC%96%B4_%EC%9D%B4%EB%A6%84_%EB%AC%B4%EB%AA%85%EC%9D%98_%EC%A0%80%EC%A3%BC_%EA%B2%B0%EC%A0%84_RAG_%EA%B3%84%EC%95%BD.md) | 플레이어 표시 이름, 진명 조각 2개 결전, RAG source plan |
-| Production 배포 계약 | [`docs/09_Approved_Contracts/28_Production_배포_계약.md`](docs/09_Approved_Contracts/28_Production_%EB%B0%B0%ED%8F%AC_%EA%B3%84%EC%95%BD.md) | AC-2A 단일 VM + Docker Compose + Gunicorn + Caddy + PostgreSQL 기준 |
+| Production 배포 계약 | [`docs/09_Approved_Contracts/28_Production_배포_계약.md`](docs/09_Approved_Contracts/28_Production_%EB%B0%B0%ED%8F%AC_%EA%B3%84%EC%95%BD.md) | AC-2A 단일 VM + Docker Compose + Gunicorn ASGI worker + Caddy + PostgreSQL + Redis 기준 |
+| Realtime 계약 | [`docs/09_Approved_Contracts/29_MVP_Realtime_Redis_WebSocket_계약.md`](docs/09_Approved_Contracts/29_MVP_Realtime_Redis_WebSocket_%EA%B3%84%EC%95%BD.md) | AI 스토리 매치 상태 동기화용 Redis/Channels/WebSocket 기준 |
 | 공식 API 스키마 | [`api-spec/pilot-mvp-api.official.jsonc`](api-spec/pilot-mvp-api.official.jsonc) | 사람이 읽는 공식 API 계약 |
 | 도구용 API 스키마 | [`api-spec/pilot-mvp-api.official.json`](api-spec/pilot-mvp-api.official.json) | strict JSON 생성본 |
 
@@ -44,12 +45,13 @@ GraphDB는 사용하지 않습니다. KAG도 1차 MVP 구현 범위가 아니며
 
 | 영역 | 사용 기술 | 현재 범위 |
 |---|---|---|
-| Backend | Django, Django REST Framework, ASGI/WSGI | 1차 MVP 백엔드 scaffold와 도메인 골격 |
-| Frontend | React, TypeScript, Vite, React Router | route 기반 화면과 prototype 의식 결투 화면. Django API 전면 연결은 후속 작업 |
+| Backend | Django, Django REST Framework, ASGI | 1차 MVP 백엔드 scaffold, 도메인 골격, WebSocket runtime |
+| Frontend | React, TypeScript, Vite, React Router | route 기반 화면, prototype 의식 결투 화면, 승인된 official API 주요 흐름 연결 |
 | Auth | Django custom user, JWT access/refresh token, HttpOnly cookie, CSRF | 인증 API scaffold와 refresh token 보안 모델 |
 | RDB | PostgreSQL 기준 Django model | Auth, Profile, Match, Story, AI Profile 저장 구조 |
 | RAG 저장/검색 준비 | PostgreSQL + `pgvector`, `retrieval` 앱 | 문서/chunk/embedding/query log 구조 |
 | LLM runtime | backend `llm` 앱, top-level `llm/generation` adapter | 판정 이후 보조 텍스트 생성과 생성 로그 저장 |
+| Realtime | Redis, Django Channels, native WebSocket | AI 스토리 매치 snapshot, turn resolved, LLM text, result ready 이벤트 |
 | JSON 검증 | `jsonschema` | JSONField payload 검증 경계 |
 | API 계약 | official JSONC/JSON schema | 프론트와 백엔드가 공유할 endpoint/response shape |
 | 테스트 | pytest, frontend contract script, Vite build | 승인 계약 기반 백엔드/LLM 테스트와 프론트 enum/build 검증 |
@@ -59,11 +61,11 @@ GraphDB는 사용하지 않습니다. KAG도 1차 MVP 구현 범위가 아니며
 
 | 항목 | 문서상 상태 | README 반영 기준 |
 |---|---|---|
-| Frontend API 전면 연결 | 프론트 기술 계약은 승인됨 | 현재 저장소에는 화면/프로토타입 구현이 있으나 공식 API 전면 연결은 후속 작업 |
+| Password reset | official API 범위 밖 | 화면 route는 있으나 1차 MVP official API에는 endpoint가 없음 |
 | LLM provider 운영 연결 | LLM runtime 계약은 승인됨 | adapter와 backend 기록 구조는 있으나 실제 호출은 `LLM_API_KEY`, `LLM_MODEL_ID` 등 환경 설정 필요 |
 | KAG | 1차 MVP 제외 | 구현하지 않음 |
 | GraphDB | 사용하지 않음 | 도입 대상 아님 |
-| Redis/Channels/WebSocket | PvP 모드 없음, realtime 구현 없음 | 1차 MVP 로컬 실행 구성에서 제외 |
+| Redis/Channels/WebSocket | AI 스토리 상태 동기화는 포함, PvP realtime은 제외 | WebSocket은 보조 알림 경로이며 REST/PostgreSQL이 권위 유지 |
 | 운영 배포 자동화 | 1차 MVP 제외 | 현재 범위 아님 |
 
 ## Docker와 배포 상태
@@ -72,13 +74,13 @@ Docker 구성은 local/dev와 production을 분리합니다.
 
 | 구분 | 주요 파일 | 기준 |
 |---|---|---|
-| local/dev | `ops/docker/docker-compose.yml`, `ops/docker/backend.Dockerfile`, `ops/env/backend.env.example` | Django `runserver`, API `8000`, PostgreSQL `5432`를 로컬 개발용으로 사용 |
-| production | `ops/docker/docker-compose.production.yml`, `ops/docker/backend.production.Dockerfile`, `ops/docker/web.production.Dockerfile`, `ops/docker/Caddyfile.production`, `ops/env/production.env.example` | AC-2A 기준. `web`만 `80/443`을 노출하고, `api`와 `postgres`는 Docker 내부 네트워크에서만 사용 |
+| local/dev | `ops/docker/docker-compose.yml`, `ops/docker/backend.Dockerfile`, `ops/env/backend.env.example` | ASGI API `8000`, PostgreSQL `5432`, Redis `6379`를 로컬 개발용으로 사용 |
+| production | `ops/docker/docker-compose.production.yml`, `ops/docker/backend.production.Dockerfile`, `ops/docker/web.production.Dockerfile`, `ops/docker/Caddyfile.production`, `ops/env/production.env.example` | AC-2A 기준. `web`만 `80/443`을 노출하고, `api`, `postgres`, `redis`는 Docker 내부 네트워크에서만 사용 |
 
-production backend runtime은 Gunicorn WSGI입니다. production에서 Django `runserver`를 사용하지 않습니다.
+production backend runtime은 Gunicorn ASGI worker입니다. production에서 Django `runserver`를 사용하지 않습니다.
 
 ```text
-gunicorn backend.config.wsgi:application --bind 0.0.0.0:8000
+gunicorn backend.config.asgi:application --worker-class uvicorn_worker.UvicornWorker --bind 0.0.0.0:8000
 ```
 
 ### Local/dev 실행 순서
@@ -87,7 +89,7 @@ gunicorn backend.config.wsgi:application --bind 0.0.0.0:8000
 
 ```powershell
 docker compose -f ops\docker\docker-compose.yml build api
-docker compose -f ops\docker\docker-compose.yml up -d postgres
+docker compose -f ops\docker\docker-compose.yml up -d postgres redis
 docker compose -f ops\docker\docker-compose.yml up -d api
 docker compose -f ops\docker\docker-compose.yml exec api python backend/manage.py migrate --noinput
 
@@ -125,7 +127,18 @@ Copy-Item ops\env\production.env.example ops\env\production.env
 | `DJANGO_CSRF_TRUSTED_ORIGINS` | `https://<APP_DOMAIN>` 기준 |
 | `DJANGO_CORS_ALLOWED_ORIGINS` | 같은 origin이면 `https://<APP_DOMAIN>` 기준 |
 | `POSTGRES_PASSWORD` | production DB password. repository 저장 금지 |
+| `REDIS_URL` | production Redis 접속 URL. password 포함 권장 |
+| `REDIS_PASSWORD` | production Redis password. repository 저장 금지 |
+| `WEBSOCKET_HEARTBEAT_SECONDS` | WebSocket heartbeat 주기 |
+| `WEBSOCKET_CONNECT_TIMEOUT_SECONDS` | WebSocket 연결 대기 시간 |
 | `LLM_API_KEY` | 실제 LLM provider 호출을 사용할 때만 주입 |
+
+프론트엔드 build 환경변수는 아래 기준을 사용합니다. 같은 origin으로 Caddy가 `/ws/*`를 proxy하는 production 배포에서는 기본값으로 충분합니다.
+
+| 변수 | 기준 |
+|---|---|
+| `VITE_WEBSOCKET_BASE_URL` | 선택값. API/WebSocket origin이 분리될 때만 `wss://<host>` 형식으로 지정 |
+| `VITE_WEBSOCKET_CONNECT_TIMEOUT_SECONDS` | 선택값. 프론트 WebSocket 연결 대기 시간. 기본값은 6초 |
 
 저장소 루트에서 실행합니다.
 
@@ -133,7 +146,7 @@ Copy-Item ops\env\production.env.example ops\env\production.env
 $env:SKN27_PRODUCTION_ENV_FILE="../env/production.env"
 
 docker compose -f ops\docker\docker-compose.production.yml --env-file ops\env\production.env build
-docker compose -f ops\docker\docker-compose.production.yml --env-file ops\env\production.env up -d postgres
+docker compose -f ops\docker\docker-compose.production.yml --env-file ops\env\production.env up -d postgres redis
 docker compose -f ops\docker\docker-compose.production.yml --env-file ops\env\production.env run --rm api python backend/manage.py migrate --plan
 docker compose -f ops\docker\docker-compose.production.yml --env-file ops\env\production.env run --rm api python backend/manage.py migrate --noinput
 docker compose -f ops\docker\docker-compose.production.yml --env-file ops\env\production.env up -d api web
@@ -156,6 +169,15 @@ Invoke-RestMethod https://<APP_DOMAIN>/healthz
 Invoke-RestMethod https://<APP_DOMAIN>/api/v1/auth/csrf
 ```
 
+WebSocket endpoint는 같은 origin 기준 `/ws/matches/{match_id}`입니다. 인증은 기존 HttpOnly access cookie를 사용하므로 프론트엔드가 token을 저장하거나 query string으로 전달하지 않습니다.
+
+local Vite dev server에서 API와 WebSocket origin이 분리되어 있다면 `frontend/.env.local`에 아래처럼 지정합니다.
+
+```text
+VITE_WEBSOCKET_BASE_URL=ws://localhost:8000
+VITE_WEBSOCKET_CONNECT_TIMEOUT_SECONDS=6
+```
+
 ## MVP 범위
 
 ### 포함
@@ -173,14 +195,15 @@ Invoke-RestMethod https://<APP_DOMAIN>/api/v1/auth/csrf
 - PostgreSQL `pgvector` 기반 검색 준비
 - AI 스토리 기준 Auth/Match/Participant/Turn 구조
 - LLM 결과 요약, 턴 연출 문구, 결전 대화 보조 텍스트와 생성 로그
+- Redis/Channels/WebSocket 기반 AI 스토리 매치 상태 동기화
 - React/Vite 기반 화면과 prototype 의식 결투 화면
 - AC-2A 기준 수동 production 배포 후보 구성
 
 ### 제외
 
 - `우물 밑의 목소리`, `문밖의 어머니` 구현
-- 프론트엔드 공식 API 전면 연결 완료
 - PvP 모드, 매칭 대기열, WebSocket 대전
+- Redis matchmaking, WebSocket action submit
 - KAG 구현
 - GraphDB 도입
 - LLM이 승패, 행동 성공/실패, 자원, 진명 조각, 거짓 단서, 괴이 행동 선택을 결정하는 기능
@@ -206,8 +229,11 @@ ops/       Docker Compose, env template, production Dockerfile, Caddy 설정
 ```mermaid
 flowchart LR
     Client["React/Vite Frontend 또는 API Client"] --> API["Django API"]
+    Client --> WS["/ws/matches/{match_id}"]
+    WS --> API
     API --> Rules["game_rules 결정적 룰 엔진"]
     API --> RDB["PostgreSQL RDB"]
+    API --> Redis["Redis Channels Layer"]
     API --> Retrieval["retrieval RAG 앱"]
     Retrieval --> Vector["PostgreSQL pgvector"]
     API --> Profile["AI Profile 지표 계산"]
@@ -472,18 +498,18 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 
 ## 화면 설계 상태
 
-프론트엔드 실제 구현은 현재 저장소에 있습니다. 다만 현재 구현은 React/Vite route 기반 화면과 prototype 의식 결투 화면 중심이며, Django official API와의 전면 연결은 아직 완료 상태로 보지 않습니다.
+프론트엔드 실제 구현은 현재 저장소에 있습니다. 현재 구현은 React/Vite route 기반 화면과 prototype 의식 결투 화면을 사용하며, 승인된 official API의 주요 사용자 흐름과 연결되어 있습니다.
 
 `docs/09_Approved_Contracts/15_프론트_기술_계약_오너_확정안.md`에는 프론트 기술 스택, route, API client, cookie/CSRF 연결, endpoint 사용 기준이 승인되어 있습니다. `docs/04_Frontend/*` 문서는 화면 기획 참고 문서입니다.
 
 | 화면 | 문서상 목적 | 현재 상태 |
 |---|---|---|
-| 로그인/회원가입 | 인증 | React 화면 존재. official auth API 연결은 후속 검증 필요 |
+| 로그인/회원가입 | 인증 | React 화면과 official auth API 연결 |
 | 로비 | 모드 선택 | React 화면 존재 |
 | AI 사건 선택/브리핑 | 승인된 사건 진입 | React 화면 존재. 정적/prototype 흐름 중심 |
 | 의식 결투 | 턴 상태 조회와 행동 제출 | prototype HTML/CSS/JS를 React route에서 로드 |
-| 결과 | 승패, 로그, 스타일 요약 조회 | React 화면 존재. 실제 result API 연결은 후속 검증 필요 |
-| 프로필 | 내 프로필과 전적 요약 조회 | React 화면 존재. `GET /api/v1/profile/me` 연결은 후속 작업 |
+| 결과 | 승패, 로그, 스타일 요약 조회 | React 화면과 `GET /api/v1/matches/{match_id}/result` 연결 |
+| 프로필 | 내 프로필과 전적 요약 조회 | React 화면과 `GET /api/v1/profile/me` 연결 |
 | PvP 매칭 | 실시간 상대 찾기 | 도입 대상 아님 |
 
 ## 테스트 시나리오와 결과
@@ -572,7 +598,7 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 8. 화면 설계 상태
    - 프론트 API 연결 계약은 존재
    - React/Vite 화면과 prototype 의식 결투 화면은 존재
-   - Django official API 전면 연결은 후속 검증 필요
+   - 승인된 Django official API 주요 흐름 연결
    - `docs/04_Frontend/*`는 화면 기획 참고 문서
 9. 테스트 시나리오와 결과
    - 백엔드/LLM 계약 테스트 범위
@@ -590,7 +616,8 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 - LLM runtime, 생성 로그, 보조 텍스트 endpoint 구현
 - React/Vite 화면과 prototype 의식 결투 화면 구현
 - `nameless_curse` 초기 공개명은 `거울 속 목소리`로 마스킹하고, `피티`는 공식 진명/결과/진명 단서 맥락에서만 사용
-- AC-2A 기준 production Compose, Gunicorn backend runtime, Caddy reverse proxy, `/healthz`, production env template 구성
+- AC-2A 기준 production Compose, Gunicorn ASGI worker backend runtime, Caddy reverse proxy, Redis service, `/healthz`, production env template 구성
+- `/ws/matches/{match_id}` WebSocket endpoint와 프론트 매치 route 구독/fallback 구현
 - 백엔드/LLM 테스트와 프론트 계약/build 검증 통과 기록
 
 남은 리스크:
@@ -598,10 +625,9 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 - 실제 VM 도메인, DNS, Caddy TLS 발급은 배포 환경에서 별도 확인이 필요합니다.
 - production secret과 DB password는 VM 전용 env 파일에만 저장해야 하며 repository에 커밋하지 않습니다.
 - production DB backup 자동화와 monitoring/alerting platform은 이번 범위에 포함하지 않습니다.
-- `auth.logout`은 계약상 endpoint가 있으나 현재 501 상태를 유지합니다.
-- 프론트엔드 화면은 있으나 Django official API 전면 연결은 완료 상태가 아닙니다.
 - 실제 LLM provider 호출은 환경변수, API key, model id, 네트워크 조건 검증이 필요합니다.
-- KAG, WebSocket, PvP 모드는 1차 MVP 제외 또는 도입 대상이 아닙니다.
+- Redis/WebSocket은 AI 스토리 상태 동기화용이며 PvP, matchmaking, authoritative action submit 용도로 사용하지 않습니다.
+- KAG와 PvP 모드는 1차 MVP 제외 또는 도입 대상이 아닙니다.
 - 사용자 화면에서 RAG 출처를 어떻게 표시할지는 프론트 구현 단계에서 확정이 필요합니다.
 - 발표용 시각적 ERD 산출물은 아직 없습니다.
 
@@ -614,3 +640,4 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 - [`docs/09_Approved_Contracts/21_AI_스토리_시간초과_판정_계약.md`](docs/09_Approved_Contracts/21_AI_%EC%8A%A4%ED%86%A0%EB%A6%AC_%EC%8B%9C%EA%B0%84%EC%B4%88%EA%B3%BC_%ED%8C%90%EC%A0%95_%EA%B3%84%EC%95%BD.md)
 - [`docs/09_Approved_Contracts/22_API_상세_Schema_계약.md`](docs/09_Approved_Contracts/22_API_%EC%83%81%EC%84%B8_Schema_%EA%B3%84%EC%95%BD.md)
 - [`docs/09_Approved_Contracts/23_프로젝트_폴더_구조_계약.md`](docs/09_Approved_Contracts/23_%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8_%ED%8F%B4%EB%8D%94_%EA%B5%AC%EC%A1%B0_%EA%B3%84%EC%95%BD.md)
+- [`docs/09_Approved_Contracts/29_MVP_Realtime_Redis_WebSocket_계약.md`](docs/09_Approved_Contracts/29_MVP_Realtime_Redis_WebSocket_%EA%B3%84%EC%95%BD.md)

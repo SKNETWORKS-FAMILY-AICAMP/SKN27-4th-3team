@@ -24,8 +24,10 @@ services:
       - ${SKN27_PRODUCTION_ENV_FILE:-../env/production.env.example}
     environment:
       - DJANGO_TRUSTED_PROXY_IPS=172.28.0.2
+      - REDIS_URL=${REDIS_URL:-redis://:change-me-production-redis-password@redis:6379/0}
     depends_on:
       - postgres
+      - redis
     networks:
       production_net:
         ipv4_address: 172.28.0.10
@@ -39,6 +41,20 @@ services:
     networks:
       production_net:
         ipv4_address: 172.28.0.11
+
+  redis:
+    image: redis:7.4-alpine
+    command:
+      - redis-server
+      - --appendonly
+      - "no"
+      - --save
+      - ""
+      - --requirepass
+      - ${REDIS_PASSWORD:-change-me-production-redis-password}
+    networks:
+      production_net:
+        ipv4_address: 172.28.0.12
 
 volumes:
   skn27_postgres_data:

@@ -4,7 +4,7 @@ status: "needs-decision"
 type: "decision-log"
 source: "[[pilot]]"
 created: "2026-05-30"
-updated: "2026-06-04"
+updated: "2026-06-08"
 ---
 
 # MVP 확정 필요 항목
@@ -22,8 +22,10 @@ updated: "2026-06-04"
 - LLM runtime 범위: [[09_Approved_Contracts/25_LLM_Runtime_통합_계약]]
 - `nameless_curse` 별도 사건: [[09_Approved_Contracts/26_무명의_저주_사건_계약]]
 - 플레이어 표시 이름, 사건별 결전 조건, RAG source plan: [[09_Approved_Contracts/27_플레이어_이름_무명의_저주_결전_RAG_계약]]
+- production 배포 기준: [[09_Approved_Contracts/28_Production_배포_계약]]
+- Redis/Channels/WebSocket 상태 동기화 기준: [[09_Approved_Contracts/29_MVP_Realtime_Redis_WebSocket_계약]]
 
-따라서 이 문서의 오래된 `프론트엔드 구현과 LLM generation 구현 제외`, `거울 속의 손님 1종만 구현` 표현은 당시 결정 로그로 보고, 현재 구현 기준 판단은 승인본 목차의 D-940, D-950, D-960을 따른다.
+따라서 이 문서의 오래된 `프론트엔드 구현과 LLM generation 구현 제외`, `거울 속의 손님 1종만 구현`, `Redis/WebSocket 제외` 표현은 당시 결정 로그로 보고, 현재 구현 기준 판단은 승인본 목차의 D-940, D-950, D-960, D-970, D-980을 따른다.
 
 ## 제품 결정
 
@@ -171,8 +173,8 @@ LLM generation log와 retrieval log 연결 방식은 LLM generation 구현 담�
 | AI participant | `participant_type = human/apparition`, `user_id` nullable, `apparition_id` nullable |
 | JSONField 사용 | 결과 스냅샷, 로그 스냅샷, 룰/정책 스냅샷, 작은 정책 데이터에 제한 |
 | JSONField schema | 모든 payload에 `schema_version`, Python `jsonschema` 검증 |
-| 로컬 Docker Compose | Django API + PostgreSQL + `pgvector` |
-| 로컬 Docker Compose 제외 | Redis, WebSocket worker, LLM provider emulator, KAG 전용 저장소 |
+| 로컬 Docker Compose | Django ASGI API + PostgreSQL + `pgvector` + Redis |
+| 로컬 Docker Compose 제외 | 별도 WebSocket worker, LLM provider emulator, KAG 전용 저장소 |
 | local/dev Secure cookie | `Secure=false` 허용 |
 | production Secure cookie | `Secure=true` 필수 |
 | SameSite | `Lax` |

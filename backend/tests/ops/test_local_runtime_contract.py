@@ -8,9 +8,6 @@ BACKEND_DOCKERFILE = OPS_DIR / "docker" / "backend.Dockerfile"
 BACKEND_ENV_EXAMPLE = OPS_DIR / "env" / "backend.env.example"
 
 FORBIDDEN_RUNTIME_WORDS = (
-    "redis",
-    "channels",
-    "websocket",
     "llm-provider",
     "llm_provider",
     "kag-store",
@@ -30,10 +27,14 @@ def test_local_docker_compose_includes_only_approved_mvp_runtime_services():
     assert "services:" in compose
     assert "api:" in compose
     assert "postgres:" in compose
+    assert "redis:" in compose
     assert "pgvector/pgvector:" in compose
+    assert "redis:" in compose
     assert "backend.Dockerfile" in compose
     assert "8000:8000" in compose
     assert "5432:5432" in compose
+    assert "6379:6379" in compose
+    assert "REDIS_URL=redis://redis:6379/0" in compose
 
     lowered = compose.lower()
     for forbidden in FORBIDDEN_RUNTIME_WORDS:
@@ -46,9 +47,12 @@ def test_backend_dockerfile_uses_locked_requirements_and_django_entrypoint():
     assert "python:3.14" in dockerfile
     assert "requirements.txt" in dockerfile
     assert "pip install --no-cache-dir -r requirements.txt" in dockerfile
-    assert "backend/manage.py" in dockerfile
-    assert "runserver" in dockerfile
-    assert "0.0.0.0:8000" in dockerfile
+    assert "backend.config.asgi:application" in dockerfile
+    assert "uvicorn" in dockerfile
+    assert "--host" in dockerfile
+    assert "0.0.0.0" in dockerfile
+    assert "--port" in dockerfile
+    assert "8000" in dockerfile
 
 
 def test_backend_env_example_documents_required_local_runtime_values_without_real_secret():
@@ -67,6 +71,9 @@ def test_backend_env_example_documents_required_local_runtime_values_without_rea
         "POSTGRES_PASSWORD=change-me-local-db-password",
         "POSTGRES_HOST=postgres",
         "POSTGRES_PORT=5432",
+        "REDIS_URL=redis://redis:6379/0",
+        "WEBSOCKET_HEARTBEAT_SECONDS=25",
+        "WEBSOCKET_CONNECT_TIMEOUT_SECONDS=6",
         "RAG_EMBEDDING_MODEL_ID=text-embedding-3-small",
     )
     for key in required_keys:

@@ -13,4 +13,4 @@ COPY api-spec api-spec
 
 EXPOSE 8000
 
-CMD ["python", "backend/manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["python", "-m", "uvicorn", "backend.config.asgi:application", "--host", "0.0.0.0", "--port", "8000", "--reload"]
