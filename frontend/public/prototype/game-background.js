@@ -29,6 +29,7 @@ window.__mirrorGuestPrototypeCleanup = () => {
 
   window.clearInterval(window.gamePrototypeState?.state?.timerId);
   window.clearTimeout(window.gamePrototypeState?.state?.ambientDialogueTimer);
+  window.clearTimeout(window.gamePrototypeState?.state?.progressHintTimer);
   delete window.gamePrototypeState;
 };
 
@@ -90,6 +91,8 @@ const OFFICIAL_INFO_TARGET_KEY_BY_UI_TARGET = {
 const AMBIENT_DIALOGUE_START_DELAY_MS = 1400;
 const AMBIENT_DIALOGUE_INTERVAL_MS = 5200;
 const AMBIENT_DIALOGUE_END_DELAY_MS = 2600;
+const SERVER_WAIT_HINT_DELAY_MS = 2000;
+const INTERACTION_CUE_TEXT = "클릭 또는 Enter로 계속";
 
 const AMBIENT_DIALOGUE_LINES = [
   {
@@ -510,6 +513,10 @@ const dom = {
   systemLogStack: document.querySelector("[data-system-log-stack]"),
   spiritLogStack: document.querySelector("[data-spirit-log-stack]"),
   turnEndCue: document.querySelector("[data-turn-end-cue]"),
+  progressOverlay: document.querySelector("[data-progress-overlay]"),
+  progressTitle: document.querySelector("[data-progress-title]"),
+  progressDetail: document.querySelector("[data-progress-detail]"),
+  interactionCue: document.querySelector("[data-interaction-cue]"),
   dialogueArchiveToggle: document.querySelector("[data-dialogue-archive-toggle]"),
   dialogueArchivePanel: document.querySelector("[data-dialogue-archive-panel]"),
   dialogueArchiveClose: document.querySelector("[data-dialogue-archive-close]"),
@@ -599,7 +606,8 @@ const state = {
   isSubmitting: false,
   remainingSeconds: GAME_RULES.timerSeconds,
   timerId: 0,
-  advanceResolver: null
+  advanceResolver: null,
+  progressHintTimer: null
 };
 
 function clamp(value, min, max) {
@@ -680,6 +688,51 @@ function setTurnState(text) {
   if (!dom.turnState) return;
   dom.turnState.textContent = text || "";
   dom.turnState.hidden = !text;
+}
+
+function clearProgressHintTimer() {
+  if (!state.progressHintTimer) return;
+  window.clearTimeout(state.progressHintTimer);
+  state.progressHintTimer = null;
+}
+
+function renderProgressOverlay(title, detail = "") {
+  if (!dom.progressOverlay || !dom.progressTitle || !dom.progressDetail) return;
+  dom.progressTitle.textContent = title;
+  dom.progressDetail.textContent = detail;
+  dom.progressDetail.hidden = !detail;
+  dom.progressOverlay.hidden = false;
+}
+
+function setProgressOverlay(title, detail = "") {
+  clearProgressHintTimer();
+  renderProgressOverlay(title, detail);
+}
+
+function clearProgressOverlay() {
+  clearProgressHintTimer();
+  if (dom.progressOverlay) dom.progressOverlay.hidden = true;
+}
+
+function scheduleServerWaitHint() {
+  clearProgressHintTimer();
+  state.progressHintTimer = window.setTimeout(() => {
+    state.progressHintTimer = null;
+    renderProgressOverlay(
+      "서버 판정 대기 중...",
+      "응답이 길어져 최신 판정을 기다리고 있습니다."
+    );
+  }, SERVER_WAIT_HINT_DELAY_MS);
+}
+
+function showInteractionCue(text = INTERACTION_CUE_TEXT) {
+  if (!dom.interactionCue) return;
+  dom.interactionCue.textContent = text;
+  dom.interactionCue.hidden = false;
+}
+
+function hideInteractionCue() {
+  if (dom.interactionCue) dom.interactionCue.hidden = true;
 }
 
 function getSanityStage() {
@@ -1296,6 +1349,7 @@ function setDialogueArchiveOpen(isOpen) {
 function showTurnEndCue() {
   if (!dom.turnEndCue) return;
   state.turnEndAwaitingAdvance = true;
+  showInteractionCue();
   dom.turnEndCue.hidden = false;
   dom.turnEndCue.classList.remove("is-active");
   void dom.turnEndCue.offsetWidth;
@@ -1304,6 +1358,7 @@ function showTurnEndCue() {
 
 function hideTurnEndCue() {
   state.turnEndAwaitingAdvance = false;
+  hideInteractionCue();
   if (dom.turnEndCue) {
     dom.turnEndCue.hidden = true;
     dom.turnEndCue.classList.remove("is-active");
@@ -1322,6 +1377,7 @@ function showPlayerLog(text, { allowCorruption = true, channel = "protagonist" }
   }
 
   state.logAwaitingAdvance = true;
+  showInteractionCue();
   pushDialogueLog(channel, channel === "system" ? "기록" : "나", rendered, corrupted ? "corrupted" : channel);
 
   if (dom.playerLog && dom.playerLogText) {
@@ -1333,6 +1389,7 @@ function showPlayerLog(text, { allowCorruption = true, channel = "protagonist" }
 
 function hidePlayerLog() {
   state.logAwaitingAdvance = false;
+  hideInteractionCue();
   if (dom.playerLog) dom.playerLog.hidden = true;
 }
 
@@ -1409,12 +1466,14 @@ function showEnemyVoice(enemy) {
   dom.enemyAction.textContent = enemy.action;
   dom.enemyText.textContent = display.text;
   state.logAwaitingAdvance = true;
+  showInteractionCue();
   pushDialogueLog("spirit", "???", display.text, display.source === "llm" ? "llm" : "spirit");
   dom.enemyVoice.hidden = true;
 }
 
 function hideEnemyVoice() {
   state.logAwaitingAdvance = false;
+  hideInteractionCue();
   if (dom.enemyVoice) dom.enemyVoice.hidden = true;
 }
 

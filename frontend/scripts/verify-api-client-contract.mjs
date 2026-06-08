@@ -63,12 +63,18 @@ const storySource = readFileSync(resolve("src/features/story/StoryCasesScreen.ts
 const prologueSource = readFileSync(resolve("src/features/prologue/PrologueScreen.tsx"), "utf8");
 const matchRouteSource = readFileSync(resolve("src/routes/match/MatchRoute.tsx"), "utf8");
 const duelSource = readFileSync(resolve("src/features/match/RitualDuelScreen.tsx"), "utf8");
+const prototypeHtmlSource = readFileSync(resolve("public/prototype/game-background.html"), "utf8");
+const prototypeCssSource = readFileSync(resolve("public/prototype/game-background.css"), "utf8");
+const prototypeScriptSource = readFileSync(resolve("public/prototype/game-background.js"), "utf8");
 
 for (const [name, source, snippets] of [
   ["StoryCasesScreen", storySource, ["listStoryCases(", "navigate(\"/prologue\""]],
   ["PrologueScreen", prologueSource, ["startStoryMatch(", "client_request_id", "crypto.randomUUID"]],
   ["MatchRoute", matchRouteSource, ["submitTurn(", "generateTurnLlmText(", "ApiClientError", "getMatchDetail(", "TURN_DEADLINE_EXPIRED"]],
   ["RitualDuelScreen", duelSource, ["turnSubmitPayload", "llm_text"]],
+  ["PrototypeHtml", prototypeHtmlSource, ["data-progress-overlay", "data-interaction-cue"]],
+  ["PrototypeCss", prototypeCssSource, [".progress-overlay", ".interaction-cue"]],
+  ["PrototypeScript", prototypeScriptSource, ["showInteractionCue(", "setProgressOverlay(", "서버 판정 대기 중", "클릭 또는 Enter로 계속"]],
 ]) {
   for (const snippet of snippets) {
     if (!source.includes(snippet)) {
