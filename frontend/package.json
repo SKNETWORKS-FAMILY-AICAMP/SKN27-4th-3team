@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test:contracts": "node scripts/verify-official-enums.mjs"
+    "test:contracts": "node scripts/verify-official-enums.mjs",
+    "test:api-client": "node scripts/verify-api-client-contract.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
