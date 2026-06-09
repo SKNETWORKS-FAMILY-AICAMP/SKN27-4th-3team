@@ -22,6 +22,7 @@ function forbidPattern(name, source, pattern, message) {
 const realtimeSource = read("src/shared/api/realtime.ts");
 const realtimeConstantsSource = read("src/shared/constants/realtime.ts");
 const matchRouteSource = read("src/routes/match/MatchRoute.tsx");
+const viteConfigSource = read("vite.config.ts");
 const readProjectFile = (path) => read(`../${path}`);
 const realtimeContractSource = readProjectFile("docs/09_Approved_Contracts/29_MVP_Realtime_Redis_WebSocket_계약.md");
 const readmeSource = readProjectFile("README.md");
@@ -33,7 +34,7 @@ for (const snippet of [
   "new WebSocket(",
   "VITE_WEBSOCKET_BASE_URL",
   "window.location.protocol",
-  "/ws/matches/",
+  "/api/v1/ws/matches",
   "encodeURIComponent(matchId)",
   "DEFAULT_WEBSOCKET_CONNECT_TIMEOUT_SECONDS",
   "MILLISECONDS_PER_SECOND",
@@ -69,6 +70,23 @@ for (const snippet of [
 ]) {
   requireSnippet("RealtimeContractDoc", realtimeContractSource, snippet);
   requireSnippet("README", readmeSource, snippet);
+}
+
+for (const snippet of [
+  "/api/v1/ws/matches/{match_id}",
+]) {
+  requireSnippet("RealtimeContractDoc", realtimeContractSource, snippet);
+  requireSnippet("README", readmeSource, snippet);
+}
+
+for (const snippet of [
+  "server:",
+  "\"/api\"",
+  "\"/healthz\"",
+  "\"/api/v1/ws\"",
+  "ws: true",
+]) {
+  requireSnippet("ViteConfig", viteConfigSource, snippet);
 }
 
 forbidPattern(

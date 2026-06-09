@@ -33,6 +33,7 @@ window.__mirrorGuestPrototypeCleanup = () => {
   window.clearInterval(window.gamePrototypeState?.state?.timerId);
   window.clearTimeout(window.gamePrototypeState?.state?.ambientDialogueTimer);
   window.clearTimeout(window.gamePrototypeState?.state?.progressHintTimer);
+  window.clearTimeout(window.gamePrototypeState?.state?.resultAdvanceCueTimer);
   delete window.gamePrototypeState;
 };
 
@@ -51,10 +52,11 @@ const GAME_RULES = {
 };
 
 const RESULT_SCENE = {
-  clearImage: "assets/clear_.png",
-  gameOverImage: "assets/gameover_.png",
+  clearImage: "/prototype/assets/clear_.png",
+  gameOverImage: "/prototype/assets/gameover_.png",
   clearDelayMs: 0,
-  gameOverDelayMs: 2700
+  gameOverDelayMs: 2700,
+  minDisplayMs: 1800
 };
 
 const BACKGROUND_AUDIO = {
@@ -109,6 +111,11 @@ const OFFICIAL_INFO_TARGET_KEY_BY_UI_TARGET = {
   missing_child_voice: "missing_child_voice",
   forgotten_room: "forgotten_room",
   self_reflection: "self_reflection"
+};
+
+const SEAL_INFO_TARGET_KEY_BY_CASE = {
+  mirror_guest: "mirror_back",
+  nameless_curse: "truth_mirror"
 };
 
 const AMBIENT_DIALOGUE_START_DELAY_MS = 1400;
@@ -631,6 +638,8 @@ const state = {
   resultShown: false,
   resultAwaitingAdvance: false,
   pendingEnding: null,
+  resultAdvanceAvailableAt: 0,
+  resultAdvanceCueTimer: null,
   isSubmitting: false,
   remainingSeconds: GAME_RULES.timerSeconds,
   timerId: 0,
@@ -1660,6 +1669,10 @@ function officialInfoTargetKeyFor(infoTargetKey) {
   return OFFICIAL_INFO_TARGET_KEY_BY_UI_TARGET[infoTargetKey] || infoTargetKey;
 }
 
+function getSealInfoTargetKey() {
+  return SEAL_INFO_TARGET_KEY_BY_CASE[state.caseId] || state.lastInfoTargetKey || INFO_TARGETS[0]?.key || "";
+}
+
 function newClientNonce() {
   if (window.crypto?.randomUUID) return window.crypto.randomUUID();
   return `prototype-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -1667,8 +1680,11 @@ function newClientNonce() {
 
 function buildTurnSubmitPayload(actionKey, options = {}) {
   const officialActionCode = officialActionCodeFor(actionKey);
+  const requestedInfoTargetKey = options.infoTargetKey
+    || state.selectedInfoTargetKey
+    || (actionKey === "seal" ? getSealInfoTargetKey() : "");
   const officialInfoTargetKey = officialInfoTargetKeyFor(
-    options.infoTargetKey || state.selectedInfoTargetKey
+    requestedInfoTargetKey
   );
   const payload = {
     action_code: officialActionCode,
@@ -1682,8 +1698,13 @@ function buildTurnSubmitPayload(actionKey, options = {}) {
 
 function advanceLogSequence() {
   if (state.resultAwaitingAdvance && state.pendingEnding) {
+    if (Date.now() < state.resultAdvanceAvailableAt) return true;
     const { outcome, reason } = state.pendingEnding;
     state.resultAwaitingAdvance = false;
+    state.resultAdvanceAvailableAt = 0;
+    window.clearTimeout(state.resultAdvanceCueTimer);
+    state.resultAdvanceCueTimer = null;
+    hideInteractionCue();
     openEndingScreen(outcome, reason);
     return true;
   }
@@ -1746,17 +1767,27 @@ function scheduleDefeatJumpscare(delayMs = 1200) {
   window.setTimeout(triggerDefeatJumpscare, delayMs);
 }
 
+function scheduleResultAdvanceCue() {
+  window.clearTimeout(state.resultAdvanceCueTimer);
+  const delayMs = Math.max(0, state.resultAdvanceAvailableAt - Date.now());
+  state.resultAdvanceCueTimer = window.setTimeout(() => {
+    if (state.resultAwaitingAdvance && state.pendingEnding) showInteractionCue();
+  }, delayMs);
+}
+
 function showResultScene(outcome, reason = "unknown") {
   if (!dom.resultScene || !dom.resultImage || state.resultShown) return;
   state.resultShown = true;
   state.resultAwaitingAdvance = true;
   state.pendingEnding = { outcome, reason };
+  state.resultAdvanceAvailableAt = Date.now() + RESULT_SCENE.minDisplayMs;
   state.phase = "ended";
   stopClock();
   hideActionCard();
   hidePlayerLog();
   hideEnemyVoice();
   hideTurnEndCue();
+  hideInteractionCue();
   setDialogueArchiveOpen(false);
   clearDialogueLogs();
 
@@ -1772,6 +1803,7 @@ function showResultScene(outcome, reason = "unknown") {
   dom.frame?.classList.add("is-ending", isWin ? "is-ending-clear" : "is-ending-lose");
   void dom.resultScene.offsetWidth;
   dom.resultScene.classList.add("is-active");
+  scheduleResultAdvanceCue();
 }
 
 function openEndingScreen(outcome, reason) {
@@ -1815,15 +1847,14 @@ function scheduleEndingScreen(outcome, reason) {
 }
 
 function getEndingScreenState(result) {
-  if (result?.seal?.success) return { outcome: "win", reason: "seal" };
-
-  const curseDefeat = result?.stateChanges?.defeatFlags?.contractFailedAtMaxCurse
-    || result?.stateChanges?.defeatFlags?.hitByCurseAtMaxCurse;
+  const outcome = getServerMatchOutcome(result);
+  if (outcome === "player_win") return { outcome: "win", reason: "seal" };
+  if (outcome !== "player_loss") return { outcome: "unfinished", reason: "unknown" };
 
   if (state.sanity <= 0) return { outcome: "lose", reason: "sanity" };
-  if (curseDefeat) return { outcome: "lose", reason: "curse" };
+  if (isCurseDefeatResult(result)) return { outcome: "lose", reason: "curse" };
   if (state.turn >= GAME_RULES.maxTurn) return { outcome: "lose", reason: "turns" };
-  return { outcome: "unfinished", reason: "unknown" };
+  return { outcome: "lose", reason: "unknown" };
 }
 
 function getPreferredEnemyActions(playerAction, isTimeout) {
@@ -2198,6 +2229,16 @@ function getPatternHint(playerAction) {
   return `거울 안쪽의 것은 ${getPlayerDisplayName()}의 반복된 의식에 반응하기 시작했다. 같은 선택의 틈을 기억한다.`;
 }
 
+function getPrototypeMatchOutcome(changes, seal) {
+  if (seal?.success) return "player_win";
+  const sanityAfter = changes.sanity?.after ?? state.sanity;
+  const curseAfter = changes.curse?.after ?? state.curse;
+  if (sanityAfter <= 0 || curseAfter >= GAME_RULES.maxCurseTrace || state.turn >= GAME_RULES.maxTurn) {
+    return "player_loss";
+  }
+  return "unresolved";
+}
+
 function createPrototypeTurnResult(playerAction, { timeout = false, enemyActionKey = null } = {}) {
   const forcedEnemy = enemyActionKey
     ? ENEMY_ACTIONS.find((entry) => entry.key === enemyActionKey)
@@ -2225,7 +2266,8 @@ function createPrototypeTurnResult(playerAction, { timeout = false, enemyActionK
     delta: seal ? (seal.success ? "진명 선언 성공" : "진명 선언 실패") : card.desc,
     stateChanges: changes,
     patternHint: getPatternHint(playerAction),
-    seal
+    seal,
+    matchOutcome: getPrototypeMatchOutcome(changes, seal)
   };
 }
 
@@ -2557,32 +2599,40 @@ function formatTurnBriefingReadable(result, applied) {
   return lines.join("\n");
 }
 
+function getServerMatchOutcome(result) {
+  return result?.matchOutcome || result?.match_outcome || "unresolved";
+}
+
+function isCurseDefeatResult(result) {
+  return Boolean(
+    result?.stateChanges?.defeatFlags?.contractFailedAtMaxCurse
+      || result?.stateChanges?.defeatFlags?.hitByCurseAtMaxCurse
+      || state.curse >= GAME_RULES.maxCurseTrace
+  );
+}
+
 function endGameIfNeeded(result) {
-  if (result?.seal?.success) {
+  const outcome = getServerMatchOutcome(result);
+  if (outcome === "unresolved") return false;
+
+  if (outcome === "player_win") {
     setTurnState("\uBD09\uC778 \uC131\uACF5");
     stopClock();
     return true;
   }
 
-  if (state.sanity <= 0) {
-    setTurnState("\uC774\uC131 \uBD95\uAD34");
-    dom.frame?.classList.add("is-sanity-collapse");
-    scheduleDefeatJumpscare(3000);
-    stopClock();
-    return true;
-  }
-
-  const curseDefeat = result?.stateChanges?.defeatFlags?.contractFailedAtMaxCurse
-    || result?.stateChanges?.defeatFlags?.hitByCurseAtMaxCurse;
-
-  if (curseDefeat) {
-    setTurnState("\uC800\uC8FC \uC7A0\uC2DD");
-    stopClock();
-    return true;
-  }
-
-  if (state.turn >= GAME_RULES.maxTurn) {
-    setTurnState("12\uD134 \uC885\uB8CC");
+  if (outcome === "player_loss") {
+    if (state.sanity <= 0) {
+      setTurnState("\uC774\uC131 \uBD95\uAD34");
+      dom.frame?.classList.add("is-sanity-collapse");
+      scheduleDefeatJumpscare(3000);
+    } else if (isCurseDefeatResult(result)) {
+      setTurnState("\uC800\uC8FC \uC7A0\uC2DD");
+    } else if (state.turn >= GAME_RULES.maxTurn) {
+      setTurnState("12\uD134 \uC885\uB8CC");
+    } else {
+      setTurnState("\uC758\uC2DD \uC2E4\uD328");
+    }
     stopClock();
     return true;
   }
@@ -2859,6 +2909,7 @@ function bindEvents() {
 
 function resetDemoGame() {
   clearAmbientDialogueTimer();
+  window.clearTimeout(state.resultAdvanceCueTimer);
   clearProgressOverlay();
   hideInteractionCue();
   Object.assign(state, {
@@ -2909,6 +2960,8 @@ function resetDemoGame() {
     resultShown: false,
     resultAwaitingAdvance: false,
     pendingEnding: null,
+    resultAdvanceAvailableAt: 0,
+    resultAdvanceCueTimer: null,
     isSubmitting: false,
     remainingSeconds: GAME_RULES.timerSeconds,
     advanceResolver: null,

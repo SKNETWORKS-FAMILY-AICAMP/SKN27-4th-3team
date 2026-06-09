@@ -56,7 +56,8 @@ def test_caddyfile_proxies_api_and_healthz_to_internal_api():
 
     assert "reverse_proxy api:8000" in source
     assert "handle_path /api/*" in source or "handle /api/*" in source
-    assert "handle /ws/*" in source
+    assert "handle /api/v1/ws/*" in source
+    assert "handle /ws/*" not in source
     assert "handle /healthz" in source
 
 

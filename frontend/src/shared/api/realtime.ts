@@ -9,6 +9,7 @@ const WEBSOCKET_CONNECT_TIMEOUT_SECONDS = Number(
   import.meta.env.VITE_WEBSOCKET_CONNECT_TIMEOUT_SECONDS
     ?? String(DEFAULT_WEBSOCKET_CONNECT_TIMEOUT_SECONDS),
 );
+const MATCH_WEBSOCKET_PATH_PREFIX = "/api/v1/ws/matches";
 
 export type MatchRealtimeEvent =
   | {
@@ -55,11 +56,11 @@ export function buildMatchWebSocketUrl(matchId: string): string {
   const encodedMatchId = encodeURIComponent(matchId);
   const configuredBaseUrl = WEBSOCKET_BASE_URL.trim();
   if (configuredBaseUrl) {
-    return `${trimTrailingSlash(configuredBaseUrl)}/ws/matches/${encodedMatchId}`;
+    return `${trimTrailingSlash(configuredBaseUrl)}${MATCH_WEBSOCKET_PATH_PREFIX}/${encodedMatchId}`;
   }
 
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${window.location.host}/ws/matches/${encodedMatchId}`;
+  return `${protocol}//${window.location.host}${MATCH_WEBSOCKET_PATH_PREFIX}/${encodedMatchId}`;
 }
 
 export function connectMatchRealtime(

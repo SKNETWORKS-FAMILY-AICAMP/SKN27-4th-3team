@@ -97,6 +97,18 @@ gunicorn backend.config.asgi:application --worker-class uvicorn_worker.UvicornWo
 
 저장소 루트에서 실행합니다.
 
+권장 실행은 아래 한 줄입니다.
+
+```powershell
+.\dev-start.cmd
+```
+
+이 명령은 Python 가상환경 의존성 설치, 프론트엔드 의존성 설치, 로컬 PostgreSQL/Redis 컨테이너 실행, DB migration, backend ASGI 서버, frontend Vite 서버 실행을 순서대로 처리합니다.
+
+브라우저에서는 `http://127.0.0.1:5173`으로 진입합니다.
+
+세부 절차를 수동으로 확인해야 하면 아래 순서를 사용합니다.
+
 ```powershell
 docker compose -f ops\docker\docker-compose.yml build api
 docker compose -f ops\docker\docker-compose.yml up -d postgres redis
@@ -114,8 +126,6 @@ cd frontend
 npm ci
 npm run dev -- --host 127.0.0.1 --port 5173
 ```
-
-브라우저에서는 `http://127.0.0.1:5173`으로 진입합니다.
 
 ### Production 실행 순서
 
@@ -145,7 +155,7 @@ Copy-Item ops\env\production.env.example ops\env\production.env
 | `LLM_API_KEY`                       | 실제 LLM provider 호출을 사용할 때만 주입               |
 
 
-프론트엔드 build 환경변수는 아래 기준을 사용합니다. 같은 origin으로 Caddy가 `/ws/*`를 proxy하는 production 배포에서는 기본값으로 충분합니다.
+프론트엔드 build 환경변수는 아래 기준을 사용합니다. 같은 origin으로 Caddy가 `/api/v1/ws/*`를 proxy하는 production 배포에서는 기본값으로 충분합니다.
 
 
 | 변수                                       | 기준                                                       |
@@ -183,7 +193,7 @@ Invoke-RestMethod https://<APP_DOMAIN>/healthz
 Invoke-RestMethod https://<APP_DOMAIN>/api/v1/auth/csrf
 ```
 
-WebSocket endpoint는 같은 origin 기준 `/ws/matches/{match_id}`입니다. 인증은 기존 HttpOnly access cookie를 사용하므로 프론트엔드가 token을 저장하거나 query string으로 전달하지 않습니다.
+WebSocket endpoint는 같은 origin 기준 `/api/v1/ws/matches/{match_id}`입니다. 인증은 기존 HttpOnly access cookie를 사용하므로 프론트엔드가 token을 저장하거나 query string으로 전달하지 않습니다.
 
 local Vite dev server에서 API와 WebSocket origin이 분리되어 있다면 `frontend/.env.local`에 아래처럼 지정합니다.
 
@@ -243,7 +253,7 @@ ops/       Docker Compose, env template, production Dockerfile, Caddy 설정
 ```mermaid
 flowchart LR
     Client["React/Vite Frontend 또는 API Client"] --> API["Django API"]
-    Client --> WS["/ws/matches/{match_id}"]
+    Client --> WS["/api/v1/ws/matches/{match_id}"]
     WS --> API
     API --> Rules["game_rules 결정적 룰 엔진"]
     API --> RDB["PostgreSQL RDB"]
@@ -663,7 +673,7 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 - React/Vite 화면과 prototype 의식 결투 화면 구현
 - `nameless_curse` 초기 공개명은 `거울 속 목소리`로 마스킹하고, `피티`는 공식 진명/결과/진명 단서 맥락에서만 사용
 - AC-2A 기준 production Compose, Gunicorn ASGI worker backend runtime, Caddy reverse proxy, Redis service, `/healthz`, production env template 구성
-- `/ws/matches/{match_id}` WebSocket endpoint와 프론트 매치 route 구독/fallback 구현
+- `/api/v1/ws/matches/{match_id}` WebSocket endpoint와 프론트 매치 route 구독/fallback 구현
 - 백엔드/LLM 테스트와 프론트 계약/build 검증 통과 기록
 
 남은 리스크:
