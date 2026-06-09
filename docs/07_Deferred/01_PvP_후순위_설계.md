@@ -1,42 +1,32 @@
----
-title: "PvP 확정 후속 설계"
-status: "core-roadmap"
-type: "deferred-detail"
-source: "[[pilot]]"
+﻿---
+title: "PvP 후순위 설계 폐기 기록"
+status: "retired"
+type: "retired-deferred-detail"
+source: "[[09_Approved_Contracts/19_PvP_미사용_및_구조_정리_계약]]"
 created: "2026-05-30"
-updated: "2026-06-02"
+updated: "2026-06-04"
+superseded_by: "[[09_Approved_Contracts/19_PvP_미사용_및_구조_정리_계약]]"
 ---
 
-# PvP 확정 후속 설계
+# PvP 후순위 설계 폐기 기록
 
-1차 MVP에서 PvP 구현은 제외한다.
+이 문서는 과거 PvP 후순위 설계 기록이다.
 
-하지만 PvP는 선택적 후순위가 아니라 로그인 다음으로 중요한 확정 후속 핵심 기능이다.
+현재 구현 기준으로 사용하지 않는다.
 
-1차 MVP의 Auth, Match, Participant, Turn, Action Submission 구조는 PvP 도입을 막지 않아야 한다.
+## 현재 결정
 
-## 보존할 설계
+PvP 모드는 없다.
 
-- 실시간 턴제 PvP
-- WebSocket 방 생성
-- 매칭 대기열
-- 상대 연결 종료와 재접속 처리
-- 전적, 로그, 부정행위 의심 이벤트 저장
-- human vs human participant 구조
-- participant 기준 행동 제출과 권한 검증
+기존의 실시간 턴제 PvP, WebSocket 방, 매칭 대기열, 상대 연결 종료와 재접속 처리, human vs human participant 구조는 더 이상 후속 구현 후보가 아니다.
 
-## 1차 MVP에서 금지할 구조 축소
+현재 기준은 [[09_Approved_Contracts/19_PvP_미사용_및_구조_정리_계약]]의 PvP 미사용 결정이다.
 
-- AI 스토리 전용 match 구조
-- 단일 user 소유 match 구조
-- 항상 apparition이 있는 match 구조
-- 사용자 1명 제출 즉시 resolve되는 전용 턴 구조
-- 약한 로그인/세션 보안
+## 구현 금지
 
-## 구현 전 확정 필요
-
-- PvP 재접속 허용 시간
-- 랭크 점수 공식
-- 매칭 기준
-
-상세 기준은 [[09_Approved_Contracts/19_PvP_확정_후속_및_구조_보존_계약]]을 따른다.
+- PvP match
+- PvP matchmaking
+- PvP reconnect
+- PvP ranking
+- PvP abuse/cheat 대응
+- PvP를 위한 Redis/Channels/WebSocket 도입

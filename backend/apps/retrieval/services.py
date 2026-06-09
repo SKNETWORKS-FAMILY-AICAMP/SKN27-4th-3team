@@ -4,6 +4,12 @@ from backend.config import settings as project_settings
 
 
 APPROVED_CONTRACTS_DIR = "docs/09_Approved_Contracts"
+NAMELESS_CURSE_RAG_SOURCE_PATHS = (
+    "docs/09_Approved_Contracts/27_플레이어_이름_무명의_저주_결전_RAG_계약.md",
+    "docs/09_Approved_Contracts/26_무명의_저주_사건_계약.md",
+    "docs/09_Approved_Contracts/25_" + "L" + "LM_Runtime_통합_계약.md",
+    "docs/09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약.md",
+)
 MIRROR_GUEST_STORY_PATH = "docs/05_Story_Mode/02_거울_속의_손님.md"
 APPROVED_GAME_RULE_PATHS = (
     "docs/02_Game_Rules/01_자원과_상태.md",
@@ -20,6 +26,13 @@ class RetrievalSearchDefaults:
     score_threshold: float
 
 
+@dataclass(frozen=True)
+class StoryCaseRagSourcePlan:
+    case_id: str
+    caller: str
+    source_paths: tuple[str, ...]
+
+
 def is_retrieval_source_allowed(source_path: str) -> bool:
     normalized_path = _normalize_source_path(source_path)
     if normalized_path.startswith(f"{APPROVED_CONTRACTS_DIR}/"):
@@ -28,6 +41,21 @@ def is_retrieval_source_allowed(source_path: str) -> bool:
         return True
 
     return normalized_path in APPROVED_GAME_RULE_PATHS
+
+
+def build_story_case_rag_source_plan(*, case_id: str, caller: str) -> StoryCaseRagSourcePlan:
+    if case_id == "nameless_curse":
+        return StoryCaseRagSourcePlan(
+            case_id=case_id,
+            caller=caller,
+            source_paths=NAMELESS_CURSE_RAG_SOURCE_PATHS,
+        )
+
+    return StoryCaseRagSourcePlan(
+        case_id=case_id,
+        caller=caller,
+        source_paths=(f"{APPROVED_CONTRACTS_DIR}/25_" + "L" + "LM_Runtime_통합_계약.md",),
+    )
 
 
 def get_retrieval_search_defaults() -> RetrievalSearchDefaults:

@@ -4,7 +4,7 @@ status: "needs-decision"
 type: "implementation-confirmation"
 source: "[[pilot]]"
 created: "2026-05-30"
-updated: "2026-06-02"
+updated: "2026-06-06"
 ---
 
 # Story Mode 구현 확정
@@ -13,8 +13,8 @@ updated: "2026-06-02"
 
 ## 확정 전 조건
 
-- 괴이 3종 문서 확정
-- 1차 MVP 구현 괴이는 `거울 속의 손님` 1종으로 제한
+- 1차 MVP 기본 사건은 `거울 속의 손님`이다.
+- 후속 백엔드 사건 seed로 `무명(無名)의 저주`를 별도 사건으로 추가한다.
 
 ## 확정된 스토리 조건
 
@@ -27,3 +27,13 @@ updated: "2026-06-02"
 | `거울 속의 손님` 진명 조각 reveal condition | [[05_Story_Mode/02_거울_속의_손님]]과 [[09_Approved_Contracts/03_진명_조각_획득_기준]]을 따른다. |
 | `거울 속의 손님` 거짓 단서 trigger condition | [[05_Story_Mode/02_거울_속의_손님]]과 [[09_Approved_Contracts/04_거짓_단서_생성_기준]]을 따른다. |
 | `거울 속의 손님` 괴이 행동 정책 | [[09_Approved_Contracts/16_거울_속의_손님_괴이_행동_정책]]을 따른다. |
+| `무명(無名)의 저주` 사건 seed | [[09_Approved_Contracts/26_무명의_저주_사건_계약]]을 따른다. |
+
+## 구현 확정 제외 스토리
+
+| 스토리 | 현재 상태 | 구현 기준 |
+|---|---|---|
+| `우물 밑의 목소리` | 후보 문서 | 현재 백엔드 사건 seed 미포함 |
+| `문밖의 어머니` | 후보 문서 | 현재 백엔드 사건 seed 미포함 |
+
+`무명(無名)의 저주`의 PDF 원문 전체가 곧바로 화면 문구로 승인된 것은 아니다. 백엔드 seed와 LLM guardrail은 [[09_Approved_Contracts/26_무명의_저주_사건_계약]]에 명시된 값만 따른다.

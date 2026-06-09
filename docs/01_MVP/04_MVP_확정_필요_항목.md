@@ -4,12 +4,28 @@ status: "needs-decision"
 type: "decision-log"
 source: "[[pilot]]"
 created: "2026-05-30"
-updated: "2026-06-02"
+updated: "2026-06-08"
 ---
 
 # MVP 확정 필요 항목
 
 이 문서는 구현 전 비어 있는 결정을 모아두는 문서다. 아래 항목은 확정 전까지 구현하지 않는다.
+
+## 최신성 메모
+
+이 문서는 `needs-decision` 상태의 결정 로그다.
+
+현재 승인된 최신 구현 기준은 [[09_Approved_Contracts/00_승인본_목차]]를 우선한다.
+
+특히 아래 항목은 이후 승인본으로 보강되었다.
+
+- LLM runtime 범위: [[09_Approved_Contracts/25_LLM_Runtime_통합_계약]]
+- `nameless_curse` 별도 사건: [[09_Approved_Contracts/26_무명의_저주_사건_계약]]
+- 플레이어 표시 이름, 사건별 결전 조건, RAG source plan: [[09_Approved_Contracts/27_플레이어_이름_무명의_저주_결전_RAG_계약]]
+- production 배포 기준: [[09_Approved_Contracts/28_Production_배포_계약]]
+- Redis/Channels/WebSocket 상태 동기화 기준: [[09_Approved_Contracts/29_MVP_Realtime_Redis_WebSocket_계약]]
+
+따라서 이 문서의 오래된 `프론트엔드 구현과 LLM generation 구현 제외`, `거울 속의 손님 1종만 구현`, `Redis/WebSocket 제외` 표현은 당시 결정 로그로 보고, 현재 구현 기준 판단은 승인본 목차의 D-940, D-950, D-960, D-970, D-980을 따른다.
 
 ## 제품 결정
 
@@ -69,6 +85,43 @@ updated: "2026-06-02"
 
 - 프론트엔드 구현과 LLM generation 구현을 제외한 백엔드/API 구현 전 남은 오너 결정 없음
 
+## Dockerfile 이미지 빌드와 배포 결정
+
+백엔드/API 구현과 로컬 Docker 준비는 진행할 수 있다.
+
+production 배포 구현은 아래 항목이 확정되기 전까지 진행하지 않는다.
+
+결정 타이밍과 구현 게이트는 [[09_Approved_Contracts/24_Dockerfile_이미지_빌드_배포_준비_계약]]을 따른다.
+
+### 지금 확정할 항목
+
+- WSGI/ASGI 방향
+- env 변수 이름과 secret 주입 원칙
+- health check endpoint 형태
+- migration 실행 원칙
+- static/media 처리 책임
+
+### 첫 컨테이너 배포 테스트 전 확정할 항목
+
+- image tag 규칙
+- DB 연결 방식
+- `collectstatic` 실행 여부
+- migration 실행 방식
+- health check 실패 기준
+- 로그 출력 기준
+
+### production 공개 전 확정할 항목
+
+- 배포 대상 환경
+- image registry
+- reverse proxy
+- TLS/domain
+- CI/CD 또는 수동 배포 절차
+- rollback 방식
+- 운영 secret 관리
+- backup/restore
+- monitoring/log retention
+
 ## RAG 결정
 
 - 프론트엔드 구현과 LLM generation 구현을 제외한 RAG 구현 전 남은 오너 결정 없음
@@ -120,8 +173,8 @@ LLM generation log와 retrieval log 연결 방식은 LLM generation 구현 담�
 | AI participant | `participant_type = human/apparition`, `user_id` nullable, `apparition_id` nullable |
 | JSONField 사용 | 결과 스냅샷, 로그 스냅샷, 룰/정책 스냅샷, 작은 정책 데이터에 제한 |
 | JSONField schema | 모든 payload에 `schema_version`, Python `jsonschema` 검증 |
-| 로컬 Docker Compose | Django API + PostgreSQL + `pgvector` |
-| 로컬 Docker Compose 제외 | Redis, WebSocket worker, LLM provider emulator, KAG 전용 저장소 |
+| 로컬 Docker Compose | Django ASGI API + PostgreSQL + `pgvector` + Redis |
+| 로컬 Docker Compose 제외 | 별도 WebSocket worker, LLM provider emulator, KAG 전용 저장소 |
 | local/dev Secure cookie | `Secure=false` 허용 |
 | production Secure cookie | `Secure=true` 필수 |
 | SameSite | `Lax` |
@@ -136,8 +189,8 @@ LLM generation log와 retrieval log 연결 방식은 LLM generation 구현 담�
 | AI Profile 계산 시점 | 각 턴 resolve 직후 계산, 매치 종료 시 최종 재계산 |
 | 0 분모 기본값 | `0.0` |
 | 개인정보 삭제 기본 정책 | 행동 이벤트와 스타일 스냅샷 삭제 |
-| PvP 우선순위 | 1차 MVP 구현 제외, 확정 후속 핵심 기능 |
-| PvP-ready 구조 | Auth/Match/Participant/Turn 구조는 [[09_Approved_Contracts/19_PvP_확정_후속_및_구조_보존_계약]]을 따른다. |
+| PvP 모드 | 없음 |
+| Match 구조 | human player와 apparition 참가자 기준의 AI 스토리 매치 구조 |
 
 세부 기준은 [[09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약]]을 따른다.
 
@@ -157,4 +210,3 @@ LLM generation log와 retrieval log 연결 방식은 LLM generation 구현 담�
 - LLM provider
 - 운영 배포 서비스
 - 랭크 점수 공식
-- PvP 재접속 허용 시간

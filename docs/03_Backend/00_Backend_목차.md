@@ -4,7 +4,7 @@ status: "draft"
 type: "backend-index"
 source: "[[pilot]]"
 created: "2026-05-30"
-updated: "2026-06-02"
+updated: "2026-06-04"
 ---
 
 # Backend 목차
@@ -19,6 +19,7 @@ updated: "2026-06-02"
 - [[03_Backend/06_API_계약]]
 - [[03_Backend/07_RAG_검색_구조]]
 - [[03_Backend/99_Backend_구현_확정]]
+- [[09_Approved_Contracts/24_Dockerfile_이미지_빌드_배포_준비_계약]]
 
 ## MVP 대상 앱
 
@@ -32,7 +33,6 @@ updated: "2026-06-02"
 
 ## MVP 제외 앱
 
-- realtime
 - knowledge
 - llm
 - audit

@@ -1,15 +1,23 @@
+from django.conf import settings
 from rest_framework import serializers
 
 
 class SignupRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
     nickname = serializers.CharField()
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField(
+        write_only=True,
+        min_length=settings.AUTH_PASSWORD_MIN_LENGTH,
+        max_length=settings.AUTH_PASSWORD_MAX_LENGTH,
+    )
 
 
 class LoginRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField(
+        write_only=True,
+        max_length=settings.AUTH_PASSWORD_MAX_LENGTH,
+    )
 
 
 class EmptyRequestSerializer(serializers.Serializer):

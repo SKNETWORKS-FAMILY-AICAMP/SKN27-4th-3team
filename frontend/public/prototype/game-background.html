@@ -51,7 +51,7 @@
           </div>
         </div>
 
-        <div class="status-token sanity-token" tabindex="0" data-current="12" data-max="12" data-tooltip="이성: 0이 되면 이안은 몸의 주도권을 잃는다." aria-label="이성 12 중 12">
+        <div class="status-token sanity-token" tabindex="0" data-current="12" data-max="12" data-tooltip="이성: 0이 되면 플레이어는 자기 이름과 숨겨진 이름을 구분하지 못한다." aria-label="이성 12 중 12">
           <div class="status-icon sanity-icon" aria-hidden="true">
             <img class="sanity-image" src="assets/sanity-mirror-icon.png" alt="" width="128" height="128" decoding="async">
           </div>
@@ -83,6 +83,15 @@
       <div class="turn-state" data-turn-state-label hidden></div>
     </section>
 
+    <section class="progress-overlay" data-progress-overlay hidden aria-live="polite" aria-label="진행 상태">
+      <strong data-progress-title>결과 처리 중...</strong>
+      <span data-progress-detail>서버 판정을 기다리고 있습니다.</span>
+    </section>
+
+    <div class="interaction-cue" data-interaction-cue hidden aria-live="polite">
+      클릭 또는 Enter로 계속
+    </div>
+
     <section class="clock-widget" data-clock data-duration="25" aria-label="자정까지의 제한 시간">
       <div class="clock-shell">
         <img class="clock-media" src="assets/clock-static.png" alt="" width="256" height="256" decoding="async">
@@ -94,7 +103,7 @@
     <button type="button" class="seal-invocation" data-action="seal" aria-label="진명 선언 사용">
       <img src="assets/seal-card.png" alt="" width="280" height="500" decoding="async">
       <span>진명</span>
-      <small data-seal-reason>진명 3/3 필요</small>
+      <small data-seal-reason>진명 0/2 필요</small>
     </button>
 
     <section class="seal-interference" data-seal-interference hidden aria-label="진명 선언 방해 단계">
@@ -224,7 +233,7 @@
       <p data-player-log-text></p>
     </section>
 
-    <section class="ambient-dialogue" data-ambient-dialogue hidden aria-live="polite" aria-label="이안과 거울 속 목소리의 대화">
+    <section class="ambient-dialogue" data-ambient-dialogue hidden aria-live="polite" aria-label="플레이어와 거울 속 목소리의 대화">
       <strong data-ambient-dialogue-speaker></strong>
       <p data-ambient-dialogue-text></p>
     </section>
@@ -240,7 +249,7 @@
     <section class="clue-journal" data-clue-journal aria-label="일지">
       <button type="button" class="journal-tab" data-journal-toggle aria-expanded="false" aria-controls="journal-panel">
         <span class="journal-icon" aria-hidden="true"></span>
-        <span class="journal-count" data-journal-count>0/3</span>
+        <span class="journal-count" data-journal-count>0/2</span>
       </button>
 
       <article class="journal-panel" id="journal-panel" hidden>
@@ -249,7 +258,7 @@
           <button type="button" class="journal-close" data-journal-close aria-label="일지 닫기">×</button>
         </header>
         <div class="journal-book">
-          <p class="journal-possession-note" aria-hidden="true">이 일지는 이안이 잃어버린 밤을 대신 적는다.</p>
+          <p class="journal-possession-note" aria-hidden="true">이 일지는 잃어버린 밤과 빼앗긴 이름을 함께 기록한다.</p>
           <dl class="journal-state-strip" aria-label="보조 상태 일지">
             <div>
               <dt>보호막</dt>
@@ -268,14 +277,14 @@
           <div class="journal-page left-page">
             <section class="journal-section case-note">
               <h2>사건 파일</h2>
-              <p>이안은 피 묻은 곰 인형과 낯선 미소로 아침을 맞았다. 다락방 일기장은 오래 닫힌 방, 금이 간 거울, 그리고 비어 있는 일지를 가리킨다.</p>
+              <p>무명실과 가죽 장정 일기장은 이름을 빼앗긴 존재의 흔적을 가리킨다. 진실의 거울 앞에서 그 이름을 되찾게 해야 한다.</p>
             </section>
 
             <section class="journal-section">
               <h2>진명 조각</h2>
               <div class="truth-progress" aria-label="진명 조각 진행도">
                 <span>진명 조각</span>
-                <strong data-truth-progress>0/3</strong>
+                <strong data-truth-progress>0/2</strong>
               </div>
               <ol class="truth-list" data-truth-list>
                 <li>
@@ -304,7 +313,7 @@
           <div class="journal-page right-page">
             <section class="journal-section taboo-note">
               <h2>금기</h2>
-              <p>같은 기억을 반복해서 파고들면 이안의 방어기제가 흔들린다. 두 번째 선택은 진실이 아니라 거울 안쪽에서 흘러든 확신을 남길 수 있다.</p>
+              <p>같은 상처를 반복해서 파고들면 방어기제가 흔들린다. 두 번째 선택은 진실이 아니라 거울 안쪽에서 흘러든 확신을 남길 수 있다.</p>
               <dl class="taboo-state">
                 <div>
                   <dt>최근 조사</dt>
@@ -335,8 +344,8 @@
 
             <section class="journal-section">
               <h2>진명 선언 조건</h2>
-              <p>진명 조각 3개를 모두 확보해야 이름을 부를 수 있다. 조건이 충족되기 전까지 진명 카드는 화면에 나타나지 않는다.</p>
-              <div class="seal-progress" aria-label="진명 조각 3개 중 0개">
+              <p>진명 조각 2개 이상을 확보하면 숨겨진 이름을 되찾게 하는 결전을 시도할 수 있다.</p>
+              <div class="seal-progress" aria-label="진명 조각 2개 중 0개">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -345,7 +354,7 @@
 
             <section class="journal-section enemy-policy-note" data-enemy-policy-note>
               <h2>괴이 반응 일지</h2>
-              <p>거울 안쪽의 것은 이안의 반복 행동에 반응한다. 확정되지 않은 행동은 일지에 단정하지 않는다.</p>
+              <p>거울 속 목소리는 반복 행동에 반응한다. 확정되지 않은 행동은 일지에 단정하지 않는다.</p>
               <p data-timeout-policy-note>누적 침묵 0/3. 침묵이 반복될수록 검은 실은 손목을 더 깊게 기억한다.</p>
             </section>
 

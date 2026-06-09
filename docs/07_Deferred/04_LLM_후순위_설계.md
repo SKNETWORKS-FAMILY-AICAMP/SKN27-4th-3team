@@ -30,7 +30,7 @@ LlmClient.generate(purpose, system_prompt, user_prompt, context_refs) -> LlmResu
 - 행동 성공 여부 결정
 - 피해량 계산
 - 진명 조각 획득 여부 결정
-- PvP 승패 결정
+- 매치 승패 결정
 - 랭크 점수 계산
 - 보상 지급
 - 인증/권한 판단
@@ -41,4 +41,3 @@ LlmClient.generate(purpose, system_prompt, user_prompt, context_refs) -> LlmResu
 - LLM provider
 - fallback 문구 관리 방식
 - generation log 보존 기간
-

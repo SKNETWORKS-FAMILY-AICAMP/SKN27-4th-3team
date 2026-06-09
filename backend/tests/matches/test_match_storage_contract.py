@@ -34,6 +34,11 @@ def test_match_storage_constants_follow_official_domain_enums_without_duplicatio
     constants_source = _read(MATCHES_DIR / "constants.py")
     domain_enums = _official_domain_enums()
 
+    assert domain_enums["match_mode"] == ["ai_story"]
+    assert "pvp" not in domain_enums["match_mode"]
+    assert "MATCH_MODE_PVP" not in constants_source
+    assert '= "pvp"' not in constants_source
+
     for match_mode in domain_enums["match_mode"]:
         assert f'= "{match_mode}"' in constants_source
     for match_status in domain_enums["match_status"]:
@@ -49,15 +54,31 @@ def test_match_storage_constants_follow_official_domain_enums_without_duplicatio
 
 def test_match_models_define_approved_tables_and_fields_without_unapproved_foreign_keys():
     source = _read(MATCHES_DIR / "models.py")
+    migration_source = _read(MATCHES_DIR / "migrations" / "0001_initial.py")
 
-    for class_name in ("Match", "MatchParticipant", "Turn", "ActionSubmission", "TurnResult"):
+    for class_name in (
+        "Match",
+        "MatchParticipant",
+        "MatchTrueNameFragmentOwnership",
+        "MatchFalseClueOwnership",
+        "Turn",
+        "ActionSubmission",
+        "TurnResult",
+        "MatchStartRequest",
+        "DuelDialogue",
+    ):
         assert f"class {class_name}(models.Model):" in source
 
+    assert "('pvp', 'pvp')" not in migration_source
     assert "db_table = \"matches\"" in source
     assert "db_table = \"match_participants\"" in source
+    assert "db_table = \"match_true_name_fragments\"" in source
+    assert "db_table = \"match_false_clues\"" in source
     assert "db_table = \"turns\"" in source
     assert "db_table = \"action_submissions\"" in source
     assert "db_table = \"turn_results\"" in source
+    assert "db_table = \"match_start_requests\"" in source
+    assert "db_table = \"duel_dialogues\"" in source
     assert "models.ForeignKey" not in source
     assert "on_delete=" not in source
 
@@ -81,11 +102,35 @@ def test_match_models_define_approved_tables_and_fields_without_unapproved_forei
     assert "ritual_power = models.PositiveIntegerField()" in participant_source
     assert "curse_marks = models.PositiveIntegerField()" in participant_source
     assert "secret_exposure = models.PositiveIntegerField()" in participant_source
+    assert "true_name_fragments = models.PositiveIntegerField()" in participant_source
+    assert "incomplete_true_name_fragments = models.PositiveIntegerField()" in participant_source
+    assert "false_clues = models.PositiveIntegerField()" in participant_source
+    assert "suspicion = models.PositiveIntegerField()" in participant_source
+    assert "shield = models.PositiveIntegerField()" in participant_source
+    assert "timeout_count = models.PositiveIntegerField()" in participant_source
+
+    true_fragment_source = _class_source(source, "MatchTrueNameFragmentOwnership")
+    assert "match_id = models.PositiveBigIntegerField()" in true_fragment_source
+    assert "participant_id = models.PositiveBigIntegerField()" in true_fragment_source
+    assert "true_name_fragment_id = models.PositiveBigIntegerField()" in true_fragment_source
+    assert "source_turn_id = models.PositiveBigIntegerField()" in true_fragment_source
+    assert "source_turn_number = models.PositiveIntegerField()" in true_fragment_source
+    assert "created_at = models.DateTimeField(auto_now_add=True)" in true_fragment_source
+
+    false_clue_source = _class_source(source, "MatchFalseClueOwnership")
+    assert "match_id = models.PositiveBigIntegerField()" in false_clue_source
+    assert "participant_id = models.PositiveBigIntegerField()" in false_clue_source
+    assert "false_clue_id = models.PositiveBigIntegerField()" in false_clue_source
+    assert "truth_state = models.TextField(choices=CLUE_TRUTH_STATE_CHOICES)" in false_clue_source
+    assert "source_turn_id = models.PositiveBigIntegerField()" in false_clue_source
+    assert "source_turn_number = models.PositiveIntegerField()" in false_clue_source
+    assert "created_at = models.DateTimeField(auto_now_add=True)" in false_clue_source
 
     turn_source = _class_source(source, "Turn")
     assert "match_id = models.PositiveBigIntegerField()" in turn_source
     assert "turn_number = models.PositiveIntegerField()" in turn_source
     assert "status = models.TextField(choices=TURN_STATUS_CHOICES)" in turn_source
+    assert "started_at = models.DateTimeField()" in turn_source
     assert "deadline_at = models.DateTimeField()" in turn_source
     assert "resolved_at = models.DateTimeField(null=True, blank=True)" in turn_source
 
@@ -104,6 +149,24 @@ def test_match_models_define_approved_tables_and_fields_without_unapproved_forei
     assert "private_log_json = models.JSONField()" in result_source
     assert "schema_version = models.TextField()" in result_source
 
+    start_request_source = _class_source(source, "MatchStartRequest")
+    assert "user_id = models.PositiveBigIntegerField()" in start_request_source
+    assert "client_request_id = models.UUIDField()" in start_request_source
+    assert "case_id = models.TextField()" in start_request_source
+    assert "player_display_name = models.TextField(null=True, blank=True)" in start_request_source
+    assert "match_id = models.PositiveBigIntegerField()" in start_request_source
+    assert "created_at = models.DateTimeField(auto_now_add=True)" in start_request_source
+    assert (MATCHES_DIR / "migrations" / "0005_matchstartrequest_player_display_name.py").exists()
+
+    duel_dialogue_source = _class_source(source, "DuelDialogue")
+    assert "match_id = models.PositiveBigIntegerField()" in duel_dialogue_source
+    assert "user_id = models.PositiveBigIntegerField()" in duel_dialogue_source
+    assert "client_nonce = models.UUIDField()" in duel_dialogue_source
+    assert "player_message = models.TextField()" in duel_dialogue_source
+    assert "apparition_message = models.TextField(null=True, blank=True)" in duel_dialogue_source
+    assert "generation_id = models.PositiveBigIntegerField(null=True, blank=True)" in duel_dialogue_source
+    assert "created_at = models.DateTimeField(auto_now_add=True)" in duel_dialogue_source
+
 
 def test_action_submission_nonce_is_unique_in_participant_and_turn_scope_only():
     source = _read(MATCHES_DIR / "models.py")
@@ -113,6 +176,36 @@ def test_action_submission_nonce_is_unique_in_participant_and_turn_scope_only():
     assert "fields=(\"turn_id\", \"participant_id\", \"client_nonce\")" in submission_source
     assert "client_nonce = models.UUIDField(unique=True)" not in submission_source
     assert "user_id" not in submission_source
+
+
+def test_match_start_request_is_unique_per_user_and_client_request_id():
+    source = _read(MATCHES_DIR / "models.py")
+    start_request_source = _class_source(source, "MatchStartRequest")
+
+    assert "models.UniqueConstraint(" in start_request_source
+    assert "fields=(\"user_id\", \"client_request_id\")" in start_request_source
+    assert "name=\"match_start_request_user_client_request_unique\"" in start_request_source
+    assert "client_request_id = models.UUIDField(unique=True)" not in start_request_source
+
+
+def test_match_clue_ownership_is_unique_per_match_participant_and_source_definition():
+    source = _read(MATCHES_DIR / "models.py")
+    true_fragment_source = _class_source(source, "MatchTrueNameFragmentOwnership")
+    false_clue_source = _class_source(source, "MatchFalseClueOwnership")
+
+    assert "models.UniqueConstraint(" in true_fragment_source
+    assert (
+        "fields=(\"match_id\", \"participant_id\", \"true_name_fragment_id\")"
+        in true_fragment_source
+    )
+    assert "name=\"match_true_name_fragment_ownership_unique\"" in true_fragment_source
+
+    assert "models.UniqueConstraint(" in false_clue_source
+    assert (
+        "fields=(\"match_id\", \"participant_id\", \"false_clue_id\")"
+        in false_clue_source
+    )
+    assert "name=\"match_false_clue_ownership_unique\"" in false_clue_source
 
 
 def test_match_storage_services_validate_participant_identity_and_json_schema_version():

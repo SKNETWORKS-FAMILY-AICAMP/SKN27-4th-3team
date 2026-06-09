@@ -1,4 +1,4 @@
-# Backend Implementation Report
+﻿# Backend Implementation Report
 
 > 목적: Obsidian 전체 문서를 먼저 스캔하되, 구현은 승인된 source of truth 범위만 진행한다. 이 파일은 각 구현 Task의 근거, 변경 파일, 검증 결과, 보류 사유를 누적 기록한다.
 
@@ -11,6 +11,7 @@
 - 문서 간 충돌, 누락, 애매함이 있으면 구현하지 않고 체크포인트에 기록한다.
 - 프론트엔드와 LLM generation 구현은 현재 범위에서 제외한다.
 - RAG/LLM은 룰 판정, 승패, 인증/권한, 진명 조각, 거짓 단서, 괴이 행동 선택 권위를 바꾸지 않는다.
+- PvP 모드는 없다. 기존 PvP-ready 구조 보존 전제는 [[09_Approved_Contracts/19_PvP_미사용_및_구조_정리_계약]]의 PvP 미사용 결정으로 대체한다.
 
 ## 구현 리포트 작성 규칙
 
@@ -31,11 +32,11 @@
 - 최종 확인 일시: 2026-06-04
 - 실행 위치: `D:\dev\Project\SKN27-4th-3team`
 - 전체 테스트 명령: `.\.venv\Scripts\python.exe -m pytest backend\tests -v`
-- 전체 테스트 결과: `92 passed`
+- 전체 테스트 결과: `95 passed`
 - Django check 명령: `.\.venv\Scripts\python.exe backend\manage.py check`
 - Django check 결과: `System check identified no issues (0 silenced).`
 - migration check 명령: `.\.venv\Scripts\python.exe backend\manage.py makemigrations accounts profiles matches story ai_profile retrieval --dry-run --check`
-- migration check 결과: `No changes detected in apps 'accounts', 'matches', 'profiles', 'story', 'ai_profile', 'retrieval'`
+- migration check 결과: `No changes detected in apps 'profiles', 'story', 'matches', 'retrieval', 'accounts', 'ai_profile'`; 로컬 `pilot` DB 인증 실패 warning은 남아 있다.
 - dependency 확인 명령: `.\.venv\Scripts\python.exe -c "import django, jsonschema, rest_framework; print(django.get_version()); print(jsonschema.__version__); print(rest_framework.VERSION)"`
 - dependency 확인 결과: `5.2.14`, `4.26.0`, `3.17.1`
 - 상태: PARTIALLY VERIFIED
@@ -56,6 +57,7 @@
 | Task 10 | Retrieval 구조 | 완료, Django check/정적/순수 테스트 검증 | `backend/apps/retrieval/models.py`, `backend/apps/retrieval/chunking.py`, `backend/apps/retrieval/services.py` |
 | Task 11 | Django initial migrations | 완료, migration check/Django check/전체 테스트 검증 | `backend/apps/*/migrations/0001_initial.py` |
 | Task 12 | Official API endpoint routing scaffold | 완료, URL resolver/Django check/전체 테스트 검증 | `backend/apps/story/urls.py`, `backend/apps/matches/urls.py`, `backend/apps/profiles/urls.py` |
+| Task 12B | Local Docker/env runtime configuration | 완료, 계약 테스트/Django check/전체 테스트 검증 | `ops/docker/docker-compose.yml`, `ops/docker/backend.Dockerfile`, `ops/env/backend.env.example` |
 
 ## Task 8 상세 기록
 
@@ -388,6 +390,69 @@
 - endpoint routing만 연결됐고 runtime service는 아직 구현되지 않았다.
 - `meta.request_id`의 생성 방식, 외부 header 수용 여부, middleware 위치는 문서에 구체화되어 있지 않다.
 - 실제 PostgreSQL DB 연결과 migration apply는 여전히 `pilot` 사용자 인증 실패로 미검증이다.
+
+## Task 12B 상세 기록
+
+### Local Docker/env runtime configuration
+
+상태: 완료, 계약 테스트/Django check/전체 테스트 검증
+
+#### 참조한 승인 문서/공식 schema
+
+- `docs/09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약.md`
+- `docs/09_Approved_Contracts/23_프로젝트_폴더_구조_계약.md`
+- `docs/superpowers/plans/2026-06-02-backend-implementation-order.md`
+
+#### 구현/수정한 파일
+
+- 생성: `backend/tests/ops/test_local_runtime_contract.py`
+- 생성: `ops/docker/docker-compose.yml`
+- 생성: `ops/docker/backend.Dockerfile`
+- 생성: `ops/env/backend.env.example`
+
+#### 구현 내용
+
+- 1차 MVP 로컬 실행 구성을 Django API, PostgreSQL, PostgreSQL `pgvector`로 제한했다.
+- `api` 서비스는 repository root를 build context로 사용하고 `ops/docker/backend.Dockerfile`을 통해 Django dev server를 실행한다.
+- `postgres` 서비스는 `pgvector/pgvector:pg17` 이미지를 사용하고 로컬 개발용 volume을 연결한다.
+- `backend.env.example`에는 로컬 개발용 Django/PostgreSQL/RAG embedding 설정만 넣었다.
+- `DJANGO_SECURE_COOKIES=false`와 `RAG_EMBEDDING_MODEL_ID=text-embedding-3-small`은 코드 기본값이 아니라 로컬 env template 값으로 명시했다.
+- Dockerfile 기반 백엔드 이미지 빌드와 Django 배포 의도는 후속 작업 후보로 문서에 반영했다.
+- 현재 Dockerfile entrypoint는 로컬/dev 기준이며 production entrypoint로 확정하지 않았다.
+- Dockerfile 이미지 빌드와 Django 배포 준비의 결정 타이밍은 `docs/09_Approved_Contracts/24_Dockerfile_이미지_빌드_배포_준비_계약.md`에 분리했다.
+
+#### 의도적으로 구현하지 않은 범위
+
+- Redis, WebSocket/Channels worker, LLM provider emulator, KAG store, GraphDB/Neo4j 서비스 추가
+- production secret 또는 실제 credential 작성
+- Docker 컨테이너 기동, image pull, DB migration apply 검증
+- Docker image build 검증
+- Django production 배포 구현
+- 프론트엔드/LLM provider/prompt/generation runtime 구성
+
+#### 검증
+
+- RED 실행 위치: `D:\dev\Project\SKN27-4th-3team`
+- RED 명령: `.\.venv\Scripts\python.exe -m pytest backend\tests\ops\test_local_runtime_contract.py -v`
+- RED 결과: `3 failed`; `backend/tests/ops/test_local_runtime_contract.py`가 요구한 `ops/docker/docker-compose.yml`, `ops/docker/backend.Dockerfile`, `ops/env/backend.env.example` 누락 확인.
+- GREEN 실행 위치: `D:\dev\Project\SKN27-4th-3team`
+- GREEN 명령: `.\.venv\Scripts\python.exe -m pytest backend\tests\ops\test_local_runtime_contract.py -v`
+- GREEN 결과: 최초 `1 failed, 2 passed`; Dockerfile `CMD`를 exec-form으로 작성한 뒤 테스트가 문자열 하나로만 검사하던 문제를 확인했다. 테스트를 계약 의도에 맞게 정렬한 뒤 최종 `3 passed`.
+- Django check 명령: `.\.venv\Scripts\python.exe backend\manage.py check`
+- Django check 결과: `System check identified no issues (0 silenced).`
+- migration check 명령: `.\.venv\Scripts\python.exe backend\manage.py makemigrations accounts profiles matches story ai_profile retrieval --dry-run --check`
+- migration check 결과: `No changes detected in apps 'profiles', 'story', 'matches', 'retrieval', 'accounts', 'ai_profile'`; 로컬 `pilot` DB 인증 실패 warning은 남아 있다.
+- 전체 테스트 명령: `.\.venv\Scripts\python.exe -m pytest backend\tests -v`
+- 전체 테스트 결과: `95 passed`
+
+#### 남은 리스크
+
+- Docker Compose 파일은 정적 계약과 테스트로 검증했지만, 실제 `docker compose up`은 아직 실행하지 않았다.
+- Docker image build는 아직 실행하지 않았다.
+- PostgreSQL 컨테이너가 떠도 `pgvector` extension 생성과 Django migration apply는 별도 검증이 필요하다.
+- `backend.env.example`은 로컬 개발 예시이며 production secret이나 배포 보안 설정을 포함하지 않는다.
+- production 배포 전 결정 타이밍과 구현 게이트는 승인 계약 24번을 따른다.
+- `meta.request_id` runtime 정책은 여전히 승인 문서에 구체화되어 있지 않아 API envelope runtime 구현으로 넘어갈 수 없다.
 
 ## 다음 구현 후보
 

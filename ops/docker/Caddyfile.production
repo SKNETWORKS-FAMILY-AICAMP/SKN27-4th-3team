@@ -1,0 +1,33 @@
+{
+  email {$CADDY_ACME_EMAIL}
+}
+
+(skn27_routes) {
+  encode zstd gzip
+  root * /srv/frontend
+
+  handle /healthz {
+    reverse_proxy api:8000
+  }
+
+  handle /api/* {
+    reverse_proxy api:8000
+  }
+
+  handle /ws/* {
+    reverse_proxy api:8000
+  }
+
+  handle {
+    try_files {path} /index.html
+    file_server
+  }
+}
+
+{$APP_DOMAIN} {
+  import skn27_routes
+}
+
+:80 {
+  import skn27_routes
+}
