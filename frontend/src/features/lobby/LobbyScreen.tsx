@@ -1,5 +1,6 @@
 import { KeyboardEvent, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { BGM_TRACKS, useBackgroundMusic } from "../../shared/audio/audio";
 import styles from "./LobbyScreen.module.css";
 
 type ZoneId = "house" | "profile";
@@ -70,6 +71,7 @@ export function LobbyScreen() {
   const [activeZone, setActiveZone] = useState<ZoneId | null>(null);
   const [isEntering, setIsEntering] = useState(false);
   const isFromPrologue = Boolean((location.state as LobbyLocationState)?.fromPrologue);
+  useBackgroundMusic(BGM_TRACKS.menu);
 
   useEffect(() => {
     return () => {

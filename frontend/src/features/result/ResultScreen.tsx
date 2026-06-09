@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ApiClientError } from "../../shared/api/client";
 import { getMatchResult } from "../../shared/api/resources";
+import { BGM_TRACKS, useBackgroundMusic } from "../../shared/audio/audio";
 import type { MatchResult, PublicLog, ResourceState } from "../../shared/types/api";
 import styles from "./ResultScreen.module.css";
 
@@ -69,6 +70,7 @@ export function ResultScreen() {
   const publicLogs = result?.turn_logs.length ? result.turn_logs : fallbackPublicLogs(searchParams.get("log"));
   const finalResources = result?.final_resources;
   const llmSummaryText = result?.llm_summary.text?.trim();
+  useBackgroundMusic(getResultMusicTrack(resultCode, resultReason), { volume: 0.48 });
 
   useEffect(() => {
     let cancelled = false;
@@ -224,4 +226,10 @@ function formatResultError(error: unknown): string {
   }
 
   return "결과 기록을 불러오지 못했습니다.";
+}
+
+function getResultMusicTrack(resultCode: string, reason: string): string {
+  if (resultCode === "player_win") return BGM_TRACKS.clear;
+  if (reason === "sanity_zero") return BGM_TRACKS.sanityGameOver;
+  return BGM_TRACKS.gameOver;
 }

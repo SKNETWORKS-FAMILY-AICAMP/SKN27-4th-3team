@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiClientError } from "../../shared/api/client";
 import { listStoryCases } from "../../shared/api/resources";
+import { BGM_TRACKS, useBackgroundMusic } from "../../shared/audio/audio";
 import type { StoryCaseSummary } from "../../shared/types/api";
 import styles from "./StoryCasesScreen.module.css";
 
@@ -9,6 +10,7 @@ export function StoryCasesScreen() {
   const navigate = useNavigate();
   const [cases, setCases] = useState<StoryCaseSummary[]>([]);
   const [notice, setNotice] = useState("사건 목록을 불러오고 있습니다.");
+  useBackgroundMusic(BGM_TRACKS.menu);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,9 +45,6 @@ export function StoryCasesScreen() {
         <div className={styles.header}>
           <p className={styles.kicker}>AI 스토리 모드</p>
           <h1 id="story-cases-title">사건 선택</h1>
-          <p>
-            MVP에서는 첫 사건만 열려 있다. 사건을 고르면 프롤로그 기록을 확인한 뒤 의식장으로 들어간다.
-          </p>
         </div>
 
         {visibleCases.map((storyCase, index) => (
@@ -93,7 +92,7 @@ export function StoryCasesScreen() {
 
 const fallbackStoryCase: StoryCaseSummary = {
   case_id: "nameless_curse",
-  title: "무명(無名)의 저주",
+  title: "거울속의 손님",
   summary: "이름을 빼앗긴 원혼과 진실의 거울을 마주하는 사건.",
   difficulty: "MVP",
   mvp_available: true,

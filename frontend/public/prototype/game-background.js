@@ -57,6 +57,23 @@ const RESULT_SCENE = {
   gameOverDelayMs: 2700
 };
 
+const BACKGROUND_AUDIO = {
+  turnEarly: "/prototype/assets/배경음악/Behind_the_Brick(1~4 turn).mp3",
+  turnMiddle: "/prototype/assets/배경음악/Knuckles_on_the_Wood(5~8 turn).mp3",
+  turnLate: "/prototype/assets/후보 트랙/The_Porcelain_Cracks.mp3",
+  clear: "/prototype/assets/배경음악/First_Breath_Outside(Clear).mp3",
+  gameOver: "/prototype/assets/배경음악/It_Was_Me_All_Along(Game over).mp3",
+  sanityGameOver: "/prototype/assets/배경음악/The_Final_Bolt(Game over2).mp3"
+};
+
+const EFFECT_AUDIO = {
+  journalPage: "/prototype/assets/효과음/flipping-book-page.mp3",
+  ghostDeceive: "/prototype/assets/효과음/ghost-horror-sound.mp3",
+  ghostCursed: "/prototype/assets/효과음/creepy-ghost-scream.mp3",
+  ghostInsight: "/prototype/assets/효과음/scary-ghost-whisper.mp3",
+  cardUse: "/prototype/assets/효과음/taking-playing-card.mp3"
+};
+
 const LLM_UI_LIMITS = {
   maxChars: 90,
   maxLines: 2
@@ -727,6 +744,47 @@ function setTurnState(text) {
   dom.turnState.hidden = !text;
 }
 
+function playPrototypeMusic(src, volume = 0.42) {
+  if (!src || typeof window.__mirrorGuestAudio?.playMusic !== "function") return;
+  window.__mirrorGuestAudio.playMusic(src, { volume });
+}
+
+function playPrototypeSfx(src, volume = 0.58) {
+  if (!src || typeof window.__mirrorGuestAudio?.playSfx !== "function") return;
+  window.__mirrorGuestAudio.playSfx(src, { volume });
+}
+
+function getTurnMusicSource() {
+  if (state.turn <= 4) return BACKGROUND_AUDIO.turnEarly;
+  if (state.turn <= 8) return BACKGROUND_AUDIO.turnMiddle;
+  return BACKGROUND_AUDIO.turnLate;
+}
+
+function syncTurnBackgroundMusic() {
+  if (state.resultShown || state.phase === "ended") return;
+  playPrototypeMusic(getTurnMusicSource(), 0.42);
+}
+
+function playResultBackgroundMusic(outcome, reason) {
+  if (outcome === "win") {
+    playPrototypeMusic(BACKGROUND_AUDIO.clear, 0.5);
+    return;
+  }
+
+  playPrototypeMusic(reason === "sanity" ? BACKGROUND_AUDIO.sanityGameOver : BACKGROUND_AUDIO.gameOver, 0.5);
+}
+
+function playEnemyActionSound(actionKey) {
+  if (actionKey === "deceive") {
+    playPrototypeSfx(EFFECT_AUDIO.ghostDeceive, 0.62);
+    return;
+  }
+
+  if (actionKey === "insight") {
+    playPrototypeSfx(EFFECT_AUDIO.ghostInsight, 0.58);
+  }
+}
+
 function clearProgressHintTimer() {
   if (!state.progressHintTimer) return;
   window.clearTimeout(state.progressHintTimer);
@@ -806,6 +864,7 @@ function renderSanityGauge() {
 
 function renderHud() {
   state.trueNamePieces = state.trueNamePieceIds.length;
+  syncTurnBackgroundMusic();
   setToken(dom.soulfireToken, state.soulfire, GAME_RULES.maxSoulfire);
   setToken(dom.sanityToken, state.sanity, GAME_RULES.maxSanity);
   setToken(dom.curseToken, state.curse, 5);
@@ -1163,6 +1222,21 @@ function getJournalSectionTitle(section, index) {
   return section.querySelector("h2")?.textContent?.trim() || `일지 ${index + 1}`;
 }
 
+function getJournalSectionSummary(section, index) {
+  const summaries = [
+    "의식 형태로 정리된 핵심 사건.",
+    "되찾은 이름의 파편과 선언 가능성.",
+    "조사로 확인한 단서 목록.",
+    "반복 조사로 흔들리는 위험한 기억.",
+    "아직 검증되지 않은 의심의 흔적.",
+    "거짓으로 드러난 단서와 출처.",
+    "봉인을 시도할 수 있는 조건.",
+    "거울 속 존재의 반복 반응.",
+    "각 턴의 선택과 변화 기록.",
+  ];
+  return summaries[index] || section.querySelector("p, li")?.textContent?.trim() || "아직 정리되지 않은 장.";
+}
+
 function getActiveJournalSection() {
   return dom.journalSections.find((section) => section.dataset.journalSection === state.activeJournalSection)
     || dom.journalSections[0];
@@ -1170,28 +1244,34 @@ function getActiveJournalSection() {
 
 function getJournalPageCount(section) {
   if (!section) return 1;
+  const isIndexPage = section.dataset.journalSection === "0";
+  const blocksPerSpread = isIndexPage ? 2 : 4;
+  const listItemsPerSpread = isIndexPage ? 6 : 12;
   const blockCount = [...section.children].filter((child) => child.tagName !== "H2").length;
   const listPageCount = [...section.querySelectorAll("ul, ol")].reduce((max, list) => {
-    return Math.max(max, Math.ceil(list.children.length / 6));
+    return Math.max(max, Math.ceil(list.children.length / listItemsPerSpread));
   }, 1);
-  return Math.max(1, Math.ceil(blockCount / 2), listPageCount);
+  return Math.max(1, Math.ceil(blockCount / blocksPerSpread), listPageCount);
 }
 
 function updateJournalPageContent(section) {
+  if (!section) return;
   const page = state.journalPage;
   const pageCount = getJournalPageCount(section);
   const clampedPage = clamp(page, 0, pageCount - 1);
   state.journalPage = clampedPage;
+  const isIndexPage = section.dataset.journalSection === "0";
+  const blocksPerSpread = isIndexPage ? 2 : 4;
+  const listItemsPerSpread = isIndexPage ? 6 : 12;
+  const contentChildren = [...section.children].filter((child) => child.tagName !== "H2");
 
-  [...section.children].forEach((child) => {
-    if (child.tagName === "H2") return;
-    const itemIndex = [...section.children].filter((item) => item.tagName !== "H2").indexOf(child);
-    child.hidden = Math.floor(itemIndex / 2) !== clampedPage;
+  contentChildren.forEach((child, itemIndex) => {
+    child.hidden = Math.floor(itemIndex / blocksPerSpread) !== clampedPage;
   });
 
   section.querySelectorAll("ul, ol").forEach((list) => {
     [...list.children].forEach((item, index) => {
-      item.hidden = Math.floor(index / 6) !== clampedPage;
+      item.hidden = Math.floor(index / listItemsPerSpread) !== clampedPage;
     });
     list.hidden = false;
   });
@@ -1208,6 +1288,7 @@ function renderJournalNavigation() {
   if (!dom.journalBook || !dom.journalSections.length) return;
 
   let nav = dom.journalBook.querySelector("[data-journal-section-nav]");
+  let spreadContent = dom.journalBook.querySelector("[data-journal-spread-content]");
   if (!nav) {
     nav = document.createElement("nav");
     nav.className = "journal-section-nav";
@@ -1225,13 +1306,21 @@ function renderJournalNavigation() {
     dom.journalBook.append(nav, controls);
 
     controls.querySelector("[data-journal-prev-page]")?.addEventListener("click", () => {
+      playPrototypeSfx(EFFECT_AUDIO.journalPage, 0.5);
       state.journalPage -= 1;
       renderJournalNavigation();
     });
     controls.querySelector("[data-journal-next-page]")?.addEventListener("click", () => {
+      playPrototypeSfx(EFFECT_AUDIO.journalPage, 0.5);
       state.journalPage += 1;
       renderJournalNavigation();
     });
+  }
+  if (!spreadContent) {
+    spreadContent = document.createElement("div");
+    spreadContent.className = "journal-spread-content";
+    spreadContent.dataset.journalSpreadContent = "";
+    dom.journalBook.append(spreadContent);
   }
 
   dom.journalBook.classList.add("has-section-nav");
@@ -1242,15 +1331,22 @@ function renderJournalNavigation() {
   if (!dom.journalSections.some((section) => section.dataset.journalSection === state.activeJournalSection)) {
     state.activeJournalSection = "0";
   }
+  const isIndexPage = state.activeJournalSection === "0";
+  dom.journalBook.dataset.journalMode = isIndexPage ? "index" : "section";
+  dom.journalBook.classList.toggle("is-section-spread", !isIndexPage);
 
   nav.innerHTML = dom.journalSections.map((section, index) => {
     const id = String(index);
     const title = getJournalSectionTitle(section, index);
-    return `<button type="button" class="${id === state.activeJournalSection ? "is-active" : ""}" data-journal-section-button="${id}">${title}</button>`;
+    const summary = getJournalSectionSummary(section, index);
+    return `<button type="button" class="${id === state.activeJournalSection ? "is-active" : ""}" data-journal-section-button="${id}"><span>${title}</span><small>${summary}</small></button>`;
   }).join("");
 
   nav.querySelectorAll("[data-journal-section-button]").forEach((button) => {
     button.addEventListener("click", () => {
+      if (state.activeJournalSection !== button.dataset.journalSectionButton) {
+        playPrototypeSfx(EFFECT_AUDIO.journalPage, 0.46);
+      }
       state.activeJournalSection = button.dataset.journalSectionButton || "0";
       state.journalPage = 0;
       renderJournalNavigation();
@@ -1258,17 +1354,29 @@ function renderJournalNavigation() {
   });
 
   [...dom.journalBook.querySelectorAll(".journal-page")].forEach((page) => {
-    page.classList.remove("is-active");
+    page.classList.add("is-active");
   });
 
   dom.journalSections.forEach((section) => {
     const isActive = section.dataset.journalSection === state.activeJournalSection;
     section.classList.toggle("is-active", isActive);
-    section.hidden = !isActive;
-    if (isActive) section.closest(".journal-page")?.classList.add("is-active");
+    section.classList.toggle("is-current-section", isActive);
+    section.hidden = !isIndexPage || !isActive;
   });
 
-  updateJournalPageContent(getActiveJournalSection());
+  const activeSection = getActiveJournalSection();
+  updateJournalPageContent(activeSection);
+  if (spreadContent) {
+    spreadContent.hidden = isIndexPage;
+    spreadContent.innerHTML = "";
+    if (!isIndexPage) {
+      const activeClone = activeSection.cloneNode(true);
+      activeClone.hidden = false;
+      activeClone.classList.add("is-current-section");
+      activeClone.removeAttribute("data-journal-section");
+      spreadContent.append(activeClone);
+    }
+  }
 }
 
 function getActionValidation(actionKey) {
@@ -1653,6 +1761,7 @@ function showResultScene(outcome, reason = "unknown") {
   clearDialogueLogs();
 
   const isWin = outcome === "win";
+  playResultBackgroundMusic(outcome, reason);
   dom.resultImage.src = isWin ? RESULT_SCENE.clearImage : RESULT_SCENE.gameOverImage;
   dom.resultImage.alt = isWin ? "Clear" : "Game Over";
   dom.resultScene.dataset.outcome = isWin ? "clear" : "game-over";
@@ -2499,6 +2608,7 @@ async function runTurnSequence(actionKey, options = {}) {
 
   setTurnState(options.timeout ? "침묵 처리" : "결과 대기");
   hideActionCard();
+  if (!options.timeout) playPrototypeSfx(EFFECT_AUDIO.cardUse, 0.64);
   playRitualEffect(actionKey);
   if (actionKey === "seal") playSealReleaseEffect();
   showPlayerLog(options.timeout ? "시간이 다했다. 검은 초가 먼저 침묵을 선언한다." : card.playerLine, { allowCorruption: !options.timeout });
@@ -2534,6 +2644,8 @@ async function runTurnSequence(actionKey, options = {}) {
   if (Array.isArray(result.llmUiTexts)) applyLlmUiTexts(result.llmUiTexts);
   const applied = applyTurnStateChanges(result.stateChanges, result);
   state.lastEnemyAction = result.enemy.key;
+  if (actionKey === "curse") playPrototypeSfx(EFFECT_AUDIO.ghostCursed, 0.72);
+  playEnemyActionSound(result.enemy.key);
   playRitualEffect(result.enemy.key, "enemy");
   showEnemyVoice(result.enemy);
 
