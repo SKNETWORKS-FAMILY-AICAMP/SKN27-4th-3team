@@ -2,10 +2,8 @@ from backend.apps.game_rules.matchups import ACTION_CODES
 
 
 MATCH_MODE_AI_STORY = "ai_story"
-MATCH_MODE_PVP = "pvp"
 MATCH_MODES = (
     MATCH_MODE_AI_STORY,
-    MATCH_MODE_PVP,
 )
 MVP_MATCH_MODES = (MATCH_MODE_AI_STORY,)
 MATCH_MODE_CHOICES = tuple((mode, mode) for mode in MATCH_MODES)
@@ -43,5 +41,17 @@ PARTICIPANT_TYPE_CHOICES = tuple(
 )
 
 ACTION_CODE_CHOICES = tuple((action_code, action_code) for action_code in ACTION_CODES)
+
+CLUE_TRUTH_STATE_UNKNOWN = "unknown"
+CLUE_TRUTH_STATE_TRUE_REVEALED = "true_revealed"
+CLUE_TRUTH_STATE_FALSE_REVEALED = "false_revealed"
+CLUE_TRUTH_STATES = (
+    CLUE_TRUTH_STATE_UNKNOWN,
+    CLUE_TRUTH_STATE_TRUE_REVEALED,
+    CLUE_TRUTH_STATE_FALSE_REVEALED,
+)
+CLUE_TRUTH_STATE_CHOICES = tuple(
+    (truth_state, truth_state) for truth_state in CLUE_TRUTH_STATES
+)
 
 MATCH_STORAGE_SCHEMA_VERSION_FIELD = "schema_version"

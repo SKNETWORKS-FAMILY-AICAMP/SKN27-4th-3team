@@ -1,10 +1,10 @@
----
+﻿---
 title: "MVP 목표와 범위"
 status: "draft"
 type: "mvp-scope"
 source: "[[pilot]]"
 created: "2026-05-30"
-updated: "2026-06-02"
+updated: "2026-06-04"
 ---
 
 # MVP 목표와 범위
@@ -13,9 +13,9 @@ updated: "2026-06-02"
 
 MVP는 게임의 전체 확장성을 증명하는 버전이 아니라, 핵심 재미와 서버 권위형 턴 판정이 성립하는지 검증하는 버전이다.
 
-PvP는 1차 MVP 구현 대상은 아니지만, 로그인 기능 다음으로 중요한 확정 후속 핵심 기능이다.
+PvP 모드는 없다.
 
-따라서 1차 MVP의 Auth, Match, Participant, Turn, Action Submission 구조는 PvP 도입을 막지 않도록 설계한다.
+따라서 1차 MVP의 Auth, Match, Participant, Turn, Action Submission 구조는 AI 스토리 단일 플레이 기준으로 설계한다.
 
 괴이 범위는 다음과 같이 고정한다.
 
@@ -29,7 +29,7 @@ PvP는 1차 MVP 구현 대상은 아니지만, 로그인 기능 다음으로 중
 - 첫 괴이 `거울 속의 손님`이 플레이어에게 명확한 목표와 압박을 주는가?
 - 서버 판정 결과가 예측 가능하고 테스트 가능한가?
 - 행동 로그와 스타일 지표가 다음 AI 대응 설계의 근거가 되는가?
-- 로그인과 매치 저장 구조가 future PvP를 막지 않는가?
+- 로그인과 매치 저장 구조가 AI 스토리 단일 플레이를 안정적으로 지원하는가?
 
 ## MVP 완료 기준
 
@@ -42,6 +42,6 @@ PvP는 1차 MVP 구현 대상은 아니지만, 로그인 기능 다음으로 중
 - 진명 조각 3개 확보 후 봉인을 시도할 수 있다.
 - 승리 또는 패배 결과가 저장되고 화면에 표시된다.
 - 행동 이벤트 기반 스타일 지표가 계산된다.
-- Match/Participant 구조가 human vs human PvP 확장을 막지 않는다.
+- Match/Participant 구조가 human player와 apparition 참가자 기준을 명확히 표현한다.
 
-상세 기준은 [[09_Approved_Contracts/19_PvP_확정_후속_및_구조_보존_계약]]을 따른다.
+상세 기준은 [[09_Approved_Contracts/19_PvP_미사용_및_구조_정리_계약]]의 PvP 미사용 결정을 따른다.

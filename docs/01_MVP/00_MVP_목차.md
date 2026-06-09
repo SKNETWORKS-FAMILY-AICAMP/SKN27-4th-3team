@@ -1,10 +1,10 @@
----
+﻿---
 title: "MVP 목차"
 status: "draft"
 type: "mvp-index"
 source: "[[pilot]]"
 created: "2026-05-30"
-updated: "2026-06-02"
+updated: "2026-06-04"
 ---
 
 # MVP 목차
@@ -13,7 +13,7 @@ updated: "2026-06-02"
 
 - 로그인 가능한 웹 게임을 만든다.
 - 첫 괴이 `거울 속의 손님`과 AI 스토리 단일 결투를 제공한다.
-- PvP는 1차 MVP 구현 범위가 아니지만, 확정 후속 핵심 기능으로 구조를 보존한다.
+- PvP 모드는 제공하지 않는다.
 - 괴이 3종은 문서로 확정하되, 1차 MVP 구현은 `거울 속의 손님` 1종으로 제한한다.
 - 서버가 모든 턴과 결과를 판정한다.
 - 행동 로그를 저장한다.
@@ -53,13 +53,11 @@ updated: "2026-06-02"
 
 - `우물 밑의 목소리` 구현
 - `문밖의 어머니` 구현
-- WebSocket 기반 PvP 매치
-- Redis 매칭 대기열과 턴 타이머
 - KAG 데이터 모델
 - LLM 브리핑/대사/요약
 - 운영 로그와 부정행위 의심 로그
 - 배포 환경 구성
 
-PvP는 선택적 후순위가 아니라 확정 후속 핵심 기능이다.
+PvP는 후속 확장 후보가 아니다.
 
-Auth/Match/Participant/Turn 구조는 [[09_Approved_Contracts/19_PvP_확정_후속_및_구조_보존_계약]]을 따른다.
+Auth/Match/Participant/Turn 구조는 [[09_Approved_Contracts/19_PvP_미사용_및_구조_정리_계약]]의 PvP 미사용 결정을 따른다.

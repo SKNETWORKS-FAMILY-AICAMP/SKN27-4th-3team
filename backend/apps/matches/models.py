@@ -2,6 +2,7 @@ from django.db import models
 
 from backend.apps.matches.constants import (
     ACTION_CODE_CHOICES,
+    CLUE_TRUTH_STATE_CHOICES,
     MATCH_MODE_CHOICES,
     MATCH_STATUS_CHOICES,
     PARTICIPANT_TYPE_CHOICES,
@@ -30,15 +31,59 @@ class MatchParticipant(models.Model):
     ritual_power = models.PositiveIntegerField()
     curse_marks = models.PositiveIntegerField()
     secret_exposure = models.PositiveIntegerField()
+    true_name_fragments = models.PositiveIntegerField()
+    incomplete_true_name_fragments = models.PositiveIntegerField()
+    false_clues = models.PositiveIntegerField()
+    suspicion = models.PositiveIntegerField()
+    shield = models.PositiveIntegerField()
+    timeout_count = models.PositiveIntegerField()
 
     class Meta:
         db_table = "match_participants"
+
+
+class MatchTrueNameFragmentOwnership(models.Model):
+    match_id = models.PositiveBigIntegerField()
+    participant_id = models.PositiveBigIntegerField()
+    true_name_fragment_id = models.PositiveBigIntegerField()
+    source_turn_id = models.PositiveBigIntegerField()
+    source_turn_number = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "match_true_name_fragments"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("match_id", "participant_id", "true_name_fragment_id"),
+                name="match_true_name_fragment_ownership_unique",
+            )
+        ]
+
+
+class MatchFalseClueOwnership(models.Model):
+    match_id = models.PositiveBigIntegerField()
+    participant_id = models.PositiveBigIntegerField()
+    false_clue_id = models.PositiveBigIntegerField()
+    truth_state = models.TextField(choices=CLUE_TRUTH_STATE_CHOICES)
+    source_turn_id = models.PositiveBigIntegerField()
+    source_turn_number = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "match_false_clues"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("match_id", "participant_id", "false_clue_id"),
+                name="match_false_clue_ownership_unique",
+            )
+        ]
 
 
 class Turn(models.Model):
     match_id = models.PositiveBigIntegerField()
     turn_number = models.PositiveIntegerField()
     status = models.TextField(choices=TURN_STATUS_CHOICES)
+    started_at = models.DateTimeField()
     deadline_at = models.DateTimeField()
     resolved_at = models.DateTimeField(null=True, blank=True)
 
@@ -73,3 +118,40 @@ class TurnResult(models.Model):
 
     class Meta:
         db_table = "turn_results"
+
+
+class MatchStartRequest(models.Model):
+    user_id = models.PositiveBigIntegerField()
+    client_request_id = models.UUIDField()
+    case_id = models.TextField()
+    player_display_name = models.TextField(null=True, blank=True)
+    match_id = models.PositiveBigIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "match_start_requests"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("user_id", "client_request_id"),
+                name="match_start_request_user_client_request_unique",
+            )
+        ]
+
+
+class DuelDialogue(models.Model):
+    match_id = models.PositiveBigIntegerField()
+    user_id = models.PositiveBigIntegerField()
+    client_nonce = models.UUIDField()
+    player_message = models.TextField()
+    apparition_message = models.TextField(null=True, blank=True)
+    generation_id = models.PositiveBigIntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "duel_dialogues"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("match_id", "user_id", "client_nonce"),
+                name="duel_dialogue_match_user_client_nonce_unique",
+            )
+        ]

@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 
@@ -112,4 +113,4 @@ def test_story_services_validate_policy_json_schema_version_without_llm_or_rag_g
     )
     lowered_source = services_source.lower()
     for forbidden in forbidden_generation_sources:
-        assert forbidden not in lowered_source
+        assert re.search(rf"\b{re.escape(forbidden)}\b", lowered_source) is None

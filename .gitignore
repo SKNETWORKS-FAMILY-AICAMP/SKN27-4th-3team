@@ -3,7 +3,7 @@ __pycache__/
 .pytest_cache/
 .venv/
 
-# 환경 변수와 비밀값
+# Environment variables and secrets
 .env
 .env.*
 !.env.example
@@ -17,6 +17,7 @@ __pycache__/
 .Python
 venv/
 env/
+ENV/
 /venv/
 /env/
 /ENV/
@@ -38,12 +39,13 @@ frontend/dist/
 build/
 .vite/
 frontend/.vite/
+.vite-temp/
 frontend/.vite-temp/
 .next/
 .turbo/
 *.tsbuildinfo
 
-# LLM 실험 산출물
+# LLM experiment outputs
 llm/output/
 llm/runs/
 llm/tmp/
@@ -51,7 +53,7 @@ llm/.cache/
 *.generated.json
 *.generated.txt
 
-# 로그와 임시 파일
+# Logs and temporary files
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -69,6 +71,6 @@ desktop.ini
 .idea/
 .vscode/
 
-# 생성 산출물
+# Generated outputs
 output/*
 !output/.gitkeep

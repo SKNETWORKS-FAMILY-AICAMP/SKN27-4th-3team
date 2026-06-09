@@ -30,6 +30,19 @@ def _origin_allowlist_env(name: str) -> list[str]:
     return origins
 
 
+def _positive_int_env(name: str, *, default: int) -> int:
+    raw_value = os.getenv(name)
+    if raw_value is None:
+        return default
+    try:
+        value = int(raw_value)
+    except ValueError as exc:
+        raise RuntimeError(f"{name} must be a positive integer") from exc
+    if value <= 0:
+        raise RuntimeError(f"{name} must be a positive integer")
+    return value
+
+
 if ENVIRONMENT == "production" and not os.getenv("DJANGO_SECRET_KEY"):
     raise RuntimeError("DJANGO_SECRET_KEY is required in production")
 
@@ -38,6 +51,7 @@ DEBUG = _bool_env("DJANGO_DEBUG", default=False)
 ALLOWED_HOSTS = _csv_env("DJANGO_ALLOWED_HOSTS", default=("localhost", "127.0.0.1"))
 CSRF_TRUSTED_ORIGINS = _origin_allowlist_env("DJANGO_CSRF_TRUSTED_ORIGINS")
 CORS_ALLOWED_ORIGINS = _origin_allowlist_env("DJANGO_CORS_ALLOWED_ORIGINS")
+DJANGO_TRUSTED_PROXY_IPS = tuple(_csv_env("DJANGO_TRUSTED_PROXY_IPS"))
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -46,6 +60,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "channels",
     "backend.apps.accounts.apps.AccountsConfig",
     "backend.apps.profiles.apps.ProfilesConfig",
     "backend.apps.game_rules.apps.GameRulesConfig",
@@ -53,9 +68,12 @@ INSTALLED_APPS = [
     "backend.apps.story.apps.StoryConfig",
     "backend.apps.ai_profile.apps.AIProfileConfig",
     "backend.apps.retrieval.apps.RetrievalConfig",
+    "backend.apps.llm.apps.LlmConfig",
 ]
 
 MIDDLEWARE = [
+    "backend.apps.common.request_ids.RequestIdMiddleware",
+    "backend.apps.common.trusted_proxy.TrustedProxyMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -86,7 +104,8 @@ LANGUAGE_CODE = "ko-kr"
 TIME_ZONE = "Asia/Seoul"
 USE_I18N = True
 USE_TZ = True
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
+STATIC_ROOT = PROJECT_ROOT / "staticfiles"
 
 TEMPLATES = [
     {
@@ -104,6 +123,7 @@ TEMPLATES = [
 ]
 
 REST_FRAMEWORK = {
+    "EXCEPTION_HANDLER": "backend.apps.common.runtime.api_exception_handler",
     "DEFAULT_AUTHENTICATION_CLASSES": [],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
@@ -116,15 +136,47 @@ CSRF_COOKIE_SECURE = SECURE_COOKIES
 SESSION_COOKIE_SECURE = SECURE_COOKIES
 CSRF_COOKIE_SAMESITE = AUTH_COOKIE_SAMESITE
 SESSION_COOKIE_SAMESITE = AUTH_COOKIE_SAMESITE
+CSRF_FAILURE_VIEW = "backend.apps.common.csrf.csrf_failure"
 
 ACCESS_TOKEN_COOKIE_NAME = "pilot_access"
 REFRESH_TOKEN_COOKIE_NAME = "pilot_refresh"
 ACCESS_TOKEN_COOKIE_PATH = API_PREFIX
-REFRESH_TOKEN_COOKIE_PATH = f"{API_PREFIX}/auth/refresh"
+REFRESH_TOKEN_COOKIE_PATH = f"{API_PREFIX}/auth"
 ACCESS_TOKEN_TTL_SECONDS = 15 * 60
 REFRESH_TOKEN_TTL_SECONDS = 14 * 24 * 60 * 60
 CSRF_HEADER_NAME = "HTTP_X_CSRFTOKEN"
 
+AUTH_PASSWORD_MIN_LENGTH = 10
+AUTH_PASSWORD_MAX_LENGTH = 128
+LOGIN_FAILURE_WINDOW_SECONDS = 10 * 60
+LOGIN_FAILURE_LIMIT = 5
+LOGIN_FAILURE_LOCKOUT_SECONDS = 15 * 60
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        "OPTIONS": {"user_attributes": ("email", "nickname")},
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {"min_length": AUTH_PASSWORD_MIN_LENGTH},
+    },
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
+
 RAG_EMBEDDING_MODEL_ID = os.getenv("RAG_EMBEDDING_MODEL_ID")
 RAG_DEFAULT_TOP_K = 6
 RAG_DEFAULT_SCORE_THRESHOLD = 0.72
+
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+WEBSOCKET_HEARTBEAT_SECONDS = _positive_int_env("WEBSOCKET_HEARTBEAT_SECONDS", default=25)
+WEBSOCKET_CONNECT_TIMEOUT_SECONDS = _positive_int_env(
+    "WEBSOCKET_CONNECT_TIMEOUT_SECONDS",
+    default=6,
+)
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {"hosts": [REDIS_URL]},
+    }
+}

@@ -55,6 +55,20 @@ class OfficialFixtureContractTest(unittest.TestCase):
         self.assertIn("거울 표면에 남은 손자국", result["metadata"]["user_prompt"])
         self.assertIn("right_apparition_message", result["metadata"]["user_prompt"])
 
+    def test_final_duel_dialogue_official_fixture_builds_prompt_in_dry_run(self) -> None:
+        generation_input = _generation_input("final_duel_dialogue.official.sample.json")
+
+        result = generate(generation_input, _dry_run_options(), dry_run=True)
+
+        self.assertEqual("skipped", result["status"])
+        self.assertIs(True, result["fallback_used"])
+        self.assertEqual("dry_run", result["metadata"]["reason"])
+        self.assertIn("final_duel_dialogue", result["purpose"])
+        self.assertIn("Yunseo", result["metadata"]["user_prompt"])
+        self.assertIn("recover_piti_true_name", result["metadata"]["user_prompt"])
+        self.assertIn("피티", result["metadata"]["user_prompt"])
+        self.assertIn("네 이름을 알고 있어", result["metadata"]["user_prompt"])
+
 
 if __name__ == "__main__":
     unittest.main()

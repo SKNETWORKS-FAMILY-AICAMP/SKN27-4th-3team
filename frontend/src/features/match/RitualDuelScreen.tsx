@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import type { MatchState } from "../../shared/types/api";
 import styles from "./RitualDuelScreen.module.css";
 
 const PROTOTYPE_ROOT = "/prototype";
@@ -9,8 +10,13 @@ const PROTOTYPE_SCRIPT_ID = "mirror-guest-prototype-script";
 
 type PrototypeEndingPayload = Record<string, string | number | boolean | null | undefined>;
 
-type PrototypeTurnRequest = {
+export type PrototypeTurnRequest = {
   playerAction: string;
+  turnSubmitPayload?: {
+    action_code: string;
+    info_target_key?: string | null;
+    client_nonce: string;
+  };
   options: Record<string, unknown>;
   state: {
     turn: number;
@@ -22,10 +28,21 @@ type PrototypeTurnRequest = {
   };
 };
 
-type PrototypeTurnResultProvider = (request: PrototypeTurnRequest) => Promise<unknown> | unknown;
+type PrototypeLlmTextPayload = {
+  llm_text?: {
+    enabled: boolean;
+    text: string | null;
+    display_slot: string | null;
+  };
+};
+
+export type PrototypeTurnResultProvider = (
+  request: PrototypeTurnRequest,
+) => Promise<(Record<string, unknown> & PrototypeLlmTextPayload) | unknown> | (Record<string, unknown> & PrototypeLlmTextPayload) | unknown;
 
 type RitualDuelScreenProps = {
   fadeIn?: boolean;
+  initialMatchState?: MatchState | null;
   matchId?: string;
   turnResultProvider?: PrototypeTurnResultProvider;
 };
@@ -33,12 +50,14 @@ type RitualDuelScreenProps = {
 declare global {
   interface Window {
     gamePrototypeBridge?: {
+      initialMatchState?: MatchState | null;
       openEndingScreen?: (payload: PrototypeEndingPayload) => void;
       requestTurnResult?: (request: PrototypeTurnRequest) => Promise<unknown> | unknown;
     };
     gamePrototypeState?: {
       restartIntroDialogue?: () => void;
       ensureIntroDialogue?: () => void;
+      applyMatchState?: (match: MatchState | null) => void;
       [key: string]: unknown;
     };
     __mirrorGuestPrototypeActiveRunId?: string;
@@ -82,6 +101,7 @@ function loadPrototypeScript(runId: string) {
 
 export function RitualDuelScreen({
   fadeIn = false,
+  initialMatchState = null,
   matchId = "prototype-mirror-guest",
   turnResultProvider,
 }: RitualDuelScreenProps) {
@@ -105,6 +125,15 @@ export function RitualDuelScreen({
   );
 
   useEffect(() => {
+    if (window.gamePrototypeBridge) {
+      window.gamePrototypeBridge.initialMatchState = initialMatchState;
+    }
+    if (initialMatchState) {
+      window.gamePrototypeState?.applyMatchState?.(initialMatchState);
+    }
+  }, [initialMatchState]);
+
+  useEffect(() => {
     let cancelled = false;
     const runId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
@@ -113,6 +142,7 @@ export function RitualDuelScreen({
         setLoadError(null);
         window.__mirrorGuestPrototypeCleanup?.();
         window.gamePrototypeBridge = {
+          initialMatchState,
           openEndingScreen,
           requestTurnResult: turnResultProvider,
         };
@@ -132,6 +162,7 @@ export function RitualDuelScreen({
         host.innerHTML = rewritePrototypeAssetPaths(documentFragment.body.innerHTML);
         await loadPrototypeScript(runId);
         if (cancelled || window.__mirrorGuestPrototypeActiveRunId !== runId) return;
+        window.gamePrototypeState?.applyMatchState?.(initialMatchState);
 
         window.requestAnimationFrame(() => {
           if (!cancelled && window.__mirrorGuestPrototypeActiveRunId === runId) {
@@ -167,7 +198,7 @@ export function RitualDuelScreen({
   }, [openEndingScreen, turnResultProvider]);
 
   return (
-    <main className={`${styles.screen} ${fadeIn ? styles.fadeIn : ""}`} aria-label="거울 속의 손님 게임 화면">
+    <main className={`${styles.screen} ${fadeIn ? styles.fadeIn : ""}`} aria-label="무명의 저주 게임 화면">
       <div ref={hostRef} className={styles.prototypeHost} />
       <button type="button" className={styles.backButton} onClick={() => navigate("/story-cases")}>
         사건 선택

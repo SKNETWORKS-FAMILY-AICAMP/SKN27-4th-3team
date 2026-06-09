@@ -58,6 +58,7 @@ UNSUPPORTED_TRUTH_WORDS = {"비밀", "진실", "드러났다", "밝혀졌다", "
 TEXT_LIMITS = {
     "result_summary": {"min_chars": 80, "max_chars": 240, "min_sentences": 2, "max_sentences": 4},
     "turn_flavor_text": {"min_chars": 10, "max_chars": 60, "min_lines": 1, "max_lines": 2, "max_line_chars": 40},
+    "final_duel_dialogue": {"min_chars": 40, "max_chars": 300, "min_sentences": 1, "max_sentences": 3},
     "style_summary": {"min_chars": 40, "max_chars": 120, "min_sentences": 1, "max_sentences": 2},
     "match_log_summary": {"min_lines": 3, "max_lines": 5, "max_line_chars": 100},
 }
@@ -303,7 +304,12 @@ def validate_output(generation_input: dict[str, Any], text: str) -> list[str]:
         violations.append("personality_judgment")
     if any(word in text for word in NEXT_ACTION_WORDS):
         violations.append("next_action_prediction")
-    if purpose in {"turn_flavor_text", "match_log_summary", "style_summary"}:
+    if purpose in {
+        "turn_flavor_text",
+        "final_duel_dialogue",
+        "match_log_summary",
+        "style_summary",
+    }:
         violations.extend(validate_non_judgmental_text(text, payload))
 
     if purpose == "result_summary":
@@ -393,7 +399,7 @@ def validate_text_shape(purpose: str, text: str) -> list[str]:
     violations: list[str] = []
     normalized = text.strip()
 
-    if purpose in {"result_summary", "style_summary"}:
+    if purpose in {"result_summary", "final_duel_dialogue", "style_summary"}:
         text_length = len(normalized)
         if text_length < limits["min_chars"] or text_length > limits["max_chars"]:
             violations.append("length_violation")

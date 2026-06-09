@@ -4,7 +4,7 @@ status: "needs-decision"
 type: "implementation-confirmation"
 source: "[[pilot]]"
 created: "2026-05-30"
-updated: "2026-06-02"
+updated: "2026-06-04"
 ---
 
 # MVP 구현 확정 문서
@@ -12,6 +12,18 @@ updated: "2026-06-02"
 이 문서는 MVP 구현 착수 직전에 승인받는 최종 기준 문서다.
 
 현재 상태는 `needs-decision`이다. [[01_MVP/04_MVP_확정_필요_항목]]이 확정되기 전까지 구현 기준으로 사용하지 않는다.
+
+## 최신성 메모
+
+이 문서는 `needs-decision` 상태이므로 현재 구현 기준으로 단독 사용하지 않는다.
+
+현재 승인된 최신 구현 기준은 [[09_Approved_Contracts/00_승인본_목차]]와 해당 승인본을 우선한다.
+
+- LLM runtime 범위는 [[09_Approved_Contracts/25_LLM_Runtime_통합_계약]]을 따른다.
+- `nameless_curse` 별도 사건과 피티 공식화 기준은 [[09_Approved_Contracts/26_무명의_저주_사건_계약]]을 따른다.
+- 플레이어 표시 이름, 사건별 결전 조건, RAG source plan은 [[09_Approved_Contracts/27_플레이어_이름_무명의_저주_결전_RAG_계약]]을 따른다.
+
+따라서 아래의 `프론트엔드 구현과 LLM generation 구현은 별도 팀 범위로 분리한다` 문장은 초기 백엔드/RAG/AI Profile 구현 범위에 대한 이력으로 보고, 현재 LLM runtime 구현 범위 판단에는 승인본 25를 우선한다.
 
 프론트엔드 구현과 LLM generation 구현은 별도 팀 범위로 분리한다.
 
@@ -42,3 +54,4 @@ Django Auth 보안은 [[09_Approved_Contracts/20_Django_Auth_보안_계약]]을 
 ## 현재 남은 구현 전 결정
 
 - 프론트엔드 구현과 LLM generation 구현을 제외한 백엔드/API 구현 전 남은 오너 결정 없음
+- production 배포 구현 전 결정 게이트는 [[09_Approved_Contracts/24_Dockerfile_이미지_빌드_배포_준비_계약]]을 따른다. 이 항목은 백엔드/API MVP 구현 착수를 막지 않지만 production 배포 구현 전에는 반드시 확정한다.

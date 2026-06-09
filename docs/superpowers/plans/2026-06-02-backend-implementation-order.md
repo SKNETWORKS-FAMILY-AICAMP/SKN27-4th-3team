@@ -1,4 +1,4 @@
-# Backend Implementation Order Implementation Plan
+﻿# Backend Implementation Order Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -30,7 +30,8 @@
 - `frontend/` 구현
 - 최상위 `llm/` 구현
 - LLM provider, prompt, generation 구현
-- WebSocket/PvP/realtime 구현
+- WebSocket/realtime 구현
+- PvP 모드 구현
 - KAG 구현
 - 운영 배포 자동화
 
@@ -107,7 +108,8 @@ Expected: `29 passed`
 - `frontend/` 구현 금지
 - 최상위 `llm/` 구현 금지
 - LLM provider/prompt/generation 구현 금지
-- WebSocket/PvP/realtime 구현 금지
+- WebSocket/realtime 구현 금지
+- PvP 모드 구현 금지
 - KAG 구현 금지
 
 - [x] **Step 3: 중단 조건 확인**
@@ -415,7 +417,7 @@ Expected: PASS
 **Source of truth:**
 
 - `docs/09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약.md`
-- `docs/09_Approved_Contracts/19_PvP_확정_후속_및_구조_보존_계약.md`
+- `docs/09_Approved_Contracts/19_PvP_미사용_및_구조_정리_계약.md`
 - `docs/09_Approved_Contracts/21_AI_스토리_시간초과_판정_계약.md`
 
 - [x] **Step 1: 실패 테스트 작성**
@@ -446,7 +448,7 @@ Expected before implementation: FAIL
 구현 기준:
 
 - AI story 전용 구조로 좁히지 않는다.
-- future PvP를 막는 단일 `match.user_id` 소유권 필드를 만들지 않는다.
+- `match.user_id`처럼 단일 소유자만으로 접근 권한을 판단하지 않는다.
 - 결과 snapshot JSONField에는 `schema_version` 필수.
 
 - [ ] **Step 3: 검증**
@@ -712,6 +714,7 @@ Expected: PASS
 
 **Files:**
 - Create: `ops/docker/docker-compose.yml`
+- Create: `ops/docker/backend.Dockerfile`
 - Create: `ops/env/backend.env.example`
 - Test: `backend/tests/ops/test_local_runtime_contract.py`
 
@@ -741,12 +744,61 @@ Expected before implementation: FAIL
 - env template에는 secret 실제값을 넣지 않는다.
 - production secure cookie는 `Secure=true` 필수, local/dev는 `Secure=false` 허용.
 - CORS/CSRF origin은 명시 allowlist만 허용한다.
+- `ops/docker/backend.Dockerfile`은 백엔드 이미지 빌드 시작점으로 둔다.
+- 현재 Dockerfile entrypoint는 로컬/dev 기준이며 production 배포 entrypoint로 확정하지 않는다.
 
 - [ ] **Step 3: 검증**
 
 Run: `C:\Python314\python.exe -m pytest backend\tests\ops\test_local_runtime_contract.py -v`
 
 Expected: PASS
+
+---
+
+### Task 12C: Dockerfile 이미지 빌드와 Django 배포 준비 문서화
+
+**Files:**
+- Read: `docs/09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약.md`
+- Read: `docs/09_Approved_Contracts/23_프로젝트_폴더_구조_계약.md`
+- Modify if needed: `docs/03_Backend/99_Backend_구현_확정.md`
+- Modify if needed: `README.md`
+- Modify if needed: `memory.md`
+
+**Source of truth:**
+
+- 현재 승인 범위: 로컬 Docker Compose와 Dockerfile 기반 이미지 빌드 준비
+- 현재 제외 범위: 운영 배포 자동화와 production 배포 구현
+- 결정 게이트: `docs/09_Approved_Contracts/24_Dockerfile_이미지_빌드_배포_준비_계약.md`
+
+- [ ] **Step 1: 문서 확인**
+
+확인:
+
+- `ops/docker/`가 Dockerfile과 image build 후보를 담당하는지
+- 현재 Dockerfile이 production entrypoint로 확정되어 있지 않음을 문서화했는지
+- Django production 배포 전에 확정해야 하는 항목을 남겼는지
+
+- [ ] **Step 2: 후속 배포 계약 전제 기록**
+
+production 배포 전 확정 필요:
+
+- 배포 대상 환경
+- image registry와 tag 규칙
+- WSGI/ASGI server
+- static/media 처리
+- secret/env 주입 방식
+- migration 실행 전략
+- health check
+- reverse proxy, TLS, domain
+- CI/CD 또는 수동 배포 절차
+
+- [ ] **Step 3: 검증**
+
+Run: `git diff --check`
+
+Expected: PASS
+
+Docker image build는 네트워크/image pull이 필요할 수 있으므로 별도 실행 승인 후 검증한다.
 
 ---
 
@@ -771,7 +823,8 @@ Expected: all tests PASS
 - LLM/RAG/embedding이 rule outcome을 바꾸지 않는다.
 - 프론트 구현이 없다.
 - LLM generation 구현이 없다.
-- WebSocket/PvP/realtime 구현이 없다.
+- WebSocket/realtime 구현이 없다.
+- PvP 모드 구현이 없다.
 - KAG 구현이 없다.
 
 - [ ] **Step 3: 남은 리스크 기록**
@@ -826,7 +879,7 @@ Expected: all tests PASS
 
 이 순서가 안전한 이유:
 
-- Auth와 Match 권한 구조가 API와 PvP-ready 구조의 기반이다.
+- Auth와 Match 권한 구조가 AI 스토리 API 구조의 기반이다.
 - Story 공식 내용은 일부 문서가 `needs-decision`이므로 뒤로 미룬다.
 - RAG는 포함 범위지만 rule authority가 아니므로 core 저장/권한 이후에 붙인다.
 
@@ -850,7 +903,7 @@ Expected: all tests PASS
 
 확인한 내용:
 
-- `frontend/`, 최상위 `llm/`, LLM provider/prompt/generation, WebSocket/PvP/realtime, KAG 구현은 현재 범위에서 제외한다.
+- `frontend/`, 최상위 `llm/`, LLM provider/prompt/generation, WebSocket/realtime, PvP 모드, KAG 구현은 현재 범위에서 제외한다.
 - `backend/manage.py`, `backend/config/settings.py`, `pyproject.toml`, `requirements*.txt`는 아직 없다.
 - Task 1의 Django/DRF/JWT/jsonschema/pgvector 의존성 버전은 구현 전 오너 확인이 필요하다.
 
@@ -1431,7 +1484,7 @@ Expected: all tests PASS
 - `api-spec/pilot-mvp-api.official.jsonc`
 - `docs/03_Backend/03_매치와_턴_저장.md`
 - `docs/09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약.md`
-- `docs/09_Approved_Contracts/19_PvP_확정_후속_및_구조_보존_계약.md`
+- `docs/09_Approved_Contracts/19_PvP_미사용_및_구조_정리_계약.md`
 - `docs/09_Approved_Contracts/21_AI_스토리_시간초과_판정_계약.md`
 
 변경 내용:
@@ -1608,3 +1661,167 @@ Expected: all tests PASS
 - `ActionView.display_name` 매핑 값은 승인 문서에서 별도로 확정된 값을 찾지 못해 이번 순수 resolve 결과에는 넣지 않았다. API serializer 단계에서 공식 schema와 표시명 출처를 다시 확인해야 한다.
 - `ApiError`는 예외가 아니라 응답 payload 객체다. API view/service 경계에서 반환형을 어떻게 HTTP 응답으로 변환할지는 이후 DRF 연결 단계에서 확정해야 한다.
 - 시간 비교의 경계값인 `submitted_at == deadline_at`, `server_time == deadline_at`의 처리 문구는 문서에 명시적으로 분리되어 있지 않다. 이번 구현은 문서의 “이후/지났고” 표현에 맞춰 `>`인 경우만 deadline 초과로 처리한다.
+
+### 2026-06-05 현재 구현 진행 현황과 다음 개발 범위
+
+목적:
+
+- 현재 브랜치에서 실제로 열린 API, 저장 구조, 검증 상태를 한 곳에 고정한다.
+- 다음 개발자가 남은 범위를 추측하지 않고 `matches.detail` → `matches.turns.submit` → `matches.result` 순서로 이어갈 수 있게 한다.
+
+현재 브랜치 상태:
+
+- 브랜치: `feature-backend-structure`
+- 최신 커밋: `33031a3`
+- 현재 추가 구현은 아직 commit 전 working tree 변경이다.
+- 주요 commit 완료 범위:
+  - `profile.me`
+  - `story.cases.list`
+  - `story.cases.briefing`
+- 현재 working tree에서 완료된 추가 범위:
+  - `story.cases.matches.start`
+  - `MatchStartRequest` idempotency 저장 테이블
+  - Django `CSRF_FAILURE_VIEW` 기반 CSRF 실패 envelope
+
+현재 구현 완료 범위:
+
+- Django/DRF 프로젝트 골격, 공통 `{ data, meta }` / `{ error, meta }` envelope, request id middleware가 동작한다.
+- `auth.csrf`는 실제 CSRF cookie와 token을 내려준다.
+- `auth.login`, `auth.refresh`, `auth.me`는 JWT access/refresh cookie 기반 실제 세션 흐름으로 연결되어 있다.
+- `auth.signup`, `auth.logout`는 아직 `501 SERVICE_NOT_IMPLEMENTED` 상태다.
+- `profile.me`는 access cookie 세션 확인 후 사용자/프로필/스타일 요약을 반환한다.
+- `story.cases.list`는 승인된 정적 MVP case `mirror_guest`만 반환한다.
+- `story.cases.briefing`은 `mirror_guest` briefing과 info target 5개를 반환하고 unknown case는 `404 CASE_NOT_FOUND`로 처리한다.
+- `story.cases.matches.start`는 다음 범위까지 실제 구현됐다.
+  - access cookie 세션 확인
+  - `client_request_id` UUID validation
+  - `mirror_guest`만 신규 시작 허용
+  - 같은 사용자 + 같은 `client_request_id` + 같은 case 재요청 시 기존 match 반환
+  - 같은 사용자 + 같은 `client_request_id` + 다른 case 재요청 시 `409 IDEMPOTENCY_CONFLICT`
+  - `Match(mode="ai_story", status="active")` 생성
+  - human/apparition participant 2개 생성
+  - turn 1 생성, `deadline_at = now + 25초`
+  - public id는 `match_{id}`, `turn_{id}`, `participant_{id}` 형식
+  - `ResourceState.initial()` 기준 초기 resource 반환
+  - 7개 action 반환, `seal`은 진명 조각 3개 전까지 disabled
+- `matches.detail`, `matches.turns.submit`, `matches.result`는 계획대로 아직 `501 SERVICE_NOT_IMPLEMENTED` 상태다.
+
+진행률 판단:
+
+- Backend 기반 구조와 도메인 저장 구조는 대부분 완료됐다.
+- Official API runtime 기준으로는 13개 endpoint 중 8개가 실제 응답으로 열려 있다.
+  - 실제 응답: `auth.csrf`, `auth.login`, `auth.refresh`, `auth.me`, `profile.me`, `story.cases.list`, `story.cases.briefing`, `story.cases.matches.start`
+  - 남은 stub: `auth.signup`, `auth.logout`, `matches.detail`, `matches.turns.submit`, `matches.result`
+- AI Story 플레이 가능 흐름 기준으로는 “매치 시작”까지만 열렸고, “매치 조회/행동 제출/턴 해석 저장/결과 조회”는 아직 남아 있다.
+
+검증 완료:
+
+- 실행 위치: `D:\dev\Project\SKN27-4th-3team`
+- 명령: `.\.venv\Scripts\python.exe -m pytest backend\tests\story backend\tests\matches backend\tests\api -q`
+- 결과: `40 passed`
+- 명령: `.\.venv\Scripts\python.exe -m pytest backend\tests -q`
+- 결과: `131 passed`
+- 명령: `.\.venv\Scripts\python.exe backend\manage.py check`
+- 결과: `System check identified no issues (0 silenced).`
+- DB 기준: `localhost:5433/pilot_verify_clean`, `POSTGRES_USER=pilot`, `POSTGRES_PASSWORD=change-me-local-db-password`
+- 명령: `.\.venv\Scripts\python.exe backend\manage.py makemigrations --check --dry-run`
+- 결과: `No changes detected`
+- 명령: `.\.venv\Scripts\python.exe backend\manage.py migrate --check`
+- 결과: exit code `0`
+- APIClient smoke 결과:
+  - first match start: `201`
+  - same user/key/case replay: `201`, same `match_id`
+  - same user/key/different case: `409 IDEMPOTENCY_CONFLICT`
+  - new key/unknown case: `404 CASE_NOT_FOUND`
+  - DB rows: match `1`, participants `2`, turn `1`, start request `1`
+  - available actions `7`, `seal.enabled=false`
+- 실행 위치: `D:\dev\Project\SKN27-4th-3team\ops\docker`
+- 명령: `docker-compose build api`
+- 결과: image build 성공
+- 명령: `docker-compose run --rm --no-deps api python backend/manage.py check`
+- 결과: `System check identified no issues (0 silenced).`
+- 명령: `git diff --check`
+- 결과: whitespace error 없음. Git line ending warning만 표시됨.
+
+다음 개발 우선순위:
+
+1. `GET /api/v1/matches/{match_id}` 실제 구현
+   - 목적: match start 직후 또는 새로고침 후 official `MatchState`를 다시 조회한다.
+   - 필요한 작업:
+     - public `match_{id}` 파싱과 validation
+     - access cookie 세션 확인
+     - `MatchStartRequest`를 통한 사용자 접근권한 확인
+     - `Match`, participant 2개, 현재 turn 조회
+     - start 응답과 동일한 `MatchState` serializer/service helper 재사용
+     - unknown match는 `404 MATCH_NOT_FOUND`
+     - 다른 사용자 match는 `403 MATCH_ACCESS_DENIED`
+   - 주의:
+     - `Match` 모델에 `user_id` 또는 `story_case_id`를 추가하지 않는다.
+     - 사용자 접근권한은 `MatchStartRequest(user_id, match_id)`로 확인한다.
+
+2. `POST /api/v1/matches/{match_id}/turns` 실제 구현
+   - 목적: 플레이어 행동 제출을 저장하고 한 턴을 resolve한다.
+   - 필요한 작업:
+     - CSRF 보호 유지
+     - access cookie 세션 확인
+     - public match id validation
+     - `client_nonce` UUID validation
+     - `action_code`가 승인된 7개 action 중 하나인지 검증
+     - `insight`, `contract`, `seal`에는 `info_target_key` 필수 검증
+     - 현재 turn deadline 확인
+     - participant/turn/client nonce 단위 idempotency 확인
+     - `ActionSubmission` 저장
+     - 기존 `matches.resolution.resolve_ai_story_turn()`과 연결
+     - `TurnResult` 저장
+     - 다음 turn 생성 또는 match resolved 처리
+   - 주의:
+     - effect code를 실제 `ResourceState` delta로 적용하는 저장 엔진이 아직 없다. 이 엔진 없이 turn submit을 열면 응답과 저장 상태가 분리될 수 있으므로 먼저 상태 적용 범위를 확정해야 한다.
+     - `seal` 성공/실패, false clue, true name fragment 증감은 승인 계약 문서만 기준으로 구현한다.
+
+3. Match 상태 저장 확장 또는 snapshot 저장 결정
+   - 목적: `matches.detail`과 다음 turn submit에서 현재 resource/clue/log 상태를 재구성할 수 있게 한다.
+   - 필요한 결정:
+     - 현재 `match_participants`의 `sanity`, `ritual_power`, `curse_marks`, `secret_exposure`만으로 충분한지
+     - `true_name_fragments`, `incomplete_true_name_fragments`, `false_clues`, `suspicion`, `shield`, `timeout_count`를 어디에 저장할지
+     - `TurnResult.result_json/public_log_json/private_log_json` snapshot만으로 재구성할지
+     - 새 table 또는 기존 table 확장이 승인 문서 범위에 포함되는지
+   - 현재 판단:
+     - match start는 초기 상태만 반환하므로 안전하다.
+     - turn submit/detail을 실제로 열기 전에는 상태 저장 방식 결정이 필요하다.
+
+4. `GET /api/v1/matches/{match_id}/result` 실제 구현
+   - 목적: resolved match의 최종 결과를 official `MatchResult` shape로 반환한다.
+   - 필요한 작업:
+     - access cookie 세션 확인
+     - 사용자 접근권한 확인
+     - match status가 resolved인지 확인
+     - `MATCH_NOT_RESOLVED` 처리
+     - winner/ending/revealed clue/log 요약 구성
+   - 선행 조건:
+     - turn submit에서 match resolved와 winner 저장이 먼저 구현되어야 한다.
+
+5. Auth stub 정리
+   - `auth.signup`과 `auth.logout`는 아직 `501`이다.
+   - signup은 사용자 생성 정책, profile 초기값, password validation, 중복 email error code가 문서에 확정된 뒤 구현한다.
+   - logout은 refresh token family revoke와 cookie 삭제 정책을 연결해야 한다.
+
+6. Profile/AI Profile 후속 연결
+   - turn submit이 열린 뒤 `ActionEvent` 저장과 style metric snapshot 갱신을 연결한다.
+   - match 종료 시 `Profile.ai_story_matches/wins/losses` public record 갱신 정책을 적용한다.
+
+7. Story 진행도 후속 연결
+   - 현재 `PlayerStoryProgress` 모델은 존재하지만 API runtime에는 연결되지 않았다.
+   - `mirror_guest` 1차 MVP에서 progress를 언제 생성/갱신할지 승인 문서 기준으로 확인한 뒤 구현한다.
+
+남은 리스크:
+
+- `localhost:5432/pilot` 기본 DB는 연결 timeout이 발생했다. 검증은 현재 `localhost:5433/pilot_verify_clean` 기준으로 수행했다.
+- 현재 `story.cases.matches.start` 구현은 working tree 변경 상태이며 아직 commit되지 않았다.
+- `story.cases.matches.start`가 내려주는 action display name은 문서 예시와 승인된 action code/cost를 기준으로 상수화했다. 표시명 문구가 프론트 확정안과 달라지면 serializer 상수만 조정한다.
+- `matches.detail`부터는 현재 상태를 DB에서 재구성해야 하므로, 단순 endpoint 연결보다 상태 저장 계약 확정이 먼저 필요하다.
+
+다음 작업 시작 조건:
+
+- 먼저 현재 변경분을 review하고 commit한다.
+- 다음 implementation task는 `matches.detail`로 시작한다.
+- `matches.turns.submit` 구현 전에는 ResourceState persistence/snapshot 방식을 문서 기준으로 확정한다.

@@ -1,0 +1,36 @@
+{
+  "purpose": "final_duel_dialogue",
+  "case": {
+    "case_id": "mirror_guest",
+    "title": "거울 속의 손님"
+  },
+  "match": {
+    "match_id": "official-sample-match-001",
+    "turn_number": 9,
+    "result": "unresolved"
+  },
+  "player": {
+    "display_name": "Yunseo"
+  },
+  "player_message": "네 이름을 알고 있어. 피티.",
+  "apparition_alias": "피티",
+  "duel_rules": {
+    "required_true_name_fragments": 2,
+    "win_condition": "recover_piti_true_name",
+    "false_clue_pressure": true
+  },
+  "public_context": {
+    "true_name_fragments": 3,
+    "false_clues": 2,
+    "curse_marks": 1,
+    "sanity": 6,
+    "recent_public_logs": [
+      {
+        "turn_number": 8,
+        "text": "거울 표면에 남은 손자국이 차갑게 번졌다.",
+        "log_key": "mirror_surface_trace"
+      }
+    ]
+  },
+  "display_slot": "duel_dialogue"
+}

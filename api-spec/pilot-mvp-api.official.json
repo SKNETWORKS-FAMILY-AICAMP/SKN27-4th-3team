@@ -5,7 +5,7 @@
     "schema_status": "approved",
     "schema_version": "2026-06-02.mvp.v1",
     "created": "2026-06-02",
-    "updated": "2026-06-02",
+    "updated": "2026-06-06",
     "source_documents": [
       "docs/09_Approved_Contracts/05_API_명세_관리_기준.md",
       "docs/09_Approved_Contracts/06_API_응답_형태_기준.md",
@@ -25,6 +25,20 @@
         "request_id",
         "server_time"
       ],
+      "request_id_policy": {
+        "source": "server_generated",
+        "format": "req_<uuid4_hex>",
+        "external_header": "X-Request-ID ignored in 1st MVP",
+        "response_header": "X-Request-ID"
+      },
+      "service_not_implemented_policy": {
+        "status": 501,
+        "error_code": "SERVICE_NOT_IMPLEMENTED",
+        "details_required_fields": [
+          "service"
+        ],
+        "mock_success_forbidden": true
+      },
       "error_required_fields": [
         "code",
         "message",
@@ -36,11 +50,23 @@
       "refresh_token_delivery": "HttpOnly cookie",
       "access_token_type": "JWT",
       "access_token_ttl_minutes": 15,
+      "jwt_algorithm": "HS256",
+      "jwt_signing_secret": "Django settings.SECRET_KEY from DJANGO_SECRET_KEY",
+      "access_token_claims": [
+        "token_type",
+        "sub",
+        "iat",
+        "exp"
+      ],
       "refresh_token_type": "JWT",
       "refresh_token_ttl_days": 14,
       "refresh_token_claims": [
+        "token_type",
+        "sub",
         "jti",
-        "family_id"
+        "family_id",
+        "iat",
+        "exp"
       ],
       "refresh_token_family_id": "UUIDv4 generated on successful login",
       "refresh_token_jti": "UUIDv4 generated for each refresh token",
@@ -61,6 +87,19 @@
         "grace_window": "none",
         "concurrency": "DB transaction with row lock"
       },
+      "security_event_storage": {
+        "fields": [
+          "event_type",
+          "user_id",
+          "request_id",
+          "metadata",
+          "created_at"
+        ],
+        "user_id": "nullable; unauthenticated or unknown actor is null",
+        "request_id": "nullable server-generated request id",
+        "metadata": "JSON object with default {}; raw token, token hash, password, cookie, and CSRF token values forbidden",
+        "actor_foreign_key": "forbidden until user deletion/event retention lifecycle is approved"
+      },
       "token_storage_forbidden": [
         "localStorage",
         "sessionStorage",
@@ -69,11 +108,30 @@
       "same_site": "Lax",
       "cookie_paths": {
         "access": "/api/v1",
-        "refresh": "/api/v1/auth/refresh"
+        "refresh": "/api/v1/auth"
       },
       "secure_cookie": {
         "local_dev": false,
         "production": true
+      },
+      "password_policy": {
+        "min_length": 10,
+        "max_length": 128,
+        "common_password_blocked": true,
+        "numeric_only_blocked": true,
+        "similar_to_email_or_nickname_blocked": true,
+        "validation_error_code": "VALIDATION_ERROR"
+      },
+      "login_failure_rate_limit": {
+        "identity": "normalized email + server observed REMOTE_ADDR",
+        "trusted_proxy_headers": "not used until a trusted proxy policy is approved",
+        "window_seconds": 600,
+        "failure_limit": 5,
+        "lockout_seconds": 900,
+        "http_status": 429,
+        "error_code": "LOGIN_RATE_LIMITED",
+        "reset_on_success": true,
+        "invalid_credentials_response_hides_account_existence": true
       }
     },
     "csrf": {
@@ -105,14 +163,12 @@
       "network_disconnect": "not an immediate timeout",
       "no_valid_submission_until_deadline": "resolve as timeout",
       "timeout_default_player_action": "silence",
-      "reconnect": "GET /api/v1/matches/{match_id}",
-      "pvp_reconnect_grace": "future scope"
+      "reconnect": "GET /api/v1/matches/{match_id}"
     }
   },
   "domain_enums": {
     "match_mode": [
-      "ai_story",
-      "pvp"
+      "ai_story"
     ],
     "mvp_match_mode": [
       "ai_story"
@@ -146,12 +202,34 @@
       "contract",
       "seal"
     ],
+    "story_case_id": [
+      "mirror_guest",
+      "nameless_curse"
+    ],
     "mirror_guest_info_target_key": [
       "mirror_surface",
       "mirror_back",
       "missing_child_voice",
       "forgotten_room",
       "self_reflection"
+    ],
+    "nameless_curse_info_target_key": [
+      "truth_mirror",
+      "family_journal",
+      "nameless_thread",
+      "basement_wall",
+      "self_reflection"
+    ],
+    "story_info_target_key": [
+      "mirror_surface",
+      "mirror_back",
+      "missing_child_voice",
+      "forgotten_room",
+      "self_reflection",
+      "truth_mirror",
+      "family_journal",
+      "nameless_thread",
+      "basement_wall"
     ],
     "match_result": [
       "player_win",
@@ -258,7 +336,7 @@
         "mvp_available"
       ],
       "properties": {
-        "case_id": "string",
+        "case_id": "string:story_case_id",
         "title": "string",
         "summary": "string",
         "difficulty": "string",
@@ -278,7 +356,7 @@
         "max_turns"
       ],
       "properties": {
-        "case_id": "string",
+        "case_id": "string:story_case_id",
         "title": "string",
         "apparition_alias": "string",
         "briefing_text": "array:string",
@@ -297,7 +375,7 @@
         "display_name"
       ],
       "properties": {
-        "key": "string:mirror_guest_info_target_key",
+        "key": "string:story_info_target_key",
         "display_name": "string"
       }
     },
@@ -422,7 +500,7 @@
         "mode": "string:match_mode",
         "status": "string:match_status",
         "case": {
-          "case_id": "string",
+          "case_id": "string:story_case_id",
           "title": "string"
         },
         "turn": {
@@ -460,7 +538,7 @@
       "properties": {
         "code": "string:action_code",
         "display_name": "string",
-        "info_target_key": "string:mirror_guest_info_target_key|null",
+        "info_target_key": "string:story_info_target_key|null",
         "timeout_applied": "boolean"
       }
     },
@@ -514,7 +592,7 @@
         "result": "string:match_result",
         "result_reason": "string:result_reason",
         "case": {
-          "case_id": "string",
+          "case_id": "string:story_case_id",
           "title": "string"
         },
         "final_resources": {
@@ -638,7 +716,7 @@
         "CSRF_TOKEN_INVALID",
         "INVALID_CREDENTIALS",
         "VALIDATION_ERROR",
-        "RATE_LIMITED"
+        "LOGIN_RATE_LIMITED"
       ],
       "schema_status": "approved"
     },
@@ -672,7 +750,8 @@
         "AUTH_REQUIRED",
         "SESSION_EXPIRED",
         "CSRF_TOKEN_MISSING",
-        "CSRF_TOKEN_INVALID"
+        "CSRF_TOKEN_INVALID",
+        "REFRESH_TOKEN_REUSED"
       ],
       "schema_status": "approved"
     },
@@ -787,7 +866,7 @@
       "success_status": 200,
       "request": {
         "path_params": {
-          "case_id": "string"
+          "case_id": "string:story_case_id"
         },
         "query": {},
         "body": null
@@ -820,11 +899,12 @@
       "success_status": 201,
       "request": {
         "path_params": {
-          "case_id": "string"
+          "case_id": "string:story_case_id"
         },
         "query": {},
         "body": {
-          "client_request_id": "string:uuid"
+          "client_request_id": "string:uuid",
+          "player_display_name": "string|null"
         }
       },
       "response": {
@@ -848,7 +928,10 @@
         "IDEMPOTENCY_CONFLICT",
         "RATE_LIMITED"
       ],
-      "schema_status": "approved"
+      "schema_status": "approved",
+      "notes": [
+        "player_display_name: optional, trim whitespace, 1-24 chars"
+      ]
     },
     {
       "id": "matches.detail",
@@ -898,7 +981,7 @@
         "query": {},
         "body": {
           "action_code": "string:action_code",
-          "info_target_key": "string:mirror_guest_info_target_key|null",
+          "info_target_key": "string:story_info_target_key|null",
           "client_nonce": "string:uuid"
         }
       },
@@ -935,6 +1018,106 @@
         "INSUFFICIENT_RITUAL_POWER",
         "VALIDATION_ERROR",
         "RATE_LIMITED"
+      ],
+      "schema_status": "approved"
+    },
+    {
+      "id": "matches.turns.llm_text",
+      "method": "POST",
+      "path": "/api/v1/matches/{match_id}/turns/{turn_id}/llm-text",
+      "auth_required": true,
+      "csrf_required": true,
+      "purpose": "턴 연출 LLM 문구 생성",
+      "success_status": 200,
+      "request": {
+        "path_params": {
+          "match_id": "string",
+          "turn_id": "string"
+        },
+        "query": {},
+        "body": {
+          "display_slot": "string|null"
+        }
+      },
+      "response": {
+        "data": {
+          "llm_text": {
+            "enabled": "boolean",
+            "purpose": "turn_flavor_text",
+            "text": "string|null",
+            "display_slot": "string|null",
+            "fallback_used": "boolean",
+            "generation_id": "string|null",
+            "context_refs": "array",
+            "metadata": "object"
+          }
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "AUTH_REQUIRED",
+        "SESSION_EXPIRED",
+        "CSRF_TOKEN_MISSING",
+        "CSRF_TOKEN_INVALID",
+        "MATCH_NOT_FOUND",
+        "MATCH_ACCESS_DENIED",
+        "VALIDATION_ERROR"
+      ],
+      "schema_status": "approved"
+    },
+    {
+      "id": "matches.duel.dialogues.create",
+      "method": "POST",
+      "path": "/api/v1/matches/{match_id}/duel/dialogues",
+      "auth_required": true,
+      "csrf_required": true,
+      "purpose": "결전 대화 LLM 문구 생성",
+      "success_status": 200,
+      "request": {
+        "path_params": {
+          "match_id": "string"
+        },
+        "query": {},
+        "body": {
+          "message": "string:minLength=1,maxLength=300",
+          "client_nonce": "string:uuid"
+        }
+      },
+      "response": {
+        "data": {
+          "dialogue": {
+            "dialogue_id": "string",
+            "match_id": "string",
+            "player_message": "string",
+            "apparition_message": "string|null",
+            "llm_text": {
+              "enabled": "boolean",
+              "purpose": "final_duel_dialogue",
+              "text": "string|null",
+              "display_slot": "duel_dialogue",
+              "fallback_used": "boolean",
+              "generation_id": "string|null",
+              "context_refs": "array",
+              "metadata": "object"
+            },
+            "created_at": "string:iso-8601-utc"
+          }
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "AUTH_REQUIRED",
+        "SESSION_EXPIRED",
+        "CSRF_TOKEN_MISSING",
+        "CSRF_TOKEN_INVALID",
+        "MATCH_NOT_FOUND",
+        "MATCH_ACCESS_DENIED",
+        "DUEL_DIALOGUE_LIMIT_EXCEEDED",
+        "VALIDATION_ERROR"
       ],
       "schema_status": "approved"
     },
@@ -1009,6 +1192,7 @@
     "AUTH_REQUIRED": "인증이 필요하다.",
     "SESSION_EXPIRED": "세션이 만료되었거나 refresh에 실패했다.",
     "INVALID_CREDENTIALS": "로그인 정보가 올바르지 않다.",
+    "LOGIN_RATE_LIMITED": "로그인 실패가 반복되어 일시적으로 로그인이 차단되었다.",
     "CSRF_TOKEN_MISSING": "CSRF token이 없다.",
     "CSRF_TOKEN_INVALID": "CSRF token이 유효하지 않다.",
     "VALIDATION_ERROR": "요청 payload가 schema 또는 서버 검증을 통과하지 못했다.",
@@ -1026,7 +1210,9 @@
     "REFRESH_TOKEN_REUSED": "refresh token 재사용이 감지되어 token family가 폐기되었다.",
     "IDEMPOTENCY_CONFLICT": "동일 idempotency key가 다른 요청 내용으로 재사용되었다.",
     "RATE_LIMITED": "요청 제한에 걸렸다.",
-    "LLM_SUMMARY_UNAVAILABLE": "LLM 요약을 사용할 수 없어 정적 문장을 표시해야 한다."
+    "LLM_SUMMARY_UNAVAILABLE": "LLM 요약을 사용할 수 없어 정적 문장을 표시해야 한다.",
+    "DUEL_DIALOGUE_LIMIT_EXCEEDED": "결전 대화 생성 제한을 초과했다.",
+    "SERVICE_NOT_IMPLEMENTED": "Service is not implemented yet."
   },
   "remaining_decisions": []
 }

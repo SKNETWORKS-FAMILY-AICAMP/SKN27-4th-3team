@@ -154,3 +154,31 @@ def test_services_calculate_turn_and_final_style_snapshots_from_metrics_module()
         "PlayerActionEvent",
         "StyleMetricSnapshot",
     )
+
+
+def test_match_submit_persists_ai_profile_event_from_turn_started_at_boundary():
+    matches_source = _read(BACKEND_DIR / "apps" / "matches" / "services.py")
+    submit_source = matches_source.split("def submit_match_turn(", maxsplit=1)[1].split(
+        "\n\ndef _match_result(",
+        maxsplit=1,
+    )[0]
+
+    assert "from backend.apps.ai_profile import services as ai_profile_services" in matches_source
+    assert "decision_duration_ms=_decision_duration_ms(" in submit_source
+    assert "started_at=turn.started_at" in submit_source
+    assert "submitted_at=now" in submit_source
+    assert "stage_id=1" in submit_source
+    assert "ai_profile_services.persist_turn_action_event(" in submit_source
+    assert "ai_profile_services.persist_style_snapshot(" in submit_source
+    assert "ai_profile_services.persist_final_style_snapshot(" in submit_source
+
+
+def test_ai_profile_services_define_persistence_helpers_without_llm_dependency():
+    services_source = _read(AI_PROFILE_DIR / "services.py")
+
+    assert "def persist_turn_action_event(" in services_source
+    assert "def persist_style_snapshot(" in services_source
+    assert "def persist_final_style_snapshot(" in services_source
+    assert "PlayerActionEvent.objects.create(" in services_source
+    assert "StyleMetricSnapshot.objects.create(" in services_source
+    assert "llm" not in services_source.lower()

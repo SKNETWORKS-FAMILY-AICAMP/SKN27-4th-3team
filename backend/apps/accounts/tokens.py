@@ -2,7 +2,15 @@ import hashlib
 import hmac
 import uuid
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
+from typing import Any
 
+import jwt
+
+
+JWT_ALGORITHM = "HS256"
+ACCESS_TOKEN_TYPE = "access"
+REFRESH_TOKEN_TYPE = "refresh"
 
 ACTIVE_REFRESH_TOKEN_STATUS = "active"
 ROTATED_REFRESH_TOKEN_STATUS = "rotated"
@@ -80,3 +88,85 @@ def is_refresh_token_reuse_status(status: str) -> bool:
         raise ValueError(f"unknown refresh token status: {status}")
 
     return status in REFRESH_TOKEN_REUSE_STATUSES
+
+
+def issue_access_token(
+    *,
+    user_id: int,
+    signing_secret: str,
+    issued_at: datetime | None = None,
+    ttl_seconds: int,
+) -> str:
+    issued_at_value = _issued_at(issued_at)
+    payload = {
+        "token_type": ACCESS_TOKEN_TYPE,
+        "sub": _subject(user_id),
+        "iat": _timestamp(issued_at_value),
+        "exp": _timestamp(issued_at_value + timedelta(seconds=ttl_seconds)),
+    }
+    return _encode(payload, signing_secret)
+
+
+def issue_refresh_token(
+    *,
+    user_id: int,
+    identifiers: RefreshTokenIdentifiers,
+    signing_secret: str,
+    issued_at: datetime | None = None,
+    ttl_seconds: int,
+) -> str:
+    issued_at_value = _issued_at(issued_at)
+    payload = {
+        "token_type": REFRESH_TOKEN_TYPE,
+        "sub": _subject(user_id),
+        "jti": str(identifiers.jti),
+        "family_id": str(identifiers.family_id),
+        "iat": _timestamp(issued_at_value),
+        "exp": _timestamp(issued_at_value + timedelta(seconds=ttl_seconds)),
+    }
+    return _encode(payload, signing_secret)
+
+
+def decode_jwt_token(
+    raw_token: str,
+    *,
+    signing_secret: str,
+    expected_token_type: str,
+) -> dict[str, Any]:
+    if not raw_token:
+        raise ValueError("raw_token is required")
+    if not signing_secret:
+        raise ValueError("signing_secret is required")
+
+    claims = jwt.decode(raw_token, signing_secret, algorithms=[JWT_ALGORITHM])
+    if claims.get("token_type") != expected_token_type:
+        raise ValueError("unexpected token_type")
+
+    return dict(claims)
+
+
+def _encode(payload: dict[str, Any], signing_secret: str) -> str:
+    if not signing_secret:
+        raise ValueError("signing_secret is required")
+
+    return jwt.encode(payload, signing_secret, algorithm=JWT_ALGORITHM)
+
+
+def _issued_at(value: datetime | None) -> datetime:
+    if value is None:
+        return datetime.now(timezone.utc)
+    if value.tzinfo is None:
+        raise ValueError("issued_at must be timezone-aware")
+
+    return value.astimezone(timezone.utc)
+
+
+def _subject(user_id: int) -> str:
+    if not isinstance(user_id, int) or user_id <= 0:
+        raise ValueError("user_id must be a positive integer")
+
+    return str(user_id)
+
+
+def _timestamp(value: datetime) -> int:
+    return int(value.timestamp())
