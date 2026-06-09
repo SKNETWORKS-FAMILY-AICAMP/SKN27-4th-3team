@@ -1,3 +1,9 @@
+@font-face {
+  font-family: "Gabia Cheongyeon Prologue";
+  src: url("/prototype/assets/GabiaCheongyeon.ttf") format("truetype");
+  font-display: swap;
+}
+
 .screen {
   position: relative;
   width: 100vw;
@@ -6,6 +12,7 @@
   color: #ddd8cd;
   background: #020202;
   cursor: pointer;
+  font-family: "Gabia Cheongyeon Prologue", "Malgun Gothic", serif;
 }
 
 .screen::before {
@@ -16,7 +23,7 @@
   background-image: var(--scene-image);
   background-position: var(--scene-focus);
   background-size: cover;
-  filter: blur(24px) brightness(0.46) saturate(0.78);
+  filter: blur(20px) brightness(0.7) saturate(0.9);
   opacity: 0;
   transform: scale(1.04);
   animation:
@@ -32,6 +39,7 @@
   background-position: var(--scene-focus);
   background-repeat: no-repeat;
   background-size: contain;
+  filter: brightness(1.28) contrast(1.08) saturate(0.96);
   opacity: 0;
   animation: sceneFadeIn 980ms ease forwards;
 }
@@ -46,13 +54,13 @@
 .vignette {
   z-index: 2;
   background:
-    radial-gradient(circle at 48% 42%, rgba(0, 0, 0, 0) 0 22%, rgba(0, 0, 0, 0.28) 56%, rgba(0, 0, 0, 0.86) 100%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.56));
+    radial-gradient(circle at 48% 42%, rgba(0, 0, 0, 0) 0 30%, rgba(0, 0, 0, 0.18) 58%, rgba(0, 0, 0, 0.74) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.42));
 }
 
 .noise {
   z-index: 3;
-  opacity: 0.11;
+  opacity: 0.08;
   mix-blend-mode: screen;
   background-image:
     linear-gradient(115deg, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px 3px),
@@ -71,23 +79,26 @@
   max-height: calc(100vh - 48px);
   padding: clamp(12px, 1.7vw, 22px) clamp(16px, 2.4vw, 30px);
   background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0.44) 68%, rgba(0, 0, 0, 0));
-  border-left: 1px solid rgba(203, 191, 160, 0.42);
-  box-shadow: -18px 0 34px rgba(0, 0, 0, 0.42);
+    linear-gradient(90deg, rgba(0, 0, 0, 0.66), rgba(0, 0, 0, 0.38) 68%, rgba(0, 0, 0, 0));
+  border-left: 1px solid rgba(203, 191, 160, 0.38);
+  box-shadow: -18px 0 34px rgba(0, 0, 0, 0.36);
+  animation: textPanelIn 260ms ease forwards;
 }
 
 .skipButton {
   position: absolute;
   right: clamp(18px, 2.4vw, 34px);
   top: clamp(18px, 2.4vw, 34px);
-  z-index: 5;
+  z-index: 7;
   min-height: 32px;
   padding: 0 12px;
-  color: rgba(185, 176, 154, 0.42);
+  color: rgba(185, 176, 154, 0.48);
   cursor: pointer;
-  background: rgba(0, 0, 0, 0.12);
-  border: 1px solid rgba(180, 166, 126, 0.16);
-  font-size: 12px;
+  background: rgba(0, 0, 0, 0.14);
+  border: 1px solid rgba(180, 166, 126, 0.18);
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: 0;
   transition:
     color 160ms ease,
     border-color 160ms ease,
@@ -96,9 +107,9 @@
 
 .skipButton:hover,
 .skipButton:focus-visible {
-  color: rgba(226, 216, 188, 0.82);
-  background: rgba(0, 0, 0, 0.34);
-  border-color: rgba(204, 184, 132, 0.42);
+  color: rgba(226, 216, 188, 0.86);
+  background: rgba(0, 0, 0, 0.36);
+  border-color: rgba(204, 184, 132, 0.44);
   outline: none;
 }
 
@@ -111,28 +122,62 @@
 }
 
 .mainText {
-  min-height: clamp(124px, 20vh, 204px);
-  font-size: clamp(13px, 1.24vw, 18px);
-  line-height: 1.48;
+  min-height: clamp(94px, 14vh, 148px);
+  font-size: clamp(18px, 1.7vw, 27px);
+  line-height: 1.42;
   color: rgba(235, 231, 219, 0.92);
+}
+
+.speakerName,
+.speakerLine {
+  display: block;
+  white-space: pre-line;
+}
+
+.speakerName {
+  margin-bottom: 0.36em;
+  font-size: 0.86em;
+  font-weight: 700;
+  text-shadow:
+    0 0 12px currentColor,
+    0 2px 10px rgba(0, 0, 0, 0.92);
+}
+
+.speakerName[data-speaker="father"] {
+  color: rgba(205, 116, 79, 0.96);
+}
+
+.speakerName[data-speaker="mother"] {
+  color: rgba(188, 161, 127, 0.96);
+}
+
+.speakerName[data-speaker="girl"] {
+  color: rgba(176, 80, 92, 0.98);
+}
+
+.speakerName[data-speaker="shaman"] {
+  color: rgba(172, 149, 212, 0.96);
+}
+
+.speakerName[data-speaker="protagonist"] {
+  color: rgba(219, 205, 164, 0.98);
+}
+
+.speakerName[data-speaker="fracture"] {
+  color: rgba(126, 170, 196, 0.96);
+}
+
+.speakerName[data-speaker="unknown"] {
+  color: rgba(210, 201, 178, 0.9);
 }
 
 .detailText {
   max-width: 920px;
   margin-top: clamp(8px, 1.4vh, 14px);
-  font-size: clamp(11px, 0.96vw, 14px);
-  line-height: 1.46;
-  color: rgba(183, 174, 157, 0.72);
-  opacity: 0;
-  transform: translateY(8px);
-  transition:
-    opacity 860ms ease,
-    transform 860ms ease;
-}
-
-.detailText.isVisible {
-  opacity: 1;
-  transform: translateY(0);
+  font-size: clamp(13px, 1.08vw, 17px);
+  line-height: 1.48;
+  color: rgba(190, 181, 164, 0.76);
+  animation: detailTextIn 420ms ease forwards;
 }
 
 .continueMark {
@@ -154,18 +199,43 @@
   animation: continuePulse 1450ms ease-in-out infinite;
 }
 
+.blackoutOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(70, 0, 0, 0.08), rgba(0, 0, 0, 0.78) 45%, #000 100%),
+    linear-gradient(110deg, rgba(0, 0, 0, 0), rgba(255, 255, 255, 0.035), rgba(0, 0, 0, 0));
+  opacity: 0;
+}
+
+.blackoutOverlay.isVisible {
+  animation: sceneBlackoutEngulf 3200ms ease-in-out forwards;
+}
+
 .screen.isLeaving .textPanel,
 .screen.isLeaving .skipButton,
 .screen.isLeaving .continueMark {
-  animation: prologueTextFadeOut 540ms ease forwards;
+  animation: prologueTextFadeOut 420ms ease forwards;
 }
 
 .screen.isLeaving .sceneImage {
-  animation: sceneExit 880ms ease forwards;
+  animation: sceneExit 760ms ease forwards;
 }
 
 .screen.isLeaving::before {
-  animation: backdropExit 880ms ease forwards;
+  animation: backdropExit 760ms ease forwards;
+}
+
+.screen.blackoutLeaving .sceneImage {
+  animation:
+    blackoutImageShudder 480ms steps(2, end) 2,
+    sceneExit 2100ms ease 720ms forwards;
+}
+
+.screen.blackoutLeaving::before {
+  animation: backdropExit 2600ms ease forwards;
 }
 
 .screen.toMatch::after {
@@ -175,7 +245,7 @@
   content: "";
   background: #000;
   opacity: 0;
-  animation: prologueBlackout 1450ms ease forwards;
+  animation: prologueBlackout 1500ms ease forwards;
 }
 
 @media (max-width: 760px) {
@@ -187,13 +257,13 @@
   }
 
   .mainText {
-    min-height: 36vh;
-    font-size: clamp(12px, 3.65vw, 16px);
-    line-height: 1.44;
+    min-height: 24vh;
+    font-size: clamp(18px, 5vw, 23px);
+    line-height: 1.36;
   }
 
   .detailText {
-    font-size: clamp(11px, 3vw, 13px);
+    font-size: clamp(13px, 3.6vw, 16px);
     line-height: 1.42;
   }
 }
@@ -218,6 +288,30 @@
   }
 }
 
+@keyframes textPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes detailTextIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes sceneExit {
   from {
     opacity: 1;
@@ -235,6 +329,37 @@
 
   to {
     opacity: 0;
+  }
+}
+
+@keyframes blackoutImageShudder {
+  0%,
+  100% {
+    filter: brightness(1.28) contrast(1.08) saturate(0.96);
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    filter: brightness(1.42) contrast(1.2) saturate(0.85);
+    transform: translate3d(-4px, 1px, 0);
+  }
+}
+
+@keyframes sceneBlackoutEngulf {
+  0% {
+    opacity: 0;
+  }
+
+  34% {
+    opacity: 0.44;
+  }
+
+  68% {
+    opacity: 0.92;
+  }
+
+  100% {
+    opacity: 1;
   }
 }
 

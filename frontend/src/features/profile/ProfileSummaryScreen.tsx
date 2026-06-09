@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiClientError } from "../../shared/api/client";
 import { getProfileMe } from "../../shared/api/resources";
+import { BGM_TRACKS, useBackgroundMusic } from "../../shared/audio/audio";
 import type { ProfileSummary, StyleMetrics, User } from "../../shared/types/api";
 import styles from "./ProfileSummaryScreen.module.css";
 
@@ -27,6 +28,7 @@ export function ProfileSummaryScreen() {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  useBackgroundMusic(BGM_TRACKS.menu);
   const returnToPreviousScreen = () => {
     if (window.history.state?.idx > 0) {
       navigate(-1);

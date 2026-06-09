@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ensureAudioBridge } from "../../shared/audio/audio";
 import type { MatchState } from "../../shared/types/api";
 import styles from "./RitualDuelScreen.module.css";
 
@@ -108,6 +109,10 @@ export function RitualDuelScreen({
   const navigate = useNavigate();
   const hostRef = useRef<HTMLDivElement>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    ensureAudioBridge();
+  }, []);
 
   const openEndingScreen = useCallback(
     (payload: PrototypeEndingPayload) => {

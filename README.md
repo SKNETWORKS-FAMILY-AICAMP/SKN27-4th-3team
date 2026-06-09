@@ -6,12 +6,14 @@
 
 ## 현재 상태 요약
 
-| 구분 | 항목 | 상태 |
-|---|---|---|
-| 현재 사용/구현 | Django, Django REST Framework, PostgreSQL 기준 RDB 모델, `retrieval` 앱, PostgreSQL `pgvector` 준비, AI Profile 지표, Redis/Channels/WebSocket 상태 동기화, 공식 API schema, pytest 계약 테스트, local/dev Compose, AC-2A production Compose, Gunicorn ASGI worker, Caddy | 1차 MVP 백엔드/RAG/AI Profile/realtime과 수동 production 배포 후보 구성 |
-| 현재 사용/구현 | React/TypeScript/Vite 프론트엔드, route 기반 화면, prototype 의식 결투 화면, 공식 API client, 공식 enum/API/realtime 계약 검증 | 승인된 official API 기준 주요 사용자 흐름 연결 |
-| 현재 사용/부분 구현 | LLM runtime 앱, `llm_generations`, 턴 연출 문구, 결과 요약, 결전 대화 endpoint, Groq 호환 adapter | LLM은 판정 권위 없이 보조 문장만 담당하며 실제 provider 호출은 환경변수와 API key에 의존 |
-| 후순위/미사용 | KAG 구현, GraphDB, PvP 모드, Redis matchmaking, WebSocket action submit, 운영 배포 자동화 | 1차 MVP 제외 또는 도입 대상 아님 |
+
+| 구분          | 항목                                                                                                                                                                                                                                                   | 상태                                                          |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| 현재 사용/구현    | Django, Django REST Framework, PostgreSQL 기준 RDB 모델, `retrieval` 앱, PostgreSQL `pgvector` 준비, AI Profile 지표, Redis/Channels/WebSocket 상태 동기화, 공식 API schema, pytest 계약 테스트, local/dev Compose, AC-2A production Compose, Gunicorn ASGI worker, Caddy | 1차 MVP 백엔드/RAG/AI Profile/realtime과 수동 production 배포 후보 구성  |
+| 현재 사용/구현    | React/TypeScript/Vite 프론트엔드, route 기반 화면, prototype 의식 결투 화면, 공식 API client, 공식 enum/API/realtime 계약 검증                                                                                                                                              | 승인된 official API 기준 주요 사용자 흐름 연결                            |
+| 현재 사용/부분 구현 | LLM runtime 앱, `llm_generations`, 턴 연출 문구, 결과 요약, 결전 대화 endpoint, Groq 호환 adapter                                                                                                                                                                    | LLM은 판정 권위 없이 보조 문장만 담당하며 실제 provider 호출은 환경변수와 API key에 의존 |
+| 후순위/미사용     | KAG 구현, GraphDB, PvP 모드, Redis matchmaking, WebSocket action submit, 운영 배포 자동화                                                                                                                                                                       | 1차 MVP 제외 또는 도입 대상 아님                                       |
+
 
 GraphDB는 사용하지 않습니다. KAG도 1차 MVP 구현 범위가 아니며, 후속 도입 시에도 현재 문서 기준은 별도 GraphDB가 아니라 RDB 기반 후보 구조입니다.
 
@@ -19,20 +21,22 @@ GraphDB는 사용하지 않습니다. KAG도 1차 MVP 구현 범위가 아니며
 
 이 프로젝트의 기획과 구현 기준은 `docs/`의 Obsidian 문서로 관리합니다.
 
-| 구분 | 위치 | 역할 |
-|---|---|---|
-| 문서 인덱스 | [`docs/00_Index.md`](docs/00_Index.md) | 전체 Obsidian 문서 진입점 |
-| 문서 운영 규칙 | [`docs/00_Project/00_문서_운영_규칙.md`](docs/00_Project/00_%EB%AC%B8%EC%84%9C_%EC%9A%B4%EC%98%81_%EA%B7%9C%EC%B9%99.md) | source of truth, 문서 상태, 미정 항목 관리 기준 |
-| 프로젝트 개요 | [`docs/00_Project/01_프로젝트_개요.md`](docs/00_Project/01_%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8_%EA%B0%9C%EC%9A%94.md) | 제품 방향과 기술 방향 |
-| MVP 범위 | [`docs/01_MVP/02_MVP_포함_제외_범위.md`](docs/01_MVP/02_MVP_%ED%8F%AC%ED%95%A8_%EC%A0%9C%EC%99%B8_%EB%B2%94%EC%9C%84.md) | 1차 MVP 포함/제외 범위 |
-| 백엔드/RAG/AI Profile 계약 | [`docs/09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약.md`](docs/09_Approved_Contracts/17_%EB%B0%B1%EC%97%94%EB%93%9C_RAG_AI_Profile_%EA%B5%AC%ED%98%84_%EA%B3%84%EC%95%BD.md) | 프론트/LLM 제외 백엔드 구현 기준 |
-| 프로젝트 폴더 구조 계약 | [`docs/09_Approved_Contracts/23_프로젝트_폴더_구조_계약.md`](docs/09_Approved_Contracts/23_%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8_%ED%8F%B4%EB%8D%94_%EA%B5%AC%EC%A1%B0_%EA%B3%84%EC%95%BD.md) | 최상위 폴더와 팀별 경계 |
-| 무명의 저주 사건 계약 | [`docs/09_Approved_Contracts/26_무명의_저주_사건_계약.md`](docs/09_Approved_Contracts/26_%EB%AC%B4%EB%AA%85%EC%9D%98_%EC%A0%80%EC%A3%BC_%EC%82%AC%EA%B1%B4_%EA%B3%84%EC%95%BD.md) | `nameless_curse` 사건 seed와 피티 공식 진명 기준 |
-| 플레이어 이름/결전/RAG 계약 | [`docs/09_Approved_Contracts/27_플레이어_이름_무명의_저주_결전_RAG_계약.md`](docs/09_Approved_Contracts/27_%ED%94%8C%EB%A0%88%EC%9D%B4%EC%96%B4_%EC%9D%B4%EB%A6%84_%EB%AC%B4%EB%AA%85%EC%9D%98_%EC%A0%80%EC%A3%BC_%EA%B2%B0%EC%A0%84_RAG_%EA%B3%84%EC%95%BD.md) | 플레이어 표시 이름, 진명 조각 2개 결전, RAG source plan |
-| Production 배포 계약 | [`docs/09_Approved_Contracts/28_Production_배포_계약.md`](docs/09_Approved_Contracts/28_Production_%EB%B0%B0%ED%8F%AC_%EA%B3%84%EC%95%BD.md) | AC-2A 단일 VM + Docker Compose + Gunicorn ASGI worker + Caddy + PostgreSQL + Redis 기준 |
-| Realtime 계약 | [`docs/09_Approved_Contracts/29_MVP_Realtime_Redis_WebSocket_계약.md`](docs/09_Approved_Contracts/29_MVP_Realtime_Redis_WebSocket_%EA%B3%84%EC%95%BD.md) | AI 스토리 매치 상태 동기화용 Redis/Channels/WebSocket 기준 |
-| 공식 API 스키마 | [`api-spec/pilot-mvp-api.official.jsonc`](api-spec/pilot-mvp-api.official.jsonc) | 사람이 읽는 공식 API 계약 |
-| 도구용 API 스키마 | [`api-spec/pilot-mvp-api.official.json`](api-spec/pilot-mvp-api.official.json) | strict JSON 생성본 |
+
+| 구분                    | 위치                                                                                                                                                                                                                                               | 역할                                                                                  |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| 문서 인덱스                | `[docs/00_Index.md](docs/00_Index.md)`                                                                                                                                                                                                           | 전체 Obsidian 문서 진입점                                                                  |
+| 문서 운영 규칙              | `[docs/00_Project/00_문서_운영_규칙.md](docs/00_Project/00_%EB%AC%B8%EC%84%9C_%EC%9A%B4%EC%98%81_%EA%B7%9C%EC%B9%99.md)`                                                                                                                               | source of truth, 문서 상태, 미정 항목 관리 기준                                                 |
+| 프로젝트 개요               | `[docs/00_Project/01_프로젝트_개요.md](docs/00_Project/01_%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8_%EA%B0%9C%EC%9A%94.md)`                                                                                                                                 | 제품 방향과 기술 방향                                                                        |
+| MVP 범위                | `[docs/01_MVP/02_MVP_포함_제외_범위.md](docs/01_MVP/02_MVP_%ED%8F%AC%ED%95%A8_%EC%A0%9C%EC%99%B8_%EB%B2%94%EC%9C%84.md)`                                                                                                                               | 1차 MVP 포함/제외 범위                                                                     |
+| 백엔드/RAG/AI Profile 계약 | `[docs/09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약.md](docs/09_Approved_Contracts/17_%EB%B0%B1%EC%97%94%EB%93%9C_RAG_AI_Profile_%EA%B5%AC%ED%98%84_%EA%B3%84%EC%95%BD.md)`                                                                 | 프론트/LLM 제외 백엔드 구현 기준                                                                |
+| 프로젝트 폴더 구조 계약         | `[docs/09_Approved_Contracts/23_프로젝트_폴더_구조_계약.md](docs/09_Approved_Contracts/23_%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8_%ED%8F%B4%EB%8D%94_%EA%B5%AC%EC%A1%B0_%EA%B3%84%EC%95%BD.md)`                                                               | 최상위 폴더와 팀별 경계                                                                       |
+| 무명의 저주 사건 계약          | `[docs/09_Approved_Contracts/26_무명의_저주_사건_계약.md](docs/09_Approved_Contracts/26_%EB%AC%B4%EB%AA%85%EC%9D%98_%EC%A0%80%EC%A3%BC_%EC%82%AC%EA%B1%B4_%EA%B3%84%EC%95%BD.md)`                                                                         | `nameless_curse` 사건 seed와 피티 공식 진명 기준                                               |
+| 플레이어 이름/결전/RAG 계약     | `[docs/09_Approved_Contracts/27_플레이어_이름_무명의_저주_결전_RAG_계약.md](docs/09_Approved_Contracts/27_%ED%94%8C%EB%A0%88%EC%9D%B4%EC%96%B4_%EC%9D%B4%EB%A6%84_%EB%AC%B4%EB%AA%85%EC%9D%98_%EC%A0%80%EC%A3%BC_%EA%B2%B0%EC%A0%84_RAG_%EA%B3%84%EC%95%BD.md)` | 플레이어 표시 이름, 진명 조각 2개 결전, RAG source plan                                            |
+| Production 배포 계약      | `[docs/09_Approved_Contracts/28_Production_배포_계약.md](docs/09_Approved_Contracts/28_Production_%EB%B0%B0%ED%8F%AC_%EA%B3%84%EC%95%BD.md)`                                                                                                         | AC-2A 단일 VM + Docker Compose + Gunicorn ASGI worker + Caddy + PostgreSQL + Redis 기준 |
+| Realtime 계약           | `[docs/09_Approved_Contracts/29_MVP_Realtime_Redis_WebSocket_계약.md](docs/09_Approved_Contracts/29_MVP_Realtime_Redis_WebSocket_%EA%B3%84%EC%95%BD.md)`                                                                                           | AI 스토리 매치 상태 동기화용 Redis/Channels/WebSocket 기준                                       |
+| 공식 API 스키마            | `[api-spec/pilot-mvp-api.official.jsonc](api-spec/pilot-mvp-api.official.jsonc)`                                                                                                                                                                 | 사람이 읽는 공식 API 계약                                                                    |
+| 도구용 API 스키마           | `[api-spec/pilot-mvp-api.official.json](api-spec/pilot-mvp-api.official.json)`                                                                                                                                                                   | strict JSON 생성본                                                                     |
+
 
 문서 운영 원칙은 다음과 같습니다.
 
@@ -43,39 +47,45 @@ GraphDB는 사용하지 않습니다. KAG도 1차 MVP 구현 범위가 아니며
 
 ## 현재 사용하는 기술
 
-| 영역 | 사용 기술 | 현재 범위 |
-|---|---|---|
-| Backend | Django, Django REST Framework, ASGI | 1차 MVP 백엔드 scaffold, 도메인 골격, WebSocket runtime |
-| Frontend | React, TypeScript, Vite, React Router | route 기반 화면, prototype 의식 결투 화면, 승인된 official API 주요 흐름 연결 |
-| Auth | Django custom user, JWT access/refresh token, HttpOnly cookie, CSRF | 인증 API scaffold와 refresh token 보안 모델 |
-| RDB | PostgreSQL 기준 Django model | Auth, Profile, Match, Story, AI Profile 저장 구조 |
-| RAG 저장/검색 준비 | PostgreSQL + `pgvector`, `retrieval` 앱 | 문서/chunk/embedding/query log 구조 |
-| LLM runtime | backend `llm` 앱, top-level `llm/generation` adapter | 판정 이후 보조 텍스트 생성과 생성 로그 저장 |
-| Realtime | Redis, Django Channels, native WebSocket | AI 스토리 매치 snapshot, turn resolved, LLM text, result ready 이벤트 |
-| JSON 검증 | `jsonschema` | JSONField payload 검증 경계 |
-| API 계약 | official JSONC/JSON schema | 프론트와 백엔드가 공유할 endpoint/response shape |
-| 테스트 | pytest, frontend contract script, Vite build | 승인 계약 기반 백엔드/LLM 테스트와 프론트 enum/build 검증 |
-| Docker 실행 준비 | Docker Compose, backend Dockerfile, production Dockerfile, Caddy | 로컬/dev 실행과 AC-2A production 수동 배포 후보 구성 |
+
+| 영역           | 사용 기술                                                               | 현재 범위                                                         |
+| ------------ | ------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Backend      | Django, Django REST Framework, ASGI                                 | 1차 MVP 백엔드 scaffold, 도메인 골격, WebSocket runtime                |
+| Frontend     | React, TypeScript, Vite, React Router                               | route 기반 화면, prototype 의식 결투 화면, 승인된 official API 주요 흐름 연결    |
+| Auth         | Django custom user, JWT access/refresh token, HttpOnly cookie, CSRF | 인증 API scaffold와 refresh token 보안 모델                          |
+| RDB          | PostgreSQL 기준 Django model                                          | Auth, Profile, Match, Story, AI Profile 저장 구조                 |
+| RAG 저장/검색 준비 | PostgreSQL + `pgvector`, `retrieval` 앱                              | 문서/chunk/embedding/query log 구조                               |
+| LLM runtime  | backend `llm` 앱, top-level `llm/generation` adapter                 | 판정 이후 보조 텍스트 생성과 생성 로그 저장                                     |
+| Realtime     | Redis, Django Channels, native WebSocket                            | AI 스토리 매치 snapshot, turn resolved, LLM text, result ready 이벤트 |
+| JSON 검증      | `jsonschema`                                                        | JSONField payload 검증 경계                                       |
+| API 계약       | official JSONC/JSON schema                                          | 프론트와 백엔드가 공유할 endpoint/response shape                         |
+| 테스트          | pytest, frontend contract script, Vite build                        | 승인 계약 기반 백엔드/LLM 테스트와 프론트 enum/build 검증                       |
+| Docker 실행 준비 | Docker Compose, backend Dockerfile, production Dockerfile, Caddy    | 로컬/dev 실행과 AC-2A production 수동 배포 후보 구성                       |
+
 
 ## 현재 제한 또는 후순위 기술
 
-| 항목 | 문서상 상태 | README 반영 기준 |
-|---|---|---|
-| Password reset | official API 범위 밖 | 화면 route는 있으나 1차 MVP official API에는 endpoint가 없음 |
-| LLM provider 운영 연결 | LLM runtime 계약은 승인됨 | adapter와 backend 기록 구조는 있으나 실제 호출은 `LLM_API_KEY`, `LLM_MODEL_ID` 등 환경 설정 필요 |
-| KAG | 1차 MVP 제외 | 구현하지 않음 |
-| GraphDB | 사용하지 않음 | 도입 대상 아님 |
-| Redis/Channels/WebSocket | AI 스토리 상태 동기화는 포함, PvP realtime은 제외 | WebSocket은 보조 알림 경로이며 REST/PostgreSQL이 권위 유지 |
-| 운영 배포 자동화 | 1차 MVP 제외 | 현재 범위 아님 |
+
+| 항목                       | 문서상 상태                              | README 반영 기준                                                                |
+| ------------------------ | ----------------------------------- | --------------------------------------------------------------------------- |
+| Password reset           | official API 범위 밖                   | 화면 route는 있으나 1차 MVP official API에는 endpoint가 없음                            |
+| LLM provider 운영 연결       | LLM runtime 계약은 승인됨                 | adapter와 backend 기록 구조는 있으나 실제 호출은 `LLM_API_KEY`, `LLM_MODEL_ID` 등 환경 설정 필요 |
+| KAG                      | 1차 MVP 제외                           | 구현하지 않음                                                                     |
+| GraphDB                  | 사용하지 않음                             | 도입 대상 아님                                                                    |
+| Redis/Channels/WebSocket | AI 스토리 상태 동기화는 포함, PvP realtime은 제외 | WebSocket은 보조 알림 경로이며 REST/PostgreSQL이 권위 유지                                |
+| 운영 배포 자동화                | 1차 MVP 제외                           | 현재 범위 아님                                                                    |
+
 
 ## Docker와 배포 상태
 
 Docker 구성은 local/dev와 production을 분리합니다.
 
-| 구분 | 주요 파일 | 기준 |
-|---|---|---|
-| local/dev | `ops/docker/docker-compose.yml`, `ops/docker/backend.Dockerfile`, `ops/env/backend.env.example` | ASGI API `8000`, PostgreSQL `5432`, Redis `6379`를 로컬 개발용으로 사용 |
+
+| 구분         | 주요 파일                                                                                                                                                                                               | 기준                                                                                |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| local/dev  | `ops/docker/docker-compose.yml`, `ops/docker/backend.Dockerfile`, `ops/env/backend.env.example`                                                                                                     | ASGI API `8000`, PostgreSQL `5432`, Redis `6379`를 로컬 개발용으로 사용                     |
 | production | `ops/docker/docker-compose.production.yml`, `ops/docker/backend.production.Dockerfile`, `ops/docker/web.production.Dockerfile`, `ops/docker/Caddyfile.production`, `ops/env/production.env.example` | AC-2A 기준. `web`만 `80/443`을 노출하고, `api`, `postgres`, `redis`는 Docker 내부 네트워크에서만 사용 |
+
 
 production backend runtime은 Gunicorn ASGI worker입니다. production에서 Django `runserver`를 사용하지 않습니다.
 
@@ -117,28 +127,32 @@ Copy-Item ops\env\production.env.example ops\env\production.env
 
 `ops/env/production.env`에서 최소한 아래 값을 실제 환경에 맞게 바꿉니다.
 
-| 변수 | 기준 |
-|---|---|
-| `APP_DOMAIN` | 실제 도메인. 예시 도메인은 DNS가 없으면 동작하지 않음 |
-| `CADDY_ACME_EMAIL` | Caddy TLS 인증서 발급 연락처 |
-| `SKN27_IMAGE_TAG` | git short SHA 또는 `YYYYMMDDHHMM` 배포 태그 |
-| `DJANGO_SECRET_KEY` | production secret. repository 저장 금지 |
-| `DJANGO_ALLOWED_HOSTS` | 실제 도메인과 필요한 host allowlist |
-| `DJANGO_CSRF_TRUSTED_ORIGINS` | `https://<APP_DOMAIN>` 기준 |
-| `DJANGO_CORS_ALLOWED_ORIGINS` | 같은 origin이면 `https://<APP_DOMAIN>` 기준 |
-| `POSTGRES_PASSWORD` | production DB password. repository 저장 금지 |
-| `REDIS_URL` | production Redis 접속 URL. password 포함 권장 |
-| `REDIS_PASSWORD` | production Redis password. repository 저장 금지 |
-| `WEBSOCKET_HEARTBEAT_SECONDS` | WebSocket heartbeat 주기 |
-| `WEBSOCKET_CONNECT_TIMEOUT_SECONDS` | WebSocket 연결 대기 시간 |
-| `LLM_API_KEY` | 실제 LLM provider 호출을 사용할 때만 주입 |
+
+| 변수                                  | 기준                                          |
+| ----------------------------------- | ------------------------------------------- |
+| `APP_DOMAIN`                        | 실제 도메인. 예시 도메인은 DNS가 없으면 동작하지 않음            |
+| `CADDY_ACME_EMAIL`                  | Caddy TLS 인증서 발급 연락처                        |
+| `SKN27_IMAGE_TAG`                   | git short SHA 또는 `YYYYMMDDHHMM` 배포 태그       |
+| `DJANGO_SECRET_KEY`                 | production secret. repository 저장 금지         |
+| `DJANGO_ALLOWED_HOSTS`              | 실제 도메인과 필요한 host allowlist                  |
+| `DJANGO_CSRF_TRUSTED_ORIGINS`       | `https://<APP_DOMAIN>` 기준                   |
+| `DJANGO_CORS_ALLOWED_ORIGINS`       | 같은 origin이면 `https://<APP_DOMAIN>` 기준       |
+| `POSTGRES_PASSWORD`                 | production DB password. repository 저장 금지    |
+| `REDIS_URL`                         | production Redis 접속 URL. password 포함 권장     |
+| `REDIS_PASSWORD`                    | production Redis password. repository 저장 금지 |
+| `WEBSOCKET_HEARTBEAT_SECONDS`       | WebSocket heartbeat 주기                      |
+| `WEBSOCKET_CONNECT_TIMEOUT_SECONDS` | WebSocket 연결 대기 시간                          |
+| `LLM_API_KEY`                       | 실제 LLM provider 호출을 사용할 때만 주입               |
+
 
 프론트엔드 build 환경변수는 아래 기준을 사용합니다. 같은 origin으로 Caddy가 `/ws/*`를 proxy하는 production 배포에서는 기본값으로 충분합니다.
 
-| 변수 | 기준 |
-|---|---|
-| `VITE_WEBSOCKET_BASE_URL` | 선택값. API/WebSocket origin이 분리될 때만 `wss://<host>` 형식으로 지정 |
-| `VITE_WEBSOCKET_CONNECT_TIMEOUT_SECONDS` | 선택값. 프론트 WebSocket 연결 대기 시간. 기본값은 6초 |
+
+| 변수                                       | 기준                                                       |
+| ---------------------------------------- | -------------------------------------------------------- |
+| `VITE_WEBSOCKET_BASE_URL`                | 선택값. API/WebSocket origin이 분리될 때만 `wss://<host>` 형식으로 지정 |
+| `VITE_WEBSOCKET_CONNECT_TIMEOUT_SECONDS` | 선택값. 프론트 WebSocket 연결 대기 시간. 기본값은 6초                     |
+
 
 저장소 루트에서 실행합니다.
 
@@ -245,6 +259,8 @@ flowchart LR
     APIContract --> Client
 ```
 
+
+
 핵심 원칙은 서버 권위입니다. LLM, RAG, KAG는 룰 판정, 승패, 인증/권한, 진명 조각, 거짓 단서, 괴이 행동 선택을 바꾸지 않습니다.
 
 ## 주요 서비스 흐름
@@ -268,6 +284,8 @@ sequenceDiagram
     A-->>C: 현재 사용자와 profile
 ```
 
+
+
 ### AI 스토리 매치 시작
 
 ```mermaid
@@ -288,6 +306,8 @@ sequenceDiagram
     M->>DB: matches, participants, turns 저장
     A-->>C: MatchState
 ```
+
+
 
 ### 턴 제출과 판정
 
@@ -310,6 +330,8 @@ sequenceDiagram
     A-->>C: TurnResult + 최신 MatchState
 ```
 
+
+
 ### RAG 색인과 검색
 
 ```mermaid
@@ -329,6 +351,8 @@ sequenceDiagram
     R-->>Q: 검색 결과와 근거 식별자
 ```
 
+
+
 ## RAG 환각 방지와 출처 정책
 
 RAG는 1차 MVP에서 판정 권위가 아니라 검색 구조와 근거 로그를 담당합니다.
@@ -346,15 +370,17 @@ RAG는 1차 MVP에서 판정 권위가 아니라 검색 구조와 근거 로그�
 
 현재 구현 기준은 사용자 화면의 citation UI 확정보다 먼저, 검색 근거를 추적 가능하게 저장하는 것입니다.
 
-| 항목 | 저장/관리 기준 |
-|---|---|
-| 문서 출처 | `source_path` |
-| 문서 식별자 | `document_id` |
-| chunk 식별자 | `chunk_id` |
-| 검색 점수 | `score` |
-| 검색 조건 | `threshold`, `top_k` |
-| 호출자 | `caller` |
-| 생성 시각 | `created_at` |
+
+| 항목        | 저장/관리 기준             |
+| --------- | -------------------- |
+| 문서 출처     | `source_path`        |
+| 문서 식별자    | `document_id`        |
+| chunk 식별자 | `chunk_id`           |
+| 검색 점수     | `score`              |
+| 검색 조건     | `threshold`, `top_k` |
+| 호출자       | `caller`             |
+| 생성 시각     | `created_at`         |
+
 
 최종 사용자 화면에서 출처를 어떻게 표시할지는 아직 프론트 구현 범위에서 확정/구현되지 않았습니다. 백엔드/RAG 기준으로는 retrieval query log와 chunk 식별자를 남겨 추적 가능성을 확보합니다.
 
@@ -362,58 +388,70 @@ RAG는 1차 MVP에서 판정 권위가 아니라 검색 구조와 근거 로그�
 
 ERD는 두 단계로 구분해서 봐야 합니다.
 
-| 항목 | 현재 상태 |
-|---|---|
-| RDB 테이블 구성 | 승인 문서와 Django model scaffold 수준에서 구성됨 |
-| 시각적 ERD 산출물 | 현재 저장소에서 별도 ERD 다이어그램 파일은 확인되지 않음 |
-| 물리 DB 검증 | migration 생성/실제 PostgreSQL 연결 검증은 별도 필요 |
+
+| 항목          | 현재 상태                                   |
+| ----------- | --------------------------------------- |
+| RDB 테이블 구성  | 승인 문서와 Django model scaffold 수준에서 구성됨   |
+| 시각적 ERD 산출물 | 현재 저장소에서 별도 ERD 다이어그램 파일은 확인되지 않음       |
+| 물리 DB 검증    | migration 생성/실제 PostgreSQL 연결 검증은 별도 필요 |
+
 
 즉, ERD에 들어갈 핵심 RDB 구성은 잡혀 있지만, 발표나 산출물용 시각적 ERD 파일은 아직 만들어진 상태가 아닙니다.
 
 ### 인증/프로필
 
-| 테이블/모델 | 주요 필드 | 목적 |
-|---|---|---|
-| `accounts.User` | email, is_active, is_staff, created_at | 인증과 권한 |
-| `accounts.RefreshToken` | user_id, jti, family_id, token_hash, status, issued/expires/rotated/revoked/reused | refresh token rotation/reuse 감지 |
-| `accounts.SecurityEvent` | event_type, created_at | 보안 이벤트 기록 |
-| `profiles.Profile` | user, nickname, 전적 요약, style 표시 필드 | 프로필과 공개 요약 |
+
+| 테이블/모델                   | 주요 필드                                                                              | 목적                              |
+| ------------------------ | ---------------------------------------------------------------------------------- | ------------------------------- |
+| `accounts.User`          | email, is_active, is_staff, created_at                                             | 인증과 권한                          |
+| `accounts.RefreshToken`  | user_id, jti, family_id, token_hash, status, issued/expires/rotated/revoked/reused | refresh token rotation/reuse 감지 |
+| `accounts.SecurityEvent` | event_type, created_at                                                             | 보안 이벤트 기록                       |
+| `profiles.Profile`       | user, nickname, 전적 요약, style 표시 필드                                                 | 프로필과 공개 요약                      |
+
 
 ### 매치/턴
 
-| 테이블 | 주요 필드 | 목적 |
-|---|---|---|
-| `matches` | mode, status, winner_participant_id, started_at, ended_at | AI 스토리 매치 |
-| `match_participants` | match_id, participant_type, user_id, apparition_id, side, 자원 수치 | human/apparition 참가자 |
-| `turns` | match_id, turn_number, status, deadline_at, resolved_at | 턴 상태 |
-| `action_submissions` | turn_id, participant_id, action_code, info_target_key, submitted_at, client_nonce | 행동 제출과 중복 방지 |
-| `turn_results` | turn_id, result_json, public_log_json, private_log_json, schema_version | 결과/로그 스냅샷 |
+
+| 테이블                  | 주요 필드                                                                             | 목적                   |
+| -------------------- | --------------------------------------------------------------------------------- | -------------------- |
+| `matches`            | mode, status, winner_participant_id, started_at, ended_at                         | AI 스토리 매치            |
+| `match_participants` | match_id, participant_type, user_id, apparition_id, side, 자원 수치                   | human/apparition 참가자 |
+| `turns`              | match_id, turn_number, status, deadline_at, resolved_at                           | 턴 상태                 |
+| `action_submissions` | turn_id, participant_id, action_code, info_target_key, submitted_at, client_nonce | 행동 제출과 중복 방지         |
+| `turn_results`       | turn_id, result_json, public_log_json, private_log_json, schema_version           | 결과/로그 스냅샷            |
+
 
 ### 스토리
 
-| 테이블 | 주요 필드 | 목적 |
-|---|---|---|
-| `story_cases` | title, summary, difficulty, status | 사건 |
-| `apparitions` | name, category, description, taboo, base_policy_json | 괴이 |
-| `stages` | case_id, apparition_id, order, victory_condition_json | 스테이지 |
-| `true_name_fragments` | apparition_id, label, content, reveal_condition_json | 진명 조각 |
-| `false_clues` | apparition_id, content, trigger_condition_json | 거짓 단서 |
-| `player_story_progress` | user_id, stage_id, status, attempts, completed_at | 사용자 진행도 |
+
+| 테이블                     | 주요 필드                                                 | 목적      |
+| ----------------------- | ----------------------------------------------------- | ------- |
+| `story_cases`           | title, summary, difficulty, status                    | 사건      |
+| `apparitions`           | name, category, description, taboo, base_policy_json  | 괴이      |
+| `stages`                | case_id, apparition_id, order, victory_condition_json | 스테이지    |
+| `true_name_fragments`   | apparition_id, label, content, reveal_condition_json  | 진명 조각   |
+| `false_clues`           | apparition_id, content, trigger_condition_json        | 거짓 단서   |
+| `player_story_progress` | user_id, stage_id, status, attempts, completed_at     | 사용자 진행도 |
+
 
 ### AI Profile
 
-| 테이블/모델 | 주요 필드 | 목적 |
-|---|---|---|
-| `PlayerActionEvent` | user_id, match_id, stage_id, turn_number, action_code, info_target_key, decision_duration_ms, opponent_action_code, result_code, clue/outcome | 턴 resolve 시점 행동 이벤트 |
-| `StyleMetricSnapshot` | aggression, defense, insight_focus, deception, risk_preference, silence_reliance, crisis_guard_rate, crisis_contract_rate, late_choice_rate | 스타일 지표 스냅샷 |
+
+| 테이블/모델                | 주요 필드                                                                                                                                         | 목적                  |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| `PlayerActionEvent`   | user_id, match_id, stage_id, turn_number, action_code, info_target_key, decision_duration_ms, opponent_action_code, result_code, clue/outcome | 턴 resolve 시점 행동 이벤트 |
+| `StyleMetricSnapshot` | aggression, defense, insight_focus, deception, risk_preference, silence_reliance, crisis_guard_rate, crisis_contract_rate, late_choice_rate   | 스타일 지표 스냅샷          |
+
 
 ### RAG
 
-| 테이블/모델 | 주요 필드 | 목적 |
-|---|---|---|
-| `RetrievalDocument` | source_path, title, schema_version | 검색 대상 문서 |
-| `RetrievalChunk` | document_id, chunk_id, content, embedding, metadata | 문서 chunk와 embedding |
-| `RetrievalQueryLog` | query, caller, document_id, chunk_id, score, threshold, top_k, created_at | 검색 근거 로그 |
+
+| 테이블/모델              | 주요 필드                                                                     | 목적                  |
+| ------------------- | ------------------------------------------------------------------------- | ------------------- |
+| `RetrievalDocument` | source_path, title, schema_version                                        | 검색 대상 문서            |
+| `RetrievalChunk`    | document_id, chunk_id, content, embedding, metadata                       | 문서 chunk와 embedding |
+| `RetrievalQueryLog` | query, caller, document_id, chunk_id, score, threshold, top_k, created_at | 검색 근거 로그            |
+
 
 ## KAG와 GraphDB
 
@@ -431,15 +469,17 @@ KAG 구현 전 확정이 필요한 항목은 다음과 같습니다.
 
 VectorDB는 PostgreSQL + `pgvector`입니다.
 
-| 항목 | 기준 |
-|---|---|
-| 저장 모델 | `RetrievalDocument`, `RetrievalChunk`, `RetrievalQueryLog` |
-| chunk 크기 | 500-900자 |
-| 경계 기준 | 문단 경계 우선 |
-| overlap | 최대 100자 |
-| 필수 메타데이터 | `document_id`, `chunk_id`, `source_path`, `schema_version` |
-| 검색 기본값 | `top_k=6`, `score_threshold=0.72` |
-| embedding model | 환경 설정으로 주입 |
+
+| 항목              | 기준                                                         |
+| --------------- | ---------------------------------------------------------- |
+| 저장 모델           | `RetrievalDocument`, `RetrievalChunk`, `RetrievalQueryLog` |
+| chunk 크기        | 500-900자                                                   |
+| 경계 기준           | 문단 경계 우선                                                   |
+| overlap         | 최대 100자                                                    |
+| 필수 메타데이터        | `document_id`, `chunk_id`, `source_path`, `schema_version` |
+| 검색 기본값          | `top_k=6`, `score_threshold=0.72`                          |
+| embedding model | 환경 설정으로 주입                                                 |
+
 
 전처리 흐름은 다음과 같습니다.
 
@@ -468,17 +508,19 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 
 전처리는 스타일 지표 계산으로 수행합니다.
 
-| 지표 | 계산 방식 |
-|---|---|
-| 공격성 | 저주 선택 수 / 전체 턴 수 |
-| 방어성 | 수호 선택 수 / 전체 턴 수 |
-| 정보 집착 | 간파 선택 수 / 전체 턴 수 |
-| 기만성 | 속임수 선택 수 / 전체 턴 수 |
-| 위험 선호 | 계약 선택 수 / 전체 턴 수 |
-| 침묵 의존 | 침묵 선택 수 / 전체 턴 수 |
+
+| 지표     | 계산 방식                      |
+| ------ | -------------------------- |
+| 공격성    | 저주 선택 수 / 전체 턴 수           |
+| 방어성    | 수호 선택 수 / 전체 턴 수           |
+| 정보 집착  | 간파 선택 수 / 전체 턴 수           |
+| 기만성    | 속임수 선택 수 / 전체 턴 수          |
+| 위험 선호  | 계약 선택 수 / 전체 턴 수           |
+| 침묵 의존  | 침묵 선택 수 / 전체 턴 수           |
 | 위기 방어율 | 이성 4 이하에서 수호 선택 수 / 위기 턴 수 |
 | 위기 계약율 | 이성 4 이하에서 계약 선택 수 / 위기 턴 수 |
 | 늦은 선택률 | 제한 시간 70% 이후 제출 수 / 전체 턴 수 |
+
 
 분모가 0인 지표는 `0.0`으로 저장합니다.
 
@@ -502,32 +544,36 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 
 `docs/09_Approved_Contracts/15_프론트_기술_계약_오너_확정안.md`에는 프론트 기술 스택, route, API client, cookie/CSRF 연결, endpoint 사용 기준이 승인되어 있습니다. `docs/04_Frontend/*` 문서는 화면 기획 참고 문서입니다.
 
-| 화면 | 문서상 목적 | 현재 상태 |
-|---|---|---|
-| 로그인/회원가입 | 인증 | React 화면과 official auth API 연결 |
-| 로비 | 모드 선택 | React 화면 존재 |
-| AI 사건 선택/브리핑 | 승인된 사건 진입 | React 화면 존재. 정적/prototype 흐름 중심 |
-| 의식 결투 | 턴 상태 조회와 행동 제출 | prototype HTML/CSS/JS를 React route에서 로드 |
-| 결과 | 승패, 로그, 스타일 요약 조회 | React 화면과 `GET /api/v1/matches/{match_id}/result` 연결 |
-| 프로필 | 내 프로필과 전적 요약 조회 | React 화면과 `GET /api/v1/profile/me` 연결 |
-| PvP 매칭 | 실시간 상대 찾기 | 도입 대상 아님 |
+
+| 화면           | 문서상 목적            | 현재 상태                                                |
+| ------------ | ----------------- | ---------------------------------------------------- |
+| 로그인/회원가입     | 인증                | React 화면과 official auth API 연결                       |
+| 로비           | 모드 선택             | React 화면 존재                                          |
+| AI 사건 선택/브리핑 | 승인된 사건 진입         | React 화면 존재. 정적/prototype 흐름 중심                      |
+| 의식 결투        | 턴 상태 조회와 행동 제출    | prototype HTML/CSS/JS를 React route에서 로드              |
+| 결과           | 승패, 로그, 스타일 요약 조회 | React 화면과 `GET /api/v1/matches/{match_id}/result` 연결 |
+| 프로필          | 내 프로필과 전적 요약 조회   | React 화면과 `GET /api/v1/profile/me` 연결                |
+| PvP 매칭       | 실시간 상대 찾기         | 도입 대상 아님                                             |
+
 
 ## 테스트 시나리오와 결과
 
 현재 테스트는 승인 계약 기반 백엔드/LLM 테스트와 프론트 계약/build 검증을 중심으로 구성되어 있습니다.
 
-| 영역 | 주요 검증 |
-|---|---|
-| config | Django 설정, 앱 경계, 환경변수 계약 |
-| common | API 성공/실패 envelope, error code catalog |
-| accounts | custom user, profile, refresh token, auth API scaffold |
-| game_rules | 7x7 상성표, 자원 상태, 승패 조건, 괴이 행동 정책 |
-| matches | match/participant/turn 저장 구조, 턴 resolve |
-| story | story case, apparition, stage, clue 저장 구조 |
-| ai_profile | 행동 이벤트, 스타일 지표 계산 |
-| retrieval | RAG 문서/chunk/embedding/query log 구조와 allowlist |
-| llm | LLM runtime, 생성 로그, guardrail/fallback |
-| frontend contracts | official enum, API client, `nameless_curse` 공개명/결전 흐름 |
+
+| 영역                 | 주요 검증                                                  |
+| ------------------ | ------------------------------------------------------ |
+| config             | Django 설정, 앱 경계, 환경변수 계약                               |
+| common             | API 성공/실패 envelope, error code catalog                 |
+| accounts           | custom user, profile, refresh token, auth API scaffold |
+| game_rules         | 7x7 상성표, 자원 상태, 승패 조건, 괴이 행동 정책                        |
+| matches            | match/participant/turn 저장 구조, 턴 resolve                |
+| story              | story case, apparition, stage, clue 저장 구조              |
+| ai_profile         | 행동 이벤트, 스타일 지표 계산                                      |
+| retrieval          | RAG 문서/chunk/embedding/query log 구조와 allowlist         |
+| llm                | LLM runtime, 생성 로그, guardrail/fallback                 |
+| frontend contracts | official enum, API client, `nameless_curse` 공개명/결전 흐름  |
+
 
 최근 검증 결과:
 
@@ -555,56 +601,56 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 
 구현 리포트:
 
-- [`docs/superpowers/reports/2026-06-04-backend-implementation-report.md`](docs/superpowers/reports/2026-06-04-backend-implementation-report.md)
+- `[docs/superpowers/reports/2026-06-04-backend-implementation-report.md](docs/superpowers/reports/2026-06-04-backend-implementation-report.md)`
 
 ## 발표 자료 구성안
 
 발표 자료는 아래 흐름으로 구성합니다.
 
 1. 프로젝트 개요
-   - 장르: 초자연 공포 스릴러 미스터리
-   - 핵심 플레이: 괴이의 진명을 파헤치는 1대1 턴제 심리전
-   - 1차 MVP 대상: `거울 속의 손님`, `무명(無名)의 저주`
+  - 장르: 초자연 공포 스릴러 미스터리
+  - 핵심 플레이: 괴이의 진명을 파헤치는 1대1 턴제 심리전
+  - 1차 MVP 대상: `거울 속의 손님`, `무명(無名)의 저주`
 2. Obsidian 문서 기반 기획
-   - 승인 문서, draft, deferred 문서 구분
-   - official API schema 관리
-   - 문서에 없는 요구사항을 임의 구현하지 않는 원칙
+  - 승인 문서, draft, deferred 문서 구분
+  - official API schema 관리
+  - 문서에 없는 요구사항을 임의 구현하지 않는 원칙
 3. 시스템 워크프레임
-   - Django API, PostgreSQL, pgvector
-   - 서버 권위 룰 엔진
-   - AI 스토리 Match 구조
-   - 프론트와 LLM은 별도 계약/후순위 경계로 분리
+  - Django API, PostgreSQL, pgvector
+  - 서버 권위 룰 엔진
+  - AI 스토리 Match 구조
+  - 프론트와 LLM은 별도 계약/후순위 경계로 분리
 4. RDB/ERD 구성
-   - Auth/Profile
-   - Match/Turn/Submission/Result
-   - Story/Apparition/Clue
-   - AI Profile
-   - RAG retrieval
-   - 시각적 ERD 산출물은 추가 제작 필요
+  - Auth/Profile
+  - Match/Turn/Submission/Result
+  - Story/Apparition/Clue
+  - AI Profile
+  - RAG retrieval
+  - 시각적 ERD 산출물은 추가 제작 필요
 5. RAG와 환각 방지
-   - 승인 문서 allowlist
-   - chunking 기준
-   - query log와 출처 추적
-   - RAG 결과의 판정 권한 금지
+  - 승인 문서 allowlist
+  - chunking 기준
+  - query log와 출처 추적
+  - RAG 결과의 판정 권한 금지
 6. VectorDB 구축 기준
-   - PostgreSQL + pgvector
-   - 500-900자 문단 기반 chunk
-   - top_k, threshold 정책
+  - PostgreSQL + pgvector
+  - 500-900자 문단 기반 chunk
+  - top_k, threshold 정책
 7. 주요 서비스 시퀀스
-   - 인증
-   - 사건 선택/매치 시작
-   - 턴 제출/판정
-   - RAG 검색
+  - 인증
+  - 사건 선택/매치 시작
+  - 턴 제출/판정
+  - RAG 검색
 8. 화면 설계 상태
-   - 프론트 API 연결 계약은 존재
-   - React/Vite 화면과 prototype 의식 결투 화면은 존재
-   - 승인된 Django official API 주요 흐름 연결
-   - `docs/04_Frontend/*`는 화면 기획 참고 문서
+  - 프론트 API 연결 계약은 존재
+  - React/Vite 화면과 prototype 의식 결투 화면은 존재
+  - 승인된 Django official API 주요 흐름 연결
+  - `docs/04_Frontend/*`는 화면 기획 참고 문서
 9. 테스트 시나리오와 결과
-   - 백엔드/LLM 계약 테스트 범위
-   - 프론트 enum 계약과 build 검증
+  - 백엔드/LLM 계약 테스트 범위
+  - 프론트 enum 계약과 build 검증
 10. 팀원별 느낀점
-   - 현재 저장소 문서에 팀원별 회고 내용이 없으므로 임의 작성하지 않음
+  - 현재 저장소 문서에 팀원별 회고 내용이 없으므로 임의 작성하지 않음
 
 ## 현재 구현 상태와 남은 리스크
 
@@ -633,11 +679,12 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 
 ## 주요 참고 문서
 
-- [`docs/09_Approved_Contracts/15_프론트_기술_계약_오너_확정안.md`](docs/09_Approved_Contracts/15_%ED%94%84%EB%A1%A0%ED%8A%B8_%EA%B8%B0%EC%88%A0_%EA%B3%84%EC%95%BD_%EC%98%A4%EB%84%88_%ED%99%95%EC%A0%95%EC%95%88.md)
-- [`docs/09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약.md`](docs/09_Approved_Contracts/17_%EB%B0%B1%EC%97%94%EB%93%9C_RAG_AI_Profile_%EA%B5%AC%ED%98%84_%EA%B3%84%EC%95%BD.md)
-- [`docs/09_Approved_Contracts/18_게임_규칙_상성표_상태_승패_계약.md`](docs/09_Approved_Contracts/18_%EA%B2%8C%EC%9E%84_%EA%B7%9C%EC%B9%99_%EC%83%81%EC%84%B1%ED%91%9C_%EC%83%81%ED%83%9C_%EC%8A%B9%ED%8C%A8_%EA%B3%84%EC%95%BD.md)
-- [`docs/09_Approved_Contracts/20_Django_Auth_보안_계약.md`](docs/09_Approved_Contracts/20_Django_Auth_%EB%B3%B4%EC%95%88_%EA%B3%84%EC%95%BD.md)
-- [`docs/09_Approved_Contracts/21_AI_스토리_시간초과_판정_계약.md`](docs/09_Approved_Contracts/21_AI_%EC%8A%A4%ED%86%A0%EB%A6%AC_%EC%8B%9C%EA%B0%84%EC%B4%88%EA%B3%BC_%ED%8C%90%EC%A0%95_%EA%B3%84%EC%95%BD.md)
-- [`docs/09_Approved_Contracts/22_API_상세_Schema_계약.md`](docs/09_Approved_Contracts/22_API_%EC%83%81%EC%84%B8_Schema_%EA%B3%84%EC%95%BD.md)
-- [`docs/09_Approved_Contracts/23_프로젝트_폴더_구조_계약.md`](docs/09_Approved_Contracts/23_%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8_%ED%8F%B4%EB%8D%94_%EA%B5%AC%EC%A1%B0_%EA%B3%84%EC%95%BD.md)
-- [`docs/09_Approved_Contracts/29_MVP_Realtime_Redis_WebSocket_계약.md`](docs/09_Approved_Contracts/29_MVP_Realtime_Redis_WebSocket_%EA%B3%84%EC%95%BD.md)
+- `[docs/09_Approved_Contracts/15_프론트_기술_계약_오너_확정안.md](docs/09_Approved_Contracts/15_%ED%94%84%EB%A1%A0%ED%8A%B8_%EA%B8%B0%EC%88%A0_%EA%B3%84%EC%95%BD_%EC%98%A4%EB%84%88_%ED%99%95%EC%A0%95%EC%95%88.md)`
+- `[docs/09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약.md](docs/09_Approved_Contracts/17_%EB%B0%B1%EC%97%94%EB%93%9C_RAG_AI_Profile_%EA%B5%AC%ED%98%84_%EA%B3%84%EC%95%BD.md)`
+- `[docs/09_Approved_Contracts/18_게임_규칙_상성표_상태_승패_계약.md](docs/09_Approved_Contracts/18_%EA%B2%8C%EC%9E%84_%EA%B7%9C%EC%B9%99_%EC%83%81%EC%84%B1%ED%91%9C_%EC%83%81%ED%83%9C_%EC%8A%B9%ED%8C%A8_%EA%B3%84%EC%95%BD.md)`
+- `[docs/09_Approved_Contracts/20_Django_Auth_보안_계약.md](docs/09_Approved_Contracts/20_Django_Auth_%EB%B3%B4%EC%95%88_%EA%B3%84%EC%95%BD.md)`
+- `[docs/09_Approved_Contracts/21_AI_스토리_시간초과_판정_계약.md](docs/09_Approved_Contracts/21_AI_%EC%8A%A4%ED%86%A0%EB%A6%AC_%EC%8B%9C%EA%B0%84%EC%B4%88%EA%B3%BC_%ED%8C%90%EC%A0%95_%EA%B3%84%EC%95%BD.md)`
+- `[docs/09_Approved_Contracts/22_API_상세_Schema_계약.md](docs/09_Approved_Contracts/22_API_%EC%83%81%EC%84%B8_Schema_%EA%B3%84%EC%95%BD.md)`
+- `[docs/09_Approved_Contracts/23_프로젝트_폴더_구조_계약.md](docs/09_Approved_Contracts/23_%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8_%ED%8F%B4%EB%8D%94_%EA%B5%AC%EC%A1%B0_%EA%B3%84%EC%95%BD.md)`
+- `[docs/09_Approved_Contracts/29_MVP_Realtime_Redis_WebSocket_계약.md](docs/09_Approved_Contracts/29_MVP_Realtime_Redis_WebSocket_%EA%B3%84%EC%95%BD.md)`
+

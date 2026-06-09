@@ -2,6 +2,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiClientError } from "../../shared/api/client";
 import { login, signup } from "../../shared/api/resources";
+import { BGM_TRACKS, useBackgroundMusic } from "../../shared/audio/audio";
 import styles from "./AuthScreen.module.css";
 
 type AuthMode = "login" | "signup" | "password-reset";
@@ -14,21 +15,21 @@ const copyByMode = {
   login: {
     kicker: "계정 확인",
     title: "로그인",
-    description: "의식 기록은 HttpOnly cookie 기반 Django 인증 세션에 보관됩니다.",
+    description: " ",
     submitLabel: "로그인",
     notice: "로그인 정보를 확인하고 있습니다.",
   },
   signup: {
     kicker: "새 기록 생성",
     title: "회원가입",
-    description: "가입 후 로그인 화면에서 새 세션을 시작합니다.",
+    description: " ",
     submitLabel: "회원가입",
     notice: "회원가입 정보를 확인하고 있습니다.",
   },
   "password-reset": {
     kicker: "계정 복구",
     title: "비밀번호 재설정",
-    description: "등록한 이메일로 재설정 안내를 보내는 화면으로 연결될 예정입니다.",
+    description: " ",
     submitLabel: "재설정 요청",
     notice: "비밀번호 재설정 API 연결 전 임시 화면입니다.",
   },
@@ -38,6 +39,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   const navigate = useNavigate();
   const [notice, setNotice] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  useBackgroundMusic(BGM_TRACKS.menu);
   const copy = copyByMode[mode];
   const isSignup = mode === "signup";
   const isPasswordReset = mode === "password-reset";
@@ -109,7 +111,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 
   return (
     <main className={styles.screen} aria-label={copy.title}>
-      <img className={styles.background} src="/prototype/assets/lobby-background.png" alt="" draggable={false} />
+      <img className={styles.background} src="/prototype/assets/메인메뉴 바탕.png" alt="" draggable={false} />
       <div className={styles.shadow} aria-hidden="true" />
 
       <section className={styles.panel} aria-labelledby="auth-title">
