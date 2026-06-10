@@ -6,6 +6,8 @@ OPS_DIR = ROOT_DIR / "ops"
 COMPOSE_FILE = OPS_DIR / "docker" / "docker-compose.yml"
 BACKEND_DOCKERFILE = OPS_DIR / "docker" / "backend.Dockerfile"
 BACKEND_ENV_EXAMPLE = OPS_DIR / "env" / "backend.env.example"
+LOCAL_GAME_SCRIPT = OPS_DIR / "scripts" / "dev-local-game.ps1"
+README_FILE = ROOT_DIR / "README.md"
 
 FORBIDDEN_RUNTIME_WORDS = (
     "llm-provider",
@@ -48,6 +50,7 @@ def test_backend_dockerfile_uses_locked_requirements_and_django_entrypoint():
     assert "requirements.txt" in dockerfile
     assert "pip install --no-cache-dir -r requirements.txt" in dockerfile
     assert "backend.config.asgi:application" in dockerfile
+    assert "COPY llm llm" in dockerfile
     assert "uvicorn" in dockerfile
     assert "--host" in dockerfile
     assert "0.0.0.0" in dockerfile
@@ -83,3 +86,55 @@ def test_backend_env_example_documents_required_local_runtime_values_without_rea
     assert "real-secret" not in env_example.lower()
     assert "Bearer" not in env_example
     assert "localStorage" not in env_example
+
+
+def test_local_game_one_command_script_runs_approved_runtime_steps():
+    script = _read(LOCAL_GAME_SCRIPT)
+
+    required_fragments = (
+        '$ErrorActionPreference = "Stop"',
+        "ops\\docker\\docker-compose.yml",
+        "docker",
+        "compose",
+        "build",
+        "up",
+        "postgres",
+        "redis",
+        "api",
+        "python",
+        "backend/manage.py",
+        "migrate",
+        "--noinput",
+        "VITE_API_BASE_URL=http://localhost:8000",
+        "VITE_WEBSOCKET_BASE_URL=ws://localhost:8000",
+        "VITE_WEBSOCKET_CONNECT_TIMEOUT_SECONDS=6",
+        "npm",
+        "ci",
+        "run",
+        "dev",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "5173",
+        "--strictPort",
+        "http://127.0.0.1:5173",
+    )
+    for fragment in required_fragments:
+        assert fragment in script
+
+    forbidden_fragments = (
+        "docker-compose.production.yml",
+        "production.env",
+        "SKN27_PRODUCTION_ENV_FILE",
+        "LLM_API_KEY",
+    )
+    for fragment in forbidden_fragments:
+        assert fragment not in script
+
+
+def test_readme_documents_local_game_one_command_script():
+    readme = _read(README_FILE)
+
+    assert ".\\ops\\scripts\\dev-local-game.ps1" in readme
+    assert "VITE_API_BASE_URL=http://localhost:8000" in readme
+    assert "http://127.0.0.1:5173/prototype/game-background.html" in readme

@@ -95,6 +95,30 @@ gunicorn backend.config.asgi:application --worker-class uvicorn_worker.UvicornWo
 
 ### Local/dev 실행 순서
 
+백엔드 Docker 실행, migration, 프론트엔드 Vite dev server 실행은 아래 원커맨드로 시작할 수 있습니다.
+
+저장소 루트에서 실행합니다.
+
+```powershell
+.\ops\scripts\dev-local-game.ps1
+```
+
+스크립트는 아래 작업을 순서대로 수행합니다.
+
+- `frontend/.env.local`에 local/dev API와 WebSocket origin 값을 설정
+- `api` Docker 이미지 빌드
+- `postgres`, `redis`, `api` 컨테이너 실행
+- Django migration 적용
+- `/healthz`, `/api/v1/auth/csrf` 확인
+- `frontend/node_modules`가 없으면 `npm ci` 실행
+- `npm run dev -- --host 127.0.0.1 --port 5173 --strictPort`로 Vite dev server 실행
+
+브라우저에서는 `http://127.0.0.1:5173`으로 진입합니다. 회원가입 또는 로그인 후 새 게임을 시작하면 서버 판정 기반 게임 흐름을 확인할 수 있습니다.
+
+정적 프로토타입 화면만 빠르게 확인하려면 프론트엔드 개발 서버만 실행한 뒤 `http://127.0.0.1:5173/prototype/game-background.html`로 진입할 수 있습니다. 이 경로는 로그인, API, WebSocket, 서버 판정을 사용하지 않는 화면 확인용 fallback입니다.
+
+문제 해결을 위해 단계를 나누어 실행해야 하면 아래 수동 순서를 사용합니다.
+
 저장소 루트에서 실행합니다.
 
 ```powershell
@@ -109,13 +133,23 @@ Invoke-RestMethod http://localhost:8000/api/v1/auth/csrf
 
 프론트엔드 개발 서버는 별도 터미널에서 실행합니다.
 
+local Vite dev server는 백엔드 API origin과 WebSocket origin이 분리되어 있으므로 `frontend/.env.local`에 아래 값을 지정합니다.
+
+```text
+VITE_API_BASE_URL=http://localhost:8000
+VITE_WEBSOCKET_BASE_URL=ws://localhost:8000
+VITE_WEBSOCKET_CONNECT_TIMEOUT_SECONDS=6
+```
+
 ```powershell
 cd frontend
 npm ci
-npm run dev -- --host 127.0.0.1 --port 5173
+npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 ```
 
-브라우저에서는 `http://127.0.0.1:5173`으로 진입합니다.
+브라우저에서는 `http://127.0.0.1:5173`으로 진입합니다. 회원가입 또는 로그인 후 새 게임을 시작하면 서버 판정 기반 게임 흐름을 확인할 수 있습니다.
+
+정적 프로토타입 화면만 빠르게 확인하려면 프론트엔드 개발 서버만 실행한 뒤 `http://127.0.0.1:5173/prototype/game-background.html`로 진입할 수 있습니다. 이 경로는 로그인, API, WebSocket, 서버 판정을 사용하지 않는 화면 확인용 fallback입니다.
 
 ### Production 실행 순서
 
@@ -188,6 +222,7 @@ WebSocket endpoint는 같은 origin 기준 `/ws/matches/{match_id}`입니다. �
 local Vite dev server에서 API와 WebSocket origin이 분리되어 있다면 `frontend/.env.local`에 아래처럼 지정합니다.
 
 ```text
+VITE_API_BASE_URL=http://localhost:8000
 VITE_WEBSOCKET_BASE_URL=ws://localhost:8000
 VITE_WEBSOCKET_CONNECT_TIMEOUT_SECONDS=6
 ```
