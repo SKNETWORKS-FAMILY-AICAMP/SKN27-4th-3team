@@ -135,7 +135,7 @@ const AMBIENT_DIALOGUE_LINES = [
   },
   {
     side: "spirit",
-    speaker: "거울 속 목소리",
+    speaker: "???",
     text: "사실을 보면 달라져? 죽은 사람은 돌아오지 않아."
   },
   {
@@ -145,7 +145,7 @@ const AMBIENT_DIALOGUE_LINES = [
   },
   {
     side: "spirit",
-    speaker: "거울 속 목소리",
+    speaker: "???",
     text: "그럼 봐. 네가 잃어버린 밤도 같이 보게 될 테니까."
   }
 ];
