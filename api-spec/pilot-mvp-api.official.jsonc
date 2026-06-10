@@ -5,14 +5,15 @@
     "schema_status": "approved",
     "schema_version": "2026-06-02.mvp.v1",
     "created": "2026-06-02",
-    "updated": "2026-06-06",
+    "updated": "2026-06-10",
     "source_documents": [
       "docs/09_Approved_Contracts/05_API_명세_관리_기준.md",
       "docs/09_Approved_Contracts/06_API_응답_형태_기준.md",
       "docs/09_Approved_Contracts/15_프론트_기술_계약_오너_확정안.md",
       "docs/09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약.md",
       "docs/09_Approved_Contracts/20_Django_Auth_보안_계약.md",
-      "docs/09_Approved_Contracts/21_AI_스토리_시간초과_판정_계약.md"
+      "docs/09_Approved_Contracts/21_AI_스토리_시간초과_판정_계약.md",
+      "docs/09_Approved_Contracts/32_RAG_Manual_Ingest_Search_API_계약.md"
     ],
     "decision": "A안: 구현 직전용 최소 완성 schema"
   },
@@ -609,6 +610,23 @@
           "generation_id": "string|null"
         }
       }
+    },
+    "RetrievalSearchResult": {
+      "type": "object",
+      "required": [
+        "document_id",
+        "chunk_id",
+        "source_path",
+        "score",
+        "text_excerpt"
+      ],
+      "properties": {
+        "document_id": "string",
+        "chunk_id": "string",
+        "source_path": "string",
+        "score": "number",
+        "text_excerpt": "string"
+      }
     }
   },
   "endpoints": [
@@ -822,6 +840,82 @@
       "errors": [
         "AUTH_REQUIRED",
         "SESSION_EXPIRED"
+      ],
+      "schema_status": "approved"
+    },
+    {
+      "id": "auth.password_reset.request",
+      "method": "POST",
+      "path": "/api/v1/auth/password-reset/request",
+      "auth_required": false,
+      "csrf_required": true,
+      "purpose": "password reset ??",
+      "success_status": 200,
+      "side_effects": [
+        "send password reset email only when a matching active user exists",
+        "do not reveal account existence in response body"
+      ],
+      "request": {
+        "path_params": {},
+        "query": {},
+        "body": {
+          "email": "string:email"
+        }
+      },
+      "response": {
+        "data": {
+          "accepted": true
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "CSRF_TOKEN_MISSING",
+        "CSRF_TOKEN_INVALID",
+        "VALIDATION_ERROR",
+        "RATE_LIMITED",
+        "PASSWORD_RESET_DELIVERY_UNAVAILABLE"
+      ],
+      "schema_status": "approved"
+    },
+    {
+      "id": "auth.password_reset.confirm",
+      "method": "POST",
+      "path": "/api/v1/auth/password-reset/confirm",
+      "auth_required": false,
+      "csrf_required": true,
+      "purpose": "password reset ??",
+      "success_status": 200,
+      "side_effects": [
+        "change password when reset token is valid",
+        "mark reset token as used",
+        "revoke existing refresh token families for the user"
+      ],
+      "request": {
+        "path_params": {},
+        "query": {},
+        "body": {
+          "token": "string",
+          "new_password": "string"
+        }
+      },
+      "response": {
+        "data": {
+          "password_reset": true
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "CSRF_TOKEN_MISSING",
+        "CSRF_TOKEN_INVALID",
+        "VALIDATION_ERROR",
+        "RATE_LIMITED",
+        "PASSWORD_RESET_TOKEN_INVALID",
+        "PASSWORD_RESET_TOKEN_EXPIRED",
+        "PASSWORD_RESET_TOKEN_USED"
       ],
       "schema_status": "approved"
     },
@@ -1156,6 +1250,98 @@
       "schema_status": "approved"
     },
     {
+      "id": "retrieval.ingest",
+      "method": "POST",
+      "path": "/api/v1/retrieval/ingest",
+      "auth_required": true,
+      "staff_required": true,
+      "csrf_required": true,
+      "purpose": "RAG 승인 문서 수동 ingest",
+      "success_status": 200,
+      "side_effects": [
+        "read approved source files from project workspace",
+        "create or replace retrieval documents and chunks",
+        "store embeddings in pgvector"
+      ],
+      "request": {
+        "path_params": {},
+        "query": {},
+        "body": {
+          "source_paths": "array:string:minItems=1,maxItems=20",
+          "force": "boolean:default=false"
+        }
+      },
+      "response": {
+        "data": {
+          "ingested_documents": "integer",
+          "ingested_chunks": "integer",
+          "skipped_documents": "integer"
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "AUTH_REQUIRED",
+        "SESSION_EXPIRED",
+        "CSRF_TOKEN_MISSING",
+        "CSRF_TOKEN_INVALID",
+        "VALIDATION_ERROR",
+        "RAG_ACCESS_DENIED",
+        "RAG_SOURCE_NOT_ALLOWED",
+        "RAG_SOURCE_NOT_FOUND",
+        "RAG_EMBEDDING_UNAVAILABLE"
+      ],
+      "schema_status": "approved"
+    },
+    {
+      "id": "retrieval.search",
+      "method": "POST",
+      "path": "/api/v1/retrieval/search",
+      "auth_required": true,
+      "staff_required": true,
+      "csrf_required": true,
+      "purpose": "RAG chunk 수동 검색",
+      "success_status": 200,
+      "side_effects": [
+        "write retrieval query logs for returned results"
+      ],
+      "request": {
+        "path_params": {},
+        "query": {},
+        "body": {
+          "query": "string:minLength=1,maxLength=300",
+          "caller": "string:minLength=1,maxLength=80",
+          "top_k": "integer:min=1,max=20,default=6",
+          "score_threshold": "number:min=0,max=1,default=0.72"
+        }
+      },
+      "response": {
+        "data": {
+          "results": [
+            {
+              "$ref": "shared_schemas.RetrievalSearchResult"
+            }
+          ],
+          "top_k": "integer",
+          "score_threshold": "number"
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "AUTH_REQUIRED",
+        "SESSION_EXPIRED",
+        "CSRF_TOKEN_MISSING",
+        "CSRF_TOKEN_INVALID",
+        "VALIDATION_ERROR",
+        "RAG_ACCESS_DENIED",
+        "RAG_EMBEDDING_UNAVAILABLE"
+      ],
+      "schema_status": "approved"
+    },
+    {
       "id": "profile.me",
       "method": "GET",
       "path": "/api/v1/profile/me",
@@ -1212,7 +1398,15 @@
     "RATE_LIMITED": "요청 제한에 걸렸다.",
     "LLM_SUMMARY_UNAVAILABLE": "LLM 요약을 사용할 수 없어 정적 문장을 표시해야 한다.",
     "DUEL_DIALOGUE_LIMIT_EXCEEDED": "결전 대화 생성 제한을 초과했다.",
-    "SERVICE_NOT_IMPLEMENTED": "Service is not implemented yet."
+    "SERVICE_NOT_IMPLEMENTED": "Service is not implemented yet.",
+    "PASSWORD_RESET_TOKEN_INVALID": "password reset token이 유효하지 않다.",
+    "PASSWORD_RESET_TOKEN_EXPIRED": "password reset token이 만료되었다.",
+    "PASSWORD_RESET_TOKEN_USED": "password reset token이 이미 사용되었다.",
+    "PASSWORD_RESET_DELIVERY_UNAVAILABLE": "password reset email 발송 설정을 사용할 수 없다.",
+    "RAG_ACCESS_DENIED": "RAG 관리 API는 staff 사용자만 사용할 수 있다.",
+    "RAG_SOURCE_NOT_ALLOWED": "RAG ingest 대상 문서가 승인 allowlist 밖이다.",
+    "RAG_SOURCE_NOT_FOUND": "RAG ingest 대상 문서를 찾을 수 없다.",
+    "RAG_EMBEDDING_UNAVAILABLE": "RAG embedding 설정을 사용할 수 없다."
   },
   "remaining_decisions": []
 }

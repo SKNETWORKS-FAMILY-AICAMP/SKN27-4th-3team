@@ -29,6 +29,14 @@ API_ERROR_MESSAGES = MappingProxyType(
         "RATE_LIMITED": "요청 제한에 걸렸다.",
         "LLM_SUMMARY_UNAVAILABLE": "LLM 요약을 사용할 수 없어 정적 문장을 표시해야 한다.",
         "DUEL_DIALOGUE_LIMIT_EXCEEDED": "결전 대화 생성 제한을 초과했다.",
+        "PASSWORD_RESET_TOKEN_INVALID": "password reset token이 유효하지 않다.",
+        "PASSWORD_RESET_TOKEN_EXPIRED": "password reset token이 만료되었다.",
+        "PASSWORD_RESET_TOKEN_USED": "password reset token이 이미 사용되었다.",
+        "PASSWORD_RESET_DELIVERY_UNAVAILABLE": "password reset email 발송 설정을 사용할 수 없다.",
+        "RAG_ACCESS_DENIED": "RAG 관리 API는 staff 사용자만 사용할 수 있다.",
+        "RAG_SOURCE_NOT_ALLOWED": "RAG ingest 대상 문서가 승인 allowlist 밖이다.",
+        "RAG_SOURCE_NOT_FOUND": "RAG ingest 대상 문서를 찾을 수 없다.",
+        "RAG_EMBEDDING_UNAVAILABLE": "RAG embedding 설정을 사용할 수 없다.",
         "SERVICE_NOT_IMPLEMENTED": "Service is not implemented yet.",
     }
 )

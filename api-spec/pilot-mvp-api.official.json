@@ -5,16 +5,17 @@
     "schema_status": "approved",
     "schema_version": "2026-06-02.mvp.v1",
     "created": "2026-06-02",
-    "updated": "2026-06-06",
+    "updated": "2026-06-10",
     "source_documents": [
-      "docs/09_Approved_Contracts/05_API_명세_관리_기준.md",
-      "docs/09_Approved_Contracts/06_API_응답_형태_기준.md",
-      "docs/09_Approved_Contracts/15_프론트_기술_계약_오너_확정안.md",
-      "docs/09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약.md",
-      "docs/09_Approved_Contracts/20_Django_Auth_보안_계약.md",
-      "docs/09_Approved_Contracts/21_AI_스토리_시간초과_판정_계약.md"
+      "docs/09_Approved_Contracts/05_API_\uba85\uc138_\uad00\ub9ac_\uae30\uc900.md",
+      "docs/09_Approved_Contracts/06_API_\uc751\ub2f5_\ud615\ud0dc_\uae30\uc900.md",
+      "docs/09_Approved_Contracts/15_\ud504\ub860\ud2b8_\uae30\uc220_\uacc4\uc57d_\uc624\ub108_\ud655\uc815\uc548.md",
+      "docs/09_Approved_Contracts/17_\ubc31\uc5d4\ub4dc_RAG_AI_Profile_\uad6c\ud604_\uacc4\uc57d.md",
+      "docs/09_Approved_Contracts/20_Django_Auth_\ubcf4\uc548_\uacc4\uc57d.md",
+      "docs/09_Approved_Contracts/21_AI_\uc2a4\ud1a0\ub9ac_\uc2dc\uac04\ucd08\uacfc_\ud310\uc815_\uacc4\uc57d.md",
+      "docs/09_Approved_Contracts/32_RAG_Manual_Ingest_Search_API_\uacc4\uc57d.md"
     ],
-    "decision": "A안: 구현 직전용 최소 완성 schema"
+    "decision": "A\uc548: \uad6c\ud604 \uc9c1\uc804\uc6a9 \ucd5c\uc18c \uc644\uc131 schema"
   },
   "api": {
     "prefix": "/api/v1",
@@ -609,6 +610,23 @@
           "generation_id": "string|null"
         }
       }
+    },
+    "RetrievalSearchResult": {
+      "type": "object",
+      "required": [
+        "document_id",
+        "chunk_id",
+        "source_path",
+        "score",
+        "text_excerpt"
+      ],
+      "properties": {
+        "document_id": "string",
+        "chunk_id": "string",
+        "source_path": "string",
+        "score": "number",
+        "text_excerpt": "string"
+      }
     }
   },
   "endpoints": [
@@ -618,7 +636,7 @@
       "path": "/api/v1/auth/csrf",
       "auth_required": false,
       "csrf_required": false,
-      "purpose": "CSRF token 발급",
+      "purpose": "CSRF token \ubc1c\uae09",
       "success_status": 200,
       "request": {
         "path_params": {},
@@ -644,7 +662,7 @@
       "path": "/api/v1/auth/signup",
       "auth_required": false,
       "csrf_required": true,
-      "purpose": "회원가입",
+      "purpose": "\ud68c\uc6d0\uac00\uc785",
       "success_status": 201,
       "request": {
         "path_params": {},
@@ -679,7 +697,7 @@
       "path": "/api/v1/auth/login",
       "auth_required": false,
       "csrf_required": true,
-      "purpose": "로그인",
+      "purpose": "\ub85c\uadf8\uc778",
       "success_status": 200,
       "side_effects": [
         "set access token HttpOnly cookie",
@@ -726,7 +744,7 @@
       "path": "/api/v1/auth/logout",
       "auth_required": true,
       "csrf_required": true,
-      "purpose": "로그아웃",
+      "purpose": "\ub85c\uadf8\uc544\uc6c3",
       "success_status": 200,
       "side_effects": [
         "revoke current refresh token family according to auth security contract",
@@ -798,7 +816,7 @@
       "path": "/api/v1/auth/me",
       "auth_required": true,
       "csrf_required": false,
-      "purpose": "현재 사용자/session 확인",
+      "purpose": "\ud604\uc7ac \uc0ac\uc6a9\uc790/session \ud655\uc778",
       "success_status": 200,
       "request": {
         "path_params": {},
@@ -826,12 +844,88 @@
       "schema_status": "approved"
     },
     {
+      "id": "auth.password_reset.request",
+      "method": "POST",
+      "path": "/api/v1/auth/password-reset/request",
+      "auth_required": false,
+      "csrf_required": true,
+      "purpose": "password reset ??",
+      "success_status": 200,
+      "side_effects": [
+        "send password reset email only when a matching active user exists",
+        "do not reveal account existence in response body"
+      ],
+      "request": {
+        "path_params": {},
+        "query": {},
+        "body": {
+          "email": "string:email"
+        }
+      },
+      "response": {
+        "data": {
+          "accepted": true
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "CSRF_TOKEN_MISSING",
+        "CSRF_TOKEN_INVALID",
+        "VALIDATION_ERROR",
+        "RATE_LIMITED",
+        "PASSWORD_RESET_DELIVERY_UNAVAILABLE"
+      ],
+      "schema_status": "approved"
+    },
+    {
+      "id": "auth.password_reset.confirm",
+      "method": "POST",
+      "path": "/api/v1/auth/password-reset/confirm",
+      "auth_required": false,
+      "csrf_required": true,
+      "purpose": "password reset ??",
+      "success_status": 200,
+      "side_effects": [
+        "change password when reset token is valid",
+        "mark reset token as used",
+        "revoke existing refresh token families for the user"
+      ],
+      "request": {
+        "path_params": {},
+        "query": {},
+        "body": {
+          "token": "string",
+          "new_password": "string"
+        }
+      },
+      "response": {
+        "data": {
+          "password_reset": true
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "CSRF_TOKEN_MISSING",
+        "CSRF_TOKEN_INVALID",
+        "VALIDATION_ERROR",
+        "RATE_LIMITED",
+        "PASSWORD_RESET_TOKEN_INVALID",
+        "PASSWORD_RESET_TOKEN_EXPIRED",
+        "PASSWORD_RESET_TOKEN_USED"
+      ],
+      "schema_status": "approved"
+    },
+    {
       "id": "story.cases.list",
       "method": "GET",
       "path": "/api/v1/story/cases",
       "auth_required": true,
       "csrf_required": false,
-      "purpose": "AI 사건 목록",
+      "purpose": "AI \uc0ac\uac74 \ubaa9\ub85d",
       "success_status": 200,
       "request": {
         "path_params": {},
@@ -862,7 +956,7 @@
       "path": "/api/v1/story/cases/{case_id}/briefing",
       "auth_required": true,
       "csrf_required": false,
-      "purpose": "브리핑 조회",
+      "purpose": "\ube0c\ub9ac\ud551 \uc870\ud68c",
       "success_status": 200,
       "request": {
         "path_params": {
@@ -895,7 +989,7 @@
       "path": "/api/v1/story/cases/{case_id}/matches",
       "auth_required": true,
       "csrf_required": true,
-      "purpose": "AI 스토리 매치 시작",
+      "purpose": "AI \uc2a4\ud1a0\ub9ac \ub9e4\uce58 \uc2dc\uc791",
       "success_status": 201,
       "request": {
         "path_params": {
@@ -939,7 +1033,7 @@
       "path": "/api/v1/matches/{match_id}",
       "auth_required": true,
       "csrf_required": false,
-      "purpose": "현재 매치 상태 조회",
+      "purpose": "\ud604\uc7ac \ub9e4\uce58 \uc0c1\ud0dc \uc870\ud68c",
       "success_status": 200,
       "request": {
         "path_params": {
@@ -972,7 +1066,7 @@
       "path": "/api/v1/matches/{match_id}/turns",
       "auth_required": true,
       "csrf_required": true,
-      "purpose": "행동 제출",
+      "purpose": "\ud589\ub3d9 \uc81c\ucd9c",
       "success_status": 200,
       "request": {
         "path_params": {
@@ -1027,7 +1121,7 @@
       "path": "/api/v1/matches/{match_id}/turns/{turn_id}/llm-text",
       "auth_required": true,
       "csrf_required": true,
-      "purpose": "턴 연출 LLM 문구 생성",
+      "purpose": "\ud134 \uc5f0\ucd9c LLM \ubb38\uad6c \uc0dd\uc131",
       "success_status": 200,
       "request": {
         "path_params": {
@@ -1073,7 +1167,7 @@
       "path": "/api/v1/matches/{match_id}/duel/dialogues",
       "auth_required": true,
       "csrf_required": true,
-      "purpose": "결전 대화 LLM 문구 생성",
+      "purpose": "\uacb0\uc804 \ub300\ud654 LLM \ubb38\uad6c \uc0dd\uc131",
       "success_status": 200,
       "request": {
         "path_params": {
@@ -1127,7 +1221,7 @@
       "path": "/api/v1/matches/{match_id}/result",
       "auth_required": true,
       "csrf_required": false,
-      "purpose": "결과 조회",
+      "purpose": "\uacb0\uacfc \uc870\ud68c",
       "success_status": 200,
       "request": {
         "path_params": {
@@ -1156,12 +1250,104 @@
       "schema_status": "approved"
     },
     {
+      "id": "retrieval.ingest",
+      "method": "POST",
+      "path": "/api/v1/retrieval/ingest",
+      "auth_required": true,
+      "staff_required": true,
+      "csrf_required": true,
+      "purpose": "RAG \uc2b9\uc778 \ubb38\uc11c \uc218\ub3d9 ingest",
+      "success_status": 200,
+      "side_effects": [
+        "read approved source files from project workspace",
+        "create or replace retrieval documents and chunks",
+        "store embeddings in pgvector"
+      ],
+      "request": {
+        "path_params": {},
+        "query": {},
+        "body": {
+          "source_paths": "array:string:minItems=1,maxItems=20",
+          "force": "boolean:default=false"
+        }
+      },
+      "response": {
+        "data": {
+          "ingested_documents": "integer",
+          "ingested_chunks": "integer",
+          "skipped_documents": "integer"
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "AUTH_REQUIRED",
+        "SESSION_EXPIRED",
+        "CSRF_TOKEN_MISSING",
+        "CSRF_TOKEN_INVALID",
+        "VALIDATION_ERROR",
+        "RAG_ACCESS_DENIED",
+        "RAG_SOURCE_NOT_ALLOWED",
+        "RAG_SOURCE_NOT_FOUND",
+        "RAG_EMBEDDING_UNAVAILABLE"
+      ],
+      "schema_status": "approved"
+    },
+    {
+      "id": "retrieval.search",
+      "method": "POST",
+      "path": "/api/v1/retrieval/search",
+      "auth_required": true,
+      "staff_required": true,
+      "csrf_required": true,
+      "purpose": "RAG chunk \uc218\ub3d9 \uac80\uc0c9",
+      "success_status": 200,
+      "side_effects": [
+        "write retrieval query logs for returned results"
+      ],
+      "request": {
+        "path_params": {},
+        "query": {},
+        "body": {
+          "query": "string:minLength=1,maxLength=300",
+          "caller": "string:minLength=1,maxLength=80",
+          "top_k": "integer:min=1,max=20,default=6",
+          "score_threshold": "number:min=0,max=1,default=0.72"
+        }
+      },
+      "response": {
+        "data": {
+          "results": [
+            {
+              "$ref": "shared_schemas.RetrievalSearchResult"
+            }
+          ],
+          "top_k": "integer",
+          "score_threshold": "number"
+        },
+        "meta": {
+          "$ref": "shared_schemas.Meta"
+        }
+      },
+      "errors": [
+        "AUTH_REQUIRED",
+        "SESSION_EXPIRED",
+        "CSRF_TOKEN_MISSING",
+        "CSRF_TOKEN_INVALID",
+        "VALIDATION_ERROR",
+        "RAG_ACCESS_DENIED",
+        "RAG_EMBEDDING_UNAVAILABLE"
+      ],
+      "schema_status": "approved"
+    },
+    {
       "id": "profile.me",
       "method": "GET",
       "path": "/api/v1/profile/me",
       "auth_required": true,
       "csrf_required": false,
-      "purpose": "내 프로필과 요약 조회",
+      "purpose": "\ub0b4 \ud504\ub85c\ud544\uacfc \uc694\uc57d \uc870\ud68c",
       "success_status": 200,
       "request": {
         "path_params": {},
@@ -1189,30 +1375,38 @@
     }
   ],
   "error_codes": {
-    "AUTH_REQUIRED": "인증이 필요하다.",
-    "SESSION_EXPIRED": "세션이 만료되었거나 refresh에 실패했다.",
-    "INVALID_CREDENTIALS": "로그인 정보가 올바르지 않다.",
-    "LOGIN_RATE_LIMITED": "로그인 실패가 반복되어 일시적으로 로그인이 차단되었다.",
-    "CSRF_TOKEN_MISSING": "CSRF token이 없다.",
-    "CSRF_TOKEN_INVALID": "CSRF token이 유효하지 않다.",
-    "VALIDATION_ERROR": "요청 payload가 schema 또는 서버 검증을 통과하지 못했다.",
-    "CASE_NOT_FOUND": "사건을 찾을 수 없다.",
-    "CASE_NOT_AVAILABLE": "사건이 1차 MVP에서 사용 가능하지 않다.",
-    "MATCH_NOT_FOUND": "매치를 찾을 수 없다.",
-    "MATCH_ACCESS_DENIED": "요청 사용자가 해당 match participant가 아니다.",
-    "MATCH_ALREADY_FINISHED": "매치가 이미 종료되었다.",
-    "MATCH_NOT_RESOLVED": "결과 조회 시점에 매치가 아직 종료되지 않았다.",
-    "TURN_ALREADY_SUBMITTED": "현재 participant가 해당 턴에 이미 행동을 제출했다.",
-    "TURN_DEADLINE_EXPIRED": "제출이 서버 deadline_at 이후 도착했다.",
-    "ACTION_NOT_AVAILABLE": "선택할 수 없는 행동이다.",
-    "INFO_TARGET_REQUIRED": "정보 행동에 필요한 info_target_key가 없다.",
-    "INSUFFICIENT_RITUAL_POWER": "의식력이 부족하다.",
-    "REFRESH_TOKEN_REUSED": "refresh token 재사용이 감지되어 token family가 폐기되었다.",
-    "IDEMPOTENCY_CONFLICT": "동일 idempotency key가 다른 요청 내용으로 재사용되었다.",
-    "RATE_LIMITED": "요청 제한에 걸렸다.",
-    "LLM_SUMMARY_UNAVAILABLE": "LLM 요약을 사용할 수 없어 정적 문장을 표시해야 한다.",
-    "DUEL_DIALOGUE_LIMIT_EXCEEDED": "결전 대화 생성 제한을 초과했다.",
-    "SERVICE_NOT_IMPLEMENTED": "Service is not implemented yet."
+    "AUTH_REQUIRED": "\uc778\uc99d\uc774 \ud544\uc694\ud558\ub2e4.",
+    "SESSION_EXPIRED": "\uc138\uc158\uc774 \ub9cc\ub8cc\ub418\uc5c8\uac70\ub098 refresh\uc5d0 \uc2e4\ud328\ud588\ub2e4.",
+    "INVALID_CREDENTIALS": "\ub85c\uadf8\uc778 \uc815\ubcf4\uac00 \uc62c\ubc14\ub974\uc9c0 \uc54a\ub2e4.",
+    "LOGIN_RATE_LIMITED": "\ub85c\uadf8\uc778 \uc2e4\ud328\uac00 \ubc18\ubcf5\ub418\uc5b4 \uc77c\uc2dc\uc801\uc73c\ub85c \ub85c\uadf8\uc778\uc774 \ucc28\ub2e8\ub418\uc5c8\ub2e4.",
+    "CSRF_TOKEN_MISSING": "CSRF token\uc774 \uc5c6\ub2e4.",
+    "CSRF_TOKEN_INVALID": "CSRF token\uc774 \uc720\ud6a8\ud558\uc9c0 \uc54a\ub2e4.",
+    "VALIDATION_ERROR": "\uc694\uccad payload\uac00 schema \ub610\ub294 \uc11c\ubc84 \uac80\uc99d\uc744 \ud1b5\uacfc\ud558\uc9c0 \ubabb\ud588\ub2e4.",
+    "CASE_NOT_FOUND": "\uc0ac\uac74\uc744 \ucc3e\uc744 \uc218 \uc5c6\ub2e4.",
+    "CASE_NOT_AVAILABLE": "\uc0ac\uac74\uc774 1\ucc28 MVP\uc5d0\uc11c \uc0ac\uc6a9 \uac00\ub2a5\ud558\uc9c0 \uc54a\ub2e4.",
+    "MATCH_NOT_FOUND": "\ub9e4\uce58\ub97c \ucc3e\uc744 \uc218 \uc5c6\ub2e4.",
+    "MATCH_ACCESS_DENIED": "\uc694\uccad \uc0ac\uc6a9\uc790\uac00 \ud574\ub2f9 match participant\uac00 \uc544\ub2c8\ub2e4.",
+    "MATCH_ALREADY_FINISHED": "\ub9e4\uce58\uac00 \uc774\ubbf8 \uc885\ub8cc\ub418\uc5c8\ub2e4.",
+    "MATCH_NOT_RESOLVED": "\uacb0\uacfc \uc870\ud68c \uc2dc\uc810\uc5d0 \ub9e4\uce58\uac00 \uc544\uc9c1 \uc885\ub8cc\ub418\uc9c0 \uc54a\uc558\ub2e4.",
+    "TURN_ALREADY_SUBMITTED": "\ud604\uc7ac participant\uac00 \ud574\ub2f9 \ud134\uc5d0 \uc774\ubbf8 \ud589\ub3d9\uc744 \uc81c\ucd9c\ud588\ub2e4.",
+    "TURN_DEADLINE_EXPIRED": "\uc81c\ucd9c\uc774 \uc11c\ubc84 deadline_at \uc774\ud6c4 \ub3c4\ucc29\ud588\ub2e4.",
+    "ACTION_NOT_AVAILABLE": "\uc120\ud0dd\ud560 \uc218 \uc5c6\ub294 \ud589\ub3d9\uc774\ub2e4.",
+    "INFO_TARGET_REQUIRED": "\uc815\ubcf4 \ud589\ub3d9\uc5d0 \ud544\uc694\ud55c info_target_key\uac00 \uc5c6\ub2e4.",
+    "INSUFFICIENT_RITUAL_POWER": "\uc758\uc2dd\ub825\uc774 \ubd80\uc871\ud558\ub2e4.",
+    "REFRESH_TOKEN_REUSED": "refresh token \uc7ac\uc0ac\uc6a9\uc774 \uac10\uc9c0\ub418\uc5b4 token family\uac00 \ud3d0\uae30\ub418\uc5c8\ub2e4.",
+    "IDEMPOTENCY_CONFLICT": "\ub3d9\uc77c idempotency key\uac00 \ub2e4\ub978 \uc694\uccad \ub0b4\uc6a9\uc73c\ub85c \uc7ac\uc0ac\uc6a9\ub418\uc5c8\ub2e4.",
+    "RATE_LIMITED": "\uc694\uccad \uc81c\ud55c\uc5d0 \uac78\ub838\ub2e4.",
+    "LLM_SUMMARY_UNAVAILABLE": "LLM \uc694\uc57d\uc744 \uc0ac\uc6a9\ud560 \uc218 \uc5c6\uc5b4 \uc815\uc801 \ubb38\uc7a5\uc744 \ud45c\uc2dc\ud574\uc57c \ud55c\ub2e4.",
+    "DUEL_DIALOGUE_LIMIT_EXCEEDED": "\uacb0\uc804 \ub300\ud654 \uc0dd\uc131 \uc81c\ud55c\uc744 \ucd08\uacfc\ud588\ub2e4.",
+    "SERVICE_NOT_IMPLEMENTED": "Service is not implemented yet.",
+    "PASSWORD_RESET_TOKEN_INVALID": "password reset token\uc774 \uc720\ud6a8\ud558\uc9c0 \uc54a\ub2e4.",
+    "PASSWORD_RESET_TOKEN_EXPIRED": "password reset token\uc774 \ub9cc\ub8cc\ub418\uc5c8\ub2e4.",
+    "PASSWORD_RESET_TOKEN_USED": "password reset token\uc774 \uc774\ubbf8 \uc0ac\uc6a9\ub418\uc5c8\ub2e4.",
+    "PASSWORD_RESET_DELIVERY_UNAVAILABLE": "password reset email \ubc1c\uc1a1 \uc124\uc815\uc744 \uc0ac\uc6a9\ud560 \uc218 \uc5c6\ub2e4.",
+    "RAG_ACCESS_DENIED": "RAG \uad00\ub9ac API\ub294 staff \uc0ac\uc6a9\uc790\ub9cc \uc0ac\uc6a9\ud560 \uc218 \uc788\ub2e4.",
+    "RAG_SOURCE_NOT_ALLOWED": "RAG ingest \ub300\uc0c1 \ubb38\uc11c\uac00 \uc2b9\uc778 allowlist \ubc16\uc774\ub2e4.",
+    "RAG_SOURCE_NOT_FOUND": "RAG ingest \ub300\uc0c1 \ubb38\uc11c\ub97c \ucc3e\uc744 \uc218 \uc5c6\ub2e4.",
+    "RAG_EMBEDDING_UNAVAILABLE": "RAG embedding \uc124\uc815\uc744 \uc0ac\uc6a9\ud560 \uc218 \uc5c6\ub2e4."
   },
   "remaining_decisions": []
 }

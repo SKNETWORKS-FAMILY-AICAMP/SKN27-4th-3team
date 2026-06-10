@@ -95,5 +95,7 @@ def test_production_env_template_has_no_real_secret_values():
     assert "REDIS_PASSWORD=change-me-production-redis-password" in source
     assert "WEBSOCKET_HEARTBEAT_SECONDS=25" in source
     assert "WEBSOCKET_CONNECT_TIMEOUT_SECONDS=6" in source
+    assert "LLM_REQUIRED=false" in source
+    assert "RAG_EMBEDDING_PROVIDER=disabled" in source
     assert "change-me" in source
     assert "actual-secret" not in source

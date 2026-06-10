@@ -13,10 +13,18 @@ from django.contrib.auth.password_validation import (
     UserAttributeSimilarityValidator,
 )
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.mail import send_mail
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from backend.apps.accounts.models import LoginFailureThrottle, RefreshToken, SecurityEvent, User
+from backend.apps.accounts.models import (
+    LoginFailureThrottle,
+    PasswordResetThrottle,
+    PasswordResetToken,
+    RefreshToken,
+    SecurityEvent,
+    User,
+)
 from backend.apps.accounts.tokens import (
     ACTIVE_REFRESH_TOKEN_STATUS,
     REFRESH_TOKEN_REUSE_ERROR_CODE,
@@ -24,12 +32,21 @@ from backend.apps.accounts.tokens import (
     REUSED_REFRESH_TOKEN_STATUS,
     REVOKED_REFRESH_TOKEN_STATUS,
     ROTATED_REFRESH_TOKEN_STATUS,
+    SECURITY_EVENT_PASSWORD_RESET_DELIVERY_UNAVAILABLE,
+    SECURITY_EVENT_PASSWORD_RESET_REQUESTED,
+    SECURITY_EVENT_PASSWORD_RESET_SUCCEEDED,
+    SECURITY_EVENT_PASSWORD_RESET_TOKEN_EXPIRED,
+    SECURITY_EVENT_PASSWORD_RESET_TOKEN_INVALID,
+    SECURITY_EVENT_PASSWORD_RESET_TOKEN_REUSED,
     SECURITY_EVENT_LOGIN_FAILED_REPEATED,
     SECURITY_EVENT_REFRESH_TOKEN_FAMILY_REVOKED,
     SECURITY_EVENT_REFRESH_TOKEN_REUSE_DETECTED,
     RefreshTokenIdentifiers,
     decode_jwt_token,
+    hash_password_reset_token,
     hash_refresh_token,
+    new_password_reset_token,
+    password_reset_email_hmac,
     is_refresh_token_reuse_status,
     issue_access_token,
     issue_refresh_token,
@@ -52,6 +69,7 @@ FORBIDDEN_SECURITY_METADATA_KEYS = (
     "password",
     "cookie",
     "csrf_token",
+    "raw_email",
 )
 STYLE_METRIC_FIELDS = (
     "aggression",
@@ -102,6 +120,140 @@ class SessionResult:
     authenticated: bool
     user: dict[str, Any]
     profile: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class PasswordResetRequestResult:
+    accepted: bool
+
+
+@dataclass(frozen=True)
+class PasswordResetConfirmResult:
+    password_reset: bool
+
+
+def request_password_reset(
+    *,
+    email: str,
+    request_id: str | None,
+    client_ip: str,
+) -> PasswordResetRequestResult:
+    normalized_email = _normalize_login_email(email)
+    normalized_client_ip = _normalize_client_ip(client_ip)
+    now = timezone.now()
+    _assert_password_reset_not_limited(
+        normalized_email=normalized_email,
+        client_ip=normalized_client_ip,
+        now=now,
+    )
+    _record_password_reset_request(
+        normalized_email=normalized_email,
+        client_ip=normalized_client_ip,
+        now=now,
+    )
+    _assert_password_reset_delivery_available(
+        user_id=None,
+        request_id=request_id,
+    )
+
+    email_hmac = password_reset_email_hmac(normalized_email, settings.SECRET_KEY)
+    user = _first_user_for_password_reset(normalized_email)
+    record_security_event(
+        event_type=SECURITY_EVENT_PASSWORD_RESET_REQUESTED,
+        user_id=None if user is None else user.id,
+        request_id=request_id,
+        metadata={"email_hmac": email_hmac},
+    )
+
+    if user is None:
+        return PasswordResetRequestResult(accepted=True)
+
+    raw_token = new_password_reset_token()
+    PasswordResetToken.objects.create(
+        user_id=user.id,
+        token_hash=hash_password_reset_token(raw_token, settings.SECRET_KEY),
+        requested_email=normalized_email,
+        request_ip=normalized_client_ip,
+        created_at=now,
+        expires_at=now + timedelta(seconds=settings.PASSWORD_RESET_TOKEN_TTL_SECONDS),
+    )
+    _send_password_reset_email(
+        user=user,
+        raw_token=raw_token,
+        requested_email=normalized_email,
+    )
+    return PasswordResetRequestResult(accepted=True)
+
+
+def confirm_password_reset(
+    *,
+    token: str,
+    new_password: str,
+    request_id: str | None,
+) -> PasswordResetConfirmResult:
+    now = timezone.now()
+    token_hash = hash_password_reset_token(token, settings.SECRET_KEY)
+
+    with transaction.atomic():
+        query = PasswordResetToken.objects.filter(token_hash=token_hash)
+        if hasattr(query, "select_for_update"):
+            query = query.select_for_update()
+        reset_token = query.first()
+
+        if reset_token is None:
+            record_security_event(
+                event_type=SECURITY_EVENT_PASSWORD_RESET_TOKEN_INVALID,
+                user_id=None,
+                request_id=request_id,
+                metadata={},
+            )
+            raise ApiErrorResponseException(
+                "PASSWORD_RESET_TOKEN_INVALID",
+                status_code=HTTP_400_BAD_REQUEST,
+            )
+
+        if reset_token.used_at is not None:
+            record_security_event(
+                event_type=SECURITY_EVENT_PASSWORD_RESET_TOKEN_REUSED,
+                user_id=reset_token.user_id,
+                request_id=request_id,
+                metadata={},
+            )
+            raise ApiErrorResponseException(
+                "PASSWORD_RESET_TOKEN_USED",
+                status_code=HTTP_400_BAD_REQUEST,
+            )
+
+        if reset_token.expires_at <= now:
+            record_security_event(
+                event_type=SECURITY_EVENT_PASSWORD_RESET_TOKEN_EXPIRED,
+                user_id=reset_token.user_id,
+                request_id=request_id,
+                metadata={},
+            )
+            raise ApiErrorResponseException(
+                "PASSWORD_RESET_TOKEN_EXPIRED",
+                status_code=HTTP_400_BAD_REQUEST,
+            )
+
+        user = User.objects.get(id=reset_token.user_id, is_active=True)
+        _validate_signup_password(email=user.email, nickname="", password=new_password)
+        user.set_password(new_password)
+        user.save(update_fields=["password"])
+        reset_token.used_at = now
+        reset_token.save(update_fields=["used_at"])
+        RefreshToken.objects.filter(user_id=user.id).update(
+            status=REVOKED_REFRESH_TOKEN_STATUS,
+            revoked_at=now,
+        )
+        record_security_event(
+            event_type=SECURITY_EVENT_PASSWORD_RESET_SUCCEEDED,
+            user_id=user.id,
+            request_id=request_id,
+            metadata={},
+        )
+
+    return PasswordResetConfirmResult(password_reset=True)
 
 
 def login(
@@ -454,6 +606,125 @@ def _raise_login_rate_limited() -> None:
     raise ApiErrorResponseException(
         "LOGIN_RATE_LIMITED",
         status_code=HTTP_429_TOO_MANY_REQUESTS,
+    )
+
+
+def _first_user_for_password_reset(normalized_email: str):
+    users = User.objects.filter(email=normalized_email, is_active=True)
+    if hasattr(users, "first"):
+        return users.first()
+    return next(iter(users), None)
+
+
+def _assert_password_reset_delivery_available(
+    *,
+    user_id: int | None,
+    request_id: str | None,
+) -> None:
+    if settings.PASSWORD_RESET_DELIVERY_ENABLED:
+        return
+
+    record_security_event(
+        event_type=SECURITY_EVENT_PASSWORD_RESET_DELIVERY_UNAVAILABLE,
+        user_id=user_id,
+        request_id=request_id,
+        metadata={"reason": "email_provider_unavailable"},
+    )
+    raise ApiErrorResponseException(
+        "PASSWORD_RESET_DELIVERY_UNAVAILABLE",
+        status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+    )
+
+
+def _assert_password_reset_not_limited(
+    *,
+    normalized_email: str,
+    client_ip: str,
+    now,
+) -> None:
+    with transaction.atomic():
+        throttle, _created = PasswordResetThrottle.objects.select_for_update().get_or_create(
+            email=normalized_email,
+            ip_address=client_ip,
+            defaults={
+                "request_count": 0,
+                "first_requested_at": now,
+                "last_requested_at": now,
+            },
+        )
+
+        if throttle.blocked_until is None:
+            return
+        if throttle.blocked_until > now:
+            raise ApiErrorResponseException(
+                "RATE_LIMITED",
+                status_code=HTTP_429_TOO_MANY_REQUESTS,
+            )
+
+        throttle.request_count = 0
+        throttle.first_requested_at = now
+        throttle.last_requested_at = now
+        throttle.blocked_until = None
+        throttle.save(
+            update_fields=(
+                "request_count",
+                "first_requested_at",
+                "last_requested_at",
+                "blocked_until",
+            )
+        )
+
+
+def _record_password_reset_request(
+    *,
+    normalized_email: str,
+    client_ip: str,
+    now,
+) -> None:
+    with transaction.atomic():
+        throttle, _created = PasswordResetThrottle.objects.select_for_update().get_or_create(
+            email=normalized_email,
+            ip_address=client_ip,
+            defaults={
+                "request_count": 0,
+                "first_requested_at": now,
+                "last_requested_at": now,
+            },
+        )
+        outside_window = (
+            now - throttle.first_requested_at
+        ).total_seconds() > settings.PASSWORD_RESET_REQUEST_WINDOW_SECONDS
+
+        if outside_window:
+            throttle.request_count = 1
+            throttle.first_requested_at = now
+            throttle.blocked_until = None
+        else:
+            throttle.request_count += 1
+
+        throttle.last_requested_at = now
+        if throttle.request_count >= settings.PASSWORD_RESET_REQUEST_LIMIT:
+            throttle.blocked_until = now + timedelta(
+                seconds=settings.PASSWORD_RESET_REQUEST_LOCKOUT_SECONDS
+            )
+        throttle.save(
+            update_fields=(
+                "request_count",
+                "first_requested_at",
+                "last_requested_at",
+                "blocked_until",
+            )
+        )
+
+
+def _send_password_reset_email(*, user, raw_token: str, requested_email: str) -> None:
+    reset_link = f"{settings.PASSWORD_RESET_LINK_BASE_URL}?token={raw_token}"
+    send_mail(
+        subject="Password reset",
+        message=f"Use this link to reset your password: {reset_link}",
+        from_email=settings.PASSWORD_RESET_FROM_EMAIL,
+        recipient_list=[requested_email],
+        fail_silently=False,
     )
 
 

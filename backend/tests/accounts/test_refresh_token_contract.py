@@ -18,6 +18,12 @@ EXPECTED_SECURITY_EVENT_TYPES = (
     "로그인 실패 반복",
     "권한 없는 match 접근 시도",
     "participant가 아닌 사용자의 행동 제출 시도",
+    "password reset requested",
+    "password reset delivery unavailable",
+    "password reset succeeded",
+    "password reset token expired",
+    "password reset token reused",
+    "password reset token invalid",
 )
 
 

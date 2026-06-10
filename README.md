@@ -4,15 +4,30 @@
 
 이 README는 `docs/`의 Obsidian 문서와 승인 계약을 기준으로 현재 쓰는 것, 계약만 있는 것, 후순위로 보류한 것을 구분해 정리합니다.
 
+## 2026-06-10 로컬 실행 및 구현 확인
+
+현재 브랜치는 로컬에서 실행 가능합니다. 저장소 루트에서 아래 한 줄을 실행하면 로컬 PostgreSQL/Redis, Django backend, Vite frontend를 순서대로 띄웁니다.
+
+```powershell
+.\dev-start.cmd
+```
+
+이번 확인에서는 동일한 흐름을 `ops\scripts\dev-start.ps1 -SkipInstall`로 실행했고, backend `http://127.0.0.1:8000/healthz`는 `{"status":"ok"}`, frontend `http://127.0.0.1:5173/`는 HTTP 200을 반환했습니다. 로그인, 홈, 로비, 사건 선택, 프롤로그, 의식 결투, 결과 화면 캡처는 `docs/10_Final_Project/assets/`에 저장했습니다.
+
+최종 제출용 정리 문서는 아래 두 개입니다.
+
+- [마지막_단위프로젝트_제출_정리.md](docs/10_Final_Project/마지막_단위프로젝트_제출_정리.md)
+- [카드_게임_룰_요약.md](docs/10_Final_Project/카드_게임_룰_요약.md)
+
 ## 현재 상태 요약
 
 
 | 구분          | 항목                                                                                                                                                                                                                                                   | 상태                                                          |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| 현재 사용/구현    | Django, Django REST Framework, PostgreSQL 기준 RDB 모델, `retrieval` 앱, PostgreSQL `pgvector` 준비, AI Profile 지표, Redis/Channels/WebSocket 상태 동기화, 공식 API schema, pytest 계약 테스트, local/dev Compose, AC-2A production Compose, Gunicorn ASGI worker, Caddy | 1차 MVP 백엔드/RAG/AI Profile/realtime과 수동 production 배포 후보 구성  |
+| 현재 사용/구현    | Django, Django REST Framework, PostgreSQL 기준 RDB 모델, `retrieval` 앱, PostgreSQL `pgvector` 준비, AI Profile 지표, Redis/Channels/WebSocket 상태 동기화, password reset backend endpoint, 공식 API schema, pytest 계약 테스트, local/dev Compose, AC-2A production Compose, Gunicorn ASGI worker, Caddy | 1차 MVP 백엔드/RAG/AI Profile/realtime과 수동 production 배포 후보 구성  |
 | 현재 사용/구현    | React/TypeScript/Vite 프론트엔드, route 기반 화면, prototype 의식 결투 화면, 공식 API client, 공식 enum/API/realtime 계약 검증                                                                                                                                              | 승인된 official API 기준 주요 사용자 흐름 연결                            |
-| 현재 사용/부분 구현 | LLM runtime 앱, `llm_generations`, 턴 연출 문구, 결과 요약, 결전 대화 endpoint, Groq 호환 adapter                                                                                                                                                                    | LLM은 판정 권위 없이 보조 문장만 담당하며 실제 provider 호출은 환경변수와 API key에 의존 |
-| 후순위/미사용     | KAG 구현, GraphDB, PvP 모드, Redis matchmaking, WebSocket action submit, 운영 배포 자동화                                                                                                                                                                       | 1차 MVP 제외 또는 도입 대상 아님                                       |
+| 현재 사용/부분 구현 | LLM runtime 앱, `llm_generations`, 턴 연출 문구, 결과 요약, 결전 대화 endpoint, Groq 호환 adapter, 강제 smoke check                                                                                                                                                                    | LLM은 판정 권위 없이 보조 문장만 담당한다. Groq provider 실호출 smoke check는 통과했지만 기본 runtime은 key 누락/실패 시 fallback/disabled 정책을 유지 |
+| 후순위/미사용     | KAG 구현, GraphDB, PvP 모드, Redis matchmaking, WebSocket action submit, 운영 배포 자동화, production CI/CD, image registry push, 자동 백업, monitoring/alerting                                                                                                                                                                       | 1차 MVP 제외 또는 도입 대상 아님                                       |
 
 
 GraphDB는 사용하지 않습니다. KAG도 1차 MVP 구현 범위가 아니며, 후속 도입 시에도 현재 문서 기준은 별도 GraphDB가 아니라 RDB 기반 후보 구조입니다.
@@ -34,6 +49,10 @@ GraphDB는 사용하지 않습니다. KAG도 1차 MVP 구현 범위가 아니며
 | 플레이어 이름/결전/RAG 계약     | `[docs/09_Approved_Contracts/27_플레이어_이름_무명의_저주_결전_RAG_계약.md](docs/09_Approved_Contracts/27_%ED%94%8C%EB%A0%88%EC%9D%B4%EC%96%B4_%EC%9D%B4%EB%A6%84_%EB%AC%B4%EB%AA%85%EC%9D%98_%EC%A0%80%EC%A3%BC_%EA%B2%B0%EC%A0%84_RAG_%EA%B3%84%EC%95%BD.md)` | 플레이어 표시 이름, 진명 조각 2개 결전, RAG source plan                                            |
 | Production 배포 계약      | `[docs/09_Approved_Contracts/28_Production_배포_계약.md](docs/09_Approved_Contracts/28_Production_%EB%B0%B0%ED%8F%AC_%EA%B3%84%EC%95%BD.md)`                                                                                                         | AC-2A 단일 VM + Docker Compose + Gunicorn ASGI worker + Caddy + PostgreSQL + Redis 기준 |
 | Realtime 계약           | `[docs/09_Approved_Contracts/29_MVP_Realtime_Redis_WebSocket_계약.md](docs/09_Approved_Contracts/29_MVP_Realtime_Redis_WebSocket_%EA%B3%84%EC%95%BD.md)`                                                                                           | AI 스토리 매치 상태 동기화용 Redis/Channels/WebSocket 기준                                       |
+| Password reset 계약       | `[docs/09_Approved_Contracts/31_Password_Reset_API_Schema_계약.md](docs/09_Approved_Contracts/31_Password_Reset_API_Schema_%EA%B3%84%EC%95%BD.md)`                                                                                                 | 비밀번호 재설정 backend endpoint, token, rate limit, email delivery 기준 |
+| RAG 수동 API 계약         | `[docs/09_Approved_Contracts/32_RAG_Manual_Ingest_Search_API_계약.md](docs/09_Approved_Contracts/32_RAG_Manual_Ingest_Search_API_%EA%B3%84%EC%95%BD.md)`                                                                                             | staff 전용 수동 ingest/search API 기준 |
+| LLM smoke check 계약      | `[docs/09_Approved_Contracts/33_LLM_Provider_Required_Smoke_Check_계약.md](docs/09_Approved_Contracts/33_LLM_Provider_Required_Smoke_Check_%EA%B3%84%EC%95%BD.md)`                                                                                   | 운영 검증용 provider 실호출 smoke check 기준 |
+| 최종 제출 정리             | `[docs/10_Final_Project/마지막_단위프로젝트_제출_정리.md](docs/10_Final_Project/%EB%A7%88%EC%A7%80%EB%A7%89_%EB%8B%A8%EC%9C%84%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8_%EC%A0%9C%EC%B6%9C_%EC%A0%95%EB%A6%AC.md)`                                              | 요구사항, 화면설계, ERD, RAG 시퀀스, 테스트 결과, 느낀점 |
 | 공식 API 스키마            | `[api-spec/pilot-mvp-api.official.jsonc](api-spec/pilot-mvp-api.official.jsonc)`                                                                                                                                                                 | 사람이 읽는 공식 API 계약                                                                    |
 | 도구용 API 스키마           | `[api-spec/pilot-mvp-api.official.json](api-spec/pilot-mvp-api.official.json)`                                                                                                                                                                   | strict JSON 생성본                                                                     |
 
@@ -52,14 +71,14 @@ GraphDB는 사용하지 않습니다. KAG도 1차 MVP 구현 범위가 아니며
 | ------------ | ------------------------------------------------------------------- | ------------------------------------------------------------- |
 | Backend      | Django, Django REST Framework, ASGI                                 | 1차 MVP 백엔드 scaffold, 도메인 골격, WebSocket runtime                |
 | Frontend     | React, TypeScript, Vite, React Router                               | route 기반 화면, prototype 의식 결투 화면, 승인된 official API 주요 흐름 연결    |
-| Auth         | Django custom user, JWT access/refresh token, HttpOnly cookie, CSRF | 인증 API scaffold와 refresh token 보안 모델                          |
+| Auth         | Django custom user, JWT access/refresh token, HttpOnly cookie, CSRF | 인증 API, refresh token 보안 모델, password reset backend endpoint |
 | RDB          | PostgreSQL 기준 Django model                                          | Auth, Profile, Match, Story, AI Profile 저장 구조                 |
-| RAG 저장/검색 준비 | PostgreSQL + `pgvector`, `retrieval` 앱                              | 문서/chunk/embedding/query log 구조                               |
+| RAG 저장/검색 | PostgreSQL + `pgvector`, `retrieval` 앱                              | staff 전용 수동 ingest/search API, 문서/chunk/embedding/query log 구조 |
 | LLM runtime  | backend `llm` 앱, top-level `llm/generation` adapter                 | 판정 이후 보조 텍스트 생성과 생성 로그 저장                                     |
 | Realtime     | Redis, Django Channels, native WebSocket                            | AI 스토리 매치 snapshot, turn resolved, LLM text, result ready 이벤트 |
 | JSON 검증      | `jsonschema`                                                        | JSONField payload 검증 경계                                       |
 | API 계약       | official JSONC/JSON schema                                          | 프론트와 백엔드가 공유할 endpoint/response shape                         |
-| 테스트          | pytest, frontend contract script, Vite build                        | 승인 계약 기반 백엔드/LLM 테스트와 프론트 enum/build 검증                       |
+| 테스트          | pytest, frontend contract script, Vite build                        | 승인 계약 기반 백엔드/LLM/RAG/password reset 테스트와 프론트 enum/build 검증 |
 | Docker 실행 준비 | Docker Compose, backend Dockerfile, production Dockerfile, Caddy    | 로컬/dev 실행과 AC-2A production 수동 배포 후보 구성                       |
 
 
@@ -68,12 +87,13 @@ GraphDB는 사용하지 않습니다. KAG도 1차 MVP 구현 범위가 아니며
 
 | 항목                       | 문서상 상태                              | README 반영 기준                                                                |
 | ------------------------ | ----------------------------------- | --------------------------------------------------------------------------- |
-| Password reset           | official API 범위 밖                   | 화면 route는 있으나 1차 MVP official API에는 endpoint가 없음                            |
-| LLM provider 운영 연결       | LLM runtime 계약은 승인됨                 | adapter와 backend 기록 구조는 있으나 실제 호출은 `LLM_API_KEY`, `LLM_MODEL_ID` 등 환경 설정 필요 |
+| Password reset frontend  | backend endpoint는 승인/구현, 프론트 화면은 제외 | API는 존재하지만 별도 password reset 화면은 이번 범위에 포함하지 않음 |
+| RAG 자동 ingest           | 수동 ingest/search 계약으로 확정           | 서버 시작, app import, migration, health check 중 자동 ingest는 구현하지 않음 |
+| LLM provider 운영 연결       | smoke check 실호출 검증 완료, 기본 runtime은 fallback 유지 | 실제 운영 사용은 `LLM_API_KEY`, `LLM_MODEL_ID`, provider 네트워크 조건과 key 관리 필요 |
 | KAG                      | 1차 MVP 제외                           | 구현하지 않음                                                                     |
 | GraphDB                  | 사용하지 않음                             | 도입 대상 아님                                                                    |
 | Redis/Channels/WebSocket | AI 스토리 상태 동기화는 포함, PvP realtime은 제외 | WebSocket은 보조 알림 경로이며 REST/PostgreSQL이 권위 유지                                |
-| 운영 배포 자동화                | 1차 MVP 제외                           | 현재 범위 아님                                                                    |
+| 운영 배포 자동화                | 1차 MVP 제외                           | CI/CD, image registry push, 자동 백업, monitoring/alerting은 현재 범위 아님 |
 
 
 ## Docker와 배포 상태
@@ -214,11 +234,13 @@ VITE_WEBSOCKET_CONNECT_TIMEOUT_SECONDS=6
 - 턴 제출, 서버 판정, 턴 결과 저장
 - 승패 처리, 결과/로그 조회
 - 행동 이벤트 저장과 스타일 지표 계산
-- RAG 검색용 `retrieval` 앱 구조
-- RAG 문서 chunk 저장, query log 저장
+- staff 전용 RAG 수동 ingest/search API
+- RAG 문서 chunk 저장, embedding 저장, query log 저장
 - PostgreSQL `pgvector` 기반 검색 준비
 - AI 스토리 기준 Auth/Match/Participant/Turn 구조
+- Password reset backend request/confirm endpoint
 - LLM 결과 요약, 턴 연출 문구, 결전 대화 보조 텍스트와 생성 로그
+- LLM provider 강제 smoke check 관리 명령
 - Redis/Channels/WebSocket 기반 AI 스토리 매치 상태 동기화
 - React/Vite 기반 화면과 prototype 의식 결투 화면
 - AC-2A 기준 수동 production 배포 후보 구성
@@ -231,9 +253,11 @@ VITE_WEBSOCKET_CONNECT_TIMEOUT_SECONDS=6
 - KAG 구현
 - GraphDB 도입
 - LLM이 승패, 행동 성공/실패, 자원, 진명 조각, 거짓 단서, 괴이 행동 선택을 결정하는 기능
-- LLM provider 운영 호출 보장
+- 기본 API runtime에서 LLM provider 실패를 사용자 요청 실패로 전파하는 동작
+- RAG 서버 시작 자동 ingest
 - 랭크 시스템, cosmetic 보상
-- 운영 배포 자동화
+- production CI/CD, image registry push, 자동 백업, monitoring/alerting
+- 실제 production 배포 완료 증거
 
 ## 시스템 구조
 
@@ -402,11 +426,11 @@ ERD는 두 단계로 구분해서 봐야 합니다.
 | 항목          | 현재 상태                                   |
 | ----------- | --------------------------------------- |
 | RDB 테이블 구성  | 승인 문서와 Django model scaffold 수준에서 구성됨   |
-| 시각적 ERD 산출물 | 현재 저장소에서 별도 ERD 다이어그램 파일은 확인되지 않음       |
+| 시각적 ERD 산출물 | `docs/10_Final_Project/마지막_단위프로젝트_제출_정리.md`에 Mermaid ERD로 정리 |
 | 물리 DB 검증    | migration 생성/실제 PostgreSQL 연결 검증은 별도 필요 |
 
 
-즉, ERD에 들어갈 핵심 RDB 구성은 잡혀 있지만, 발표나 산출물용 시각적 ERD 파일은 아직 만들어진 상태가 아닙니다.
+즉, ERD에 들어갈 핵심 RDB 구성은 Django model 기준으로 잡혀 있으며, 발표용 요약 ERD는 최종 제출 정리 문서에 포함했습니다.
 
 ### 인증/프로필
 
@@ -550,7 +574,7 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 
 ## 화면 설계 상태
 
-프론트엔드 실제 구현은 현재 저장소에 있습니다. 현재 구현은 React/Vite route 기반 화면과 prototype 의식 결투 화면을 사용하며, 승인된 official API의 주요 사용자 흐름과 연결되어 있습니다.
+프론트엔드 실제 구현은 현재 저장소에 있습니다. 현재 구현은 React/Vite route 기반 화면과 prototype 의식 결투 화면을 사용하며, 승인된 official API의 주요 사용자 흐름과 연결되어 있습니다. 로컬 실행 화면 캡처는 `docs/10_Final_Project/assets/`에 저장했고, 화면별 설명은 [마지막_단위프로젝트_제출_정리.md](docs/10_Final_Project/마지막_단위프로젝트_제출_정리.md)에 포함했습니다.
 
 `docs/09_Approved_Contracts/15_프론트_기술_계약_오너_확정안.md`에는 프론트 기술 스택, route, API client, cookie/CSRF 연결, endpoint 사용 기준이 승인되어 있습니다. `docs/04_Frontend/*` 문서는 화면 기획 참고 문서입니다.
 
@@ -588,9 +612,29 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 최근 검증 결과:
 
 ```text
-명령: C:\Python314\python.exe -m pytest backend\tests -q
+명령: powershell.exe -ExecutionPolicy Bypass -File ops\scripts\dev-start.ps1 -SkipInstall
 위치: 저장소 루트
-결과: 210 passed
+결과: backend 8000, frontend 5173 실행 확인
+
+명령: Invoke-RestMethod http://127.0.0.1:8000/healthz
+위치: 저장소 루트
+결과: {"status":"ok"}
+
+명령: Invoke-WebRequest -UseBasicParsing http://127.0.0.1:5173/
+위치: 저장소 루트
+결과: HTTP 200
+
+명령: .\.venv\Scripts\python.exe backend\manage.py migrate --check --noinput
+위치: 저장소 루트
+결과: passed
+
+명령: Get-Content -Raw api-spec\pilot-mvp-api.official.json | ConvertFrom-Json
+위치: 저장소 루트
+결과: passed
+
+명령: .\.venv\Scripts\python.exe -m pytest backend\tests -q
+위치: 저장소 루트
+결과: 261 passed
 
 명령: npm run test:contracts
 위치: frontend
@@ -607,6 +651,11 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 명령: npm run build
 위치: frontend
 결과: passed
+
+명령: .\.venv\Scripts\python.exe backend\manage.py llm_smoke_check
+위치: 저장소 루트
+조건: LLM_REQUIRED=true, LLM_PROVIDER=groq, LLM_API_KEY는 사용자 제공 key를 환경변수로 주입
+결과: provider=groq, status=succeeded
 ```
 
 구현 리포트:
@@ -636,7 +685,7 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
   - Story/Apparition/Clue
   - AI Profile
   - RAG retrieval
-  - 시각적 ERD 산출물은 추가 제작 필요
+  - 최종 제출 정리 문서에 Mermaid ERD 포함
 5. RAG와 환각 방지
   - 승인 문서 allowlist
   - chunking 기준
@@ -655,7 +704,7 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
   - 프론트 API 연결 계약은 존재
   - React/Vite 화면과 prototype 의식 결투 화면은 존재
   - 승인된 Django official API 주요 흐름 연결
-  - `docs/04_Frontend/*`는 화면 기획 참고 문서
+  - 실제 로컬 실행 캡처는 `docs/10_Final_Project/assets/`에 저장
 9. 테스트 시나리오와 결과
   - 백엔드/LLM 계약 테스트 범위
   - 프론트 enum 계약과 build 검증
@@ -668,27 +717,34 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 
 - 백엔드 도메인 모델/서비스/API runtime 구현
 - 공식 API schema와 계약 테스트 정리
-- RAG 구조, chunking, allowlist, 검색 기본값 구현 준비
-- LLM runtime, 생성 로그, 보조 텍스트 endpoint 구현
+- Password reset backend endpoint와 보안 저장 구조 구현
+- RAG staff 전용 수동 ingest/search API, chunking, allowlist, 검색 기본값 구현
+- LLM runtime, 생성 로그, 보조 텍스트 endpoint, provider smoke check 구현
 - React/Vite 화면과 prototype 의식 결투 화면 구현
 - `nameless_curse` 초기 공개명은 `거울 속 목소리`로 마스킹하고, `피티`는 공식 진명/결과/진명 단서 맥락에서만 사용
 - AC-2A 기준 production Compose, Gunicorn ASGI worker backend runtime, Caddy reverse proxy, Redis service, `/healthz`, production env template 구성
 - `/api/v1/ws/matches/{match_id}` WebSocket endpoint와 프론트 매치 route 구독/fallback 구현
-- 백엔드/LLM 테스트와 프론트 계약/build 검증 통과 기록
+- 백엔드/LLM/RAG/password reset 테스트와 프론트 계약/build 검증 통과 기록
+- 최종 제출용 요구사항, 화면설계, ERD, RAG 시퀀스, 테스트 결과, 카드 룰 요약 문서 추가
 
 남은 리스크:
 
 - 실제 VM 도메인, DNS, Caddy TLS 발급은 배포 환경에서 별도 확인이 필요합니다.
 - production secret과 DB password는 VM 전용 env 파일에만 저장해야 하며 repository에 커밋하지 않습니다.
 - production DB backup 자동화와 monitoring/alerting platform은 이번 범위에 포함하지 않습니다.
-- 실제 LLM provider 호출은 환경변수, API key, model id, 네트워크 조건 검증이 필요합니다.
+- image registry push와 CI/CD 자동 배포는 이번 범위에 포함하지 않습니다.
+- LLM provider smoke check는 통과했지만, 채팅에 노출된 API key는 실제 운영 전 교체해야 합니다.
+- 기본 API runtime은 LLM key 누락/실패를 사용자 요청 실패로 전파하지 않고 fallback/disabled 정책을 유지합니다.
+- RAG 자동 ingest는 계약상 제외했으며, 수동 ingest/search는 staff 권한과 embedding provider 설정이 필요합니다.
 - Redis/WebSocket은 AI 스토리 상태 동기화용이며 PvP, matchmaking, authoritative action submit 용도로 사용하지 않습니다.
 - KAG와 PvP 모드는 1차 MVP 제외 또는 도입 대상이 아닙니다.
 - 사용자 화면에서 RAG 출처를 어떻게 표시할지는 프론트 구현 단계에서 확정이 필요합니다.
-- 발표용 시각적 ERD 산출물은 아직 없습니다.
+- 게임 종료 후 이미지와 사건 로그 노출 순서는 추가 UX 점검 대상입니다.
 
 ## 주요 참고 문서
 
+- `[docs/10_Final_Project/마지막_단위프로젝트_제출_정리.md](docs/10_Final_Project/%EB%A7%88%EC%A7%80%EB%A7%89_%EB%8B%A8%EC%9C%84%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8_%EC%A0%9C%EC%B6%9C_%EC%A0%95%EB%A6%AC.md)`
+- `[docs/10_Final_Project/카드_게임_룰_요약.md](docs/10_Final_Project/%EC%B9%B4%EB%93%9C_%EA%B2%8C%EC%9E%84_%EB%A3%B0_%EC%9A%94%EC%95%BD.md)`
 - `[docs/09_Approved_Contracts/15_프론트_기술_계약_오너_확정안.md](docs/09_Approved_Contracts/15_%ED%94%84%EB%A1%A0%ED%8A%B8_%EA%B8%B0%EC%88%A0_%EA%B3%84%EC%95%BD_%EC%98%A4%EB%84%88_%ED%99%95%EC%A0%95%EC%95%88.md)`
 - `[docs/09_Approved_Contracts/17_백엔드_RAG_AI_Profile_구현_계약.md](docs/09_Approved_Contracts/17_%EB%B0%B1%EC%97%94%EB%93%9C_RAG_AI_Profile_%EA%B5%AC%ED%98%84_%EA%B3%84%EC%95%BD.md)`
 - `[docs/09_Approved_Contracts/18_게임_규칙_상성표_상태_승패_계약.md](docs/09_Approved_Contracts/18_%EA%B2%8C%EC%9E%84_%EA%B7%9C%EC%B9%99_%EC%83%81%EC%84%B1%ED%91%9C_%EC%83%81%ED%83%9C_%EC%8A%B9%ED%8C%A8_%EA%B3%84%EC%95%BD.md)`
@@ -697,4 +753,7 @@ VectorDB는 PostgreSQL + `pgvector`입니다.
 - `[docs/09_Approved_Contracts/22_API_상세_Schema_계약.md](docs/09_Approved_Contracts/22_API_%EC%83%81%EC%84%B8_Schema_%EA%B3%84%EC%95%BD.md)`
 - `[docs/09_Approved_Contracts/23_프로젝트_폴더_구조_계약.md](docs/09_Approved_Contracts/23_%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8_%ED%8F%B4%EB%8D%94_%EA%B5%AC%EC%A1%B0_%EA%B3%84%EC%95%BD.md)`
 - `[docs/09_Approved_Contracts/29_MVP_Realtime_Redis_WebSocket_계약.md](docs/09_Approved_Contracts/29_MVP_Realtime_Redis_WebSocket_%EA%B3%84%EC%95%BD.md)`
+- `[docs/09_Approved_Contracts/31_Password_Reset_API_Schema_계약.md](docs/09_Approved_Contracts/31_Password_Reset_API_Schema_%EA%B3%84%EC%95%BD.md)`
+- `[docs/09_Approved_Contracts/32_RAG_Manual_Ingest_Search_API_계약.md](docs/09_Approved_Contracts/32_RAG_Manual_Ingest_Search_API_%EA%B3%84%EC%95%BD.md)`
+- `[docs/09_Approved_Contracts/33_LLM_Provider_Required_Smoke_Check_계약.md](docs/09_Approved_Contracts/33_LLM_Provider_Required_Smoke_Check_%EA%B3%84%EC%95%BD.md)`
 

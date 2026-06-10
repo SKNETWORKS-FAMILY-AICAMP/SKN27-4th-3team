@@ -151,6 +151,29 @@ AUTH_PASSWORD_MAX_LENGTH = 128
 LOGIN_FAILURE_WINDOW_SECONDS = 10 * 60
 LOGIN_FAILURE_LIMIT = 5
 LOGIN_FAILURE_LOCKOUT_SECONDS = 15 * 60
+PASSWORD_RESET_TOKEN_TTL_SECONDS = 30 * 60
+PASSWORD_RESET_REQUEST_WINDOW_SECONDS = 10 * 60
+PASSWORD_RESET_REQUEST_LIMIT = 3
+PASSWORD_RESET_REQUEST_LOCKOUT_SECONDS = 30 * 60
+PASSWORD_RESET_LINK_BASE_URL = os.getenv(
+    "PASSWORD_RESET_LINK_BASE_URL",
+    "http://localhost:5173/password-reset",
+)
+EMAIL_BACKEND = os.getenv(
+    "DJANGO_EMAIL_BACKEND",
+    "django.core.mail.backends.console.EmailBackend" if ENVIRONMENT != "production" else "",
+)
+PASSWORD_RESET_FROM_EMAIL = os.getenv("PASSWORD_RESET_FROM_EMAIL", "no-reply@example.com")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "localhost")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "25"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = _bool_env("EMAIL_USE_TLS", default=False)
+PASSWORD_RESET_DELIVERY_ENABLED = ENVIRONMENT != "production" or (
+    bool(EMAIL_BACKEND)
+    and EMAIL_BACKEND != "django.core.mail.backends.console.EmailBackend"
+    and bool(PASSWORD_RESET_LINK_BASE_URL)
+)
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
@@ -165,8 +188,10 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 RAG_EMBEDDING_MODEL_ID = os.getenv("RAG_EMBEDDING_MODEL_ID")
+RAG_EMBEDDING_PROVIDER = os.getenv("RAG_EMBEDDING_PROVIDER", "disabled")
 RAG_DEFAULT_TOP_K = 6
 RAG_DEFAULT_SCORE_THRESHOLD = 0.72
+LLM_REQUIRED = _bool_env("LLM_REQUIRED", default=False)
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 WEBSOCKET_HEARTBEAT_SECONDS = _positive_int_env("WEBSOCKET_HEARTBEAT_SECONDS", default=25)

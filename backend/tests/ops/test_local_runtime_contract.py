@@ -76,7 +76,9 @@ def test_backend_env_example_documents_required_local_runtime_values_without_rea
         "REDIS_URL=redis://redis:6379/0",
         "WEBSOCKET_HEARTBEAT_SECONDS=25",
         "WEBSOCKET_CONNECT_TIMEOUT_SECONDS=6",
+        "LLM_REQUIRED=false",
         "RAG_EMBEDDING_MODEL_ID=text-embedding-3-small",
+        "RAG_EMBEDDING_PROVIDER=deterministic",
     )
     for key in required_keys:
         assert key in env_example
