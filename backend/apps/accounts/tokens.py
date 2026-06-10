@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import secrets
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -39,6 +40,13 @@ SECURITY_EVENT_NON_PARTICIPANT_ACTION_SUBMIT_ATTEMPTED = (
     "participant가 아닌 사용자의 행동 제출 시도"
 )
 
+SECURITY_EVENT_PASSWORD_RESET_REQUESTED = "password reset requested"
+SECURITY_EVENT_PASSWORD_RESET_DELIVERY_UNAVAILABLE = "password reset delivery unavailable"
+SECURITY_EVENT_PASSWORD_RESET_SUCCEEDED = "password reset succeeded"
+SECURITY_EVENT_PASSWORD_RESET_TOKEN_EXPIRED = "password reset token expired"
+SECURITY_EVENT_PASSWORD_RESET_TOKEN_REUSED = "password reset token reused"
+SECURITY_EVENT_PASSWORD_RESET_TOKEN_INVALID = "password reset token invalid"
+
 SECURITY_EVENT_TYPES = (
     SECURITY_EVENT_REFRESH_TOKEN_REUSE_DETECTED,
     SECURITY_EVENT_REFRESH_TOKEN_FAMILY_REVOKED,
@@ -46,6 +54,12 @@ SECURITY_EVENT_TYPES = (
     SECURITY_EVENT_LOGIN_FAILED_REPEATED,
     SECURITY_EVENT_UNAUTHORIZED_MATCH_ACCESS_ATTEMPTED,
     SECURITY_EVENT_NON_PARTICIPANT_ACTION_SUBMIT_ATTEMPTED,
+    SECURITY_EVENT_PASSWORD_RESET_REQUESTED,
+    SECURITY_EVENT_PASSWORD_RESET_DELIVERY_UNAVAILABLE,
+    SECURITY_EVENT_PASSWORD_RESET_SUCCEEDED,
+    SECURITY_EVENT_PASSWORD_RESET_TOKEN_EXPIRED,
+    SECURITY_EVENT_PASSWORD_RESET_TOKEN_REUSED,
+    SECURITY_EVENT_PASSWORD_RESET_TOKEN_INVALID,
 )
 
 
@@ -79,6 +93,37 @@ def hash_refresh_token(raw_token: str, server_secret: str) -> str:
     return hmac.new(
         server_secret.encode("utf-8"),
         raw_token.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+
+
+def new_password_reset_token() -> str:
+    return secrets.token_urlsafe(32)
+
+
+def hash_password_reset_token(raw_token: str, server_secret: str) -> str:
+    if not raw_token:
+        raise ValueError("raw_token is required")
+    if not server_secret:
+        raise ValueError("server_secret is required")
+
+    return hmac.new(
+        server_secret.encode("utf-8"),
+        raw_token.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+
+
+def password_reset_email_hmac(email: str, server_secret: str) -> str:
+    normalized_email = email.strip().lower()
+    if not normalized_email:
+        raise ValueError("email is required")
+    if not server_secret:
+        raise ValueError("server_secret is required")
+
+    return hmac.new(
+        server_secret.encode("utf-8"),
+        normalized_email.encode("utf-8"),
         hashlib.sha256,
     ).hexdigest()
 

@@ -27,6 +27,13 @@ def test_match_realtime_group_name_rejects_invalid_match_id():
         realtime.match_group_name(public_match_id="2")
 
 
+def test_match_realtime_route_is_under_access_cookie_path_for_browser_cookie_auth():
+    routing_source = (MATCHES_DIR / "routing.py").read_text(encoding="utf-8")
+    expected_route = f'{settings.ACCESS_TOKEN_COOKIE_PATH.lstrip("/")}/ws/matches/<str:match_id>'
+
+    assert expected_route in routing_source
+
+
 def test_match_snapshot_event_reuses_rest_match_shape():
     event = realtime.build_match_snapshot_event(match={"match_id": "match_2"})
 

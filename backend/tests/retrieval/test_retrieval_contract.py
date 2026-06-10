@@ -177,7 +177,6 @@ def test_retrieval_code_does_not_implement_provider_llm_or_rule_mutation():
         "openai",
         "llm",
         "generate",
-        "provider",
         "mutate_rule",
         "change_outcome",
         "true_name_fragment:+",

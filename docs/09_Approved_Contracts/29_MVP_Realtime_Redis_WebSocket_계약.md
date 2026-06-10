@@ -59,12 +59,14 @@ AI 스토리 매치 상태 동기화는 `matches` 앱의 runtime 보조 기능�
 1차 MVP WebSocket endpoint는 아래 하나만 둔다.
 
 ```text
-GET /ws/matches/{match_id}
+GET /api/v1/ws/matches/{match_id}
 ```
 
 `match_id`는 REST API와 같은 public id 형식인 `match_<number>`를 사용한다.
 
 인증은 기존 access token HttpOnly cookie를 사용한다.
+
+access token cookie path가 `/api/v1`이므로 WebSocket endpoint도 `/api/v1` 하위에 둔다.
 
 URL query string, localStorage, sessionStorage, JavaScript 변수에 access token 또는 refresh token을 저장하거나 전달하지 않는다.
 
@@ -105,7 +107,7 @@ Backend runtime은 WebSocket을 처리할 수 있는 ASGI runtime이어야 한�
 gunicorn backend.config.asgi:application --worker-class uvicorn_worker.UvicornWorker --bind 0.0.0.0:8000
 ```
 
-Caddy는 `/ws/*`, `/api/*`, `/healthz`를 내부 `api:8000`으로 proxy한다.
+Caddy는 `/api/v1/ws/*`, `/api/*`, `/healthz`를 내부 `api:8000`으로 proxy한다.
 
 외부에 노출되는 포트는 계속 `web` 서비스의 `80`, `443`뿐이다.
 

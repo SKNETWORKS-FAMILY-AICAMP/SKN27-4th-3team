@@ -56,3 +56,24 @@ class MeResponseSerializer(serializers.Serializer):
     authenticated = serializers.BooleanField()
     user = serializers.DictField()
     profile = serializers.DictField()
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class PasswordResetRequestResponseSerializer(serializers.Serializer):
+    accepted = serializers.BooleanField()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    new_password = serializers.CharField(
+        write_only=True,
+        min_length=settings.AUTH_PASSWORD_MIN_LENGTH,
+        max_length=settings.AUTH_PASSWORD_MAX_LENGTH,
+    )
+
+
+class PasswordResetConfirmResponseSerializer(serializers.Serializer):
+    password_reset = serializers.BooleanField()

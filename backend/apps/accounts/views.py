@@ -14,6 +14,10 @@ from backend.apps.accounts.serializers import (
     LoginResponseSerializer,
     LogoutResponseSerializer,
     MeResponseSerializer,
+    PasswordResetConfirmResponseSerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestResponseSerializer,
+    PasswordResetRequestSerializer,
     RefreshResponseSerializer,
     SignupRequestSerializer,
     SignupResponseSerializer,
@@ -209,6 +213,52 @@ class MeView(APIView):
                 "profile": session.profile,
             },
         )
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class PasswordResetRequestView(APIView):
+    permission_classes = [AllowAny]
+    request_serializer_class = PasswordResetRequestSerializer
+    response_serializer_class = PasswordResetRequestResponseSerializer
+
+    def post(self, request):
+        serializer = self.request_serializer_class(data=request.data)
+        if not serializer.is_valid():
+            raise ApiErrorResponseException(
+                "VALIDATION_ERROR",
+                status_code=status.HTTP_400_BAD_REQUEST,
+                details=serializer.errors,
+            )
+
+        result = auth_services.request_password_reset(
+            email=serializer.validated_data["email"],
+            request_id=get_request_id(request),
+            client_ip=_server_observed_client_ip(request),
+        )
+        return api_success_response(request, {"accepted": result.accepted})
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class PasswordResetConfirmView(APIView):
+    permission_classes = [AllowAny]
+    request_serializer_class = PasswordResetConfirmSerializer
+    response_serializer_class = PasswordResetConfirmResponseSerializer
+
+    def post(self, request):
+        serializer = self.request_serializer_class(data=request.data)
+        if not serializer.is_valid():
+            raise ApiErrorResponseException(
+                "VALIDATION_ERROR",
+                status_code=status.HTTP_400_BAD_REQUEST,
+                details=serializer.errors,
+            )
+
+        result = auth_services.confirm_password_reset(
+            token=serializer.validated_data["token"],
+            new_password=serializer.validated_data["new_password"],
+            request_id=get_request_id(request),
+        )
+        return api_success_response(request, {"password_reset": result.password_reset})
 
 
 def _server_observed_client_ip(request) -> str:

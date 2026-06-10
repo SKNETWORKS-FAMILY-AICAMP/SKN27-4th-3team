@@ -14,6 +14,8 @@ EXPECTED_AUTH_ENDPOINTS = {
     ("POST", "/api/v1/auth/logout"),
     ("POST", "/api/v1/auth/refresh"),
     ("GET", "/api/v1/auth/me"),
+    ("POST", "/api/v1/auth/password-reset/request"),
+    ("POST", "/api/v1/auth/password-reset/confirm"),
 }
 
 

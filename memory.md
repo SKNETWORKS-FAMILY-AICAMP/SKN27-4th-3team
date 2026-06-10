@@ -1,6 +1,97 @@
 ﻿# Project Memory
 
-Updated: 2026-06-08
+Updated: 2026-06-10
+
+## LLM Provider Required Smoke Check Decision And Implementation 2026-06-10
+
+- Decision: 사용자는 추천 기준인 별도 LLM provider smoke check를 승인했다.
+- Approved contract: `docs/09_Approved_Contracts/33_LLM_Provider_Required_Smoke_Check_계약.md`.
+- Management command: `python backend/manage.py llm_smoke_check`.
+- Constraints:
+  - Normal API runtime still follows fallback/disabled behavior from `docs/09_Approved_Contracts/25_LLM_Runtime_통합_계약.md`.
+  - `/healthz` remains DB/process health only and is not expanded to LLM provider checks.
+  - `LLM_REQUIRED=false` is the default and skips provider calls in smoke check.
+  - `LLM_REQUIRED=true` makes missing API key, disabled mode, unsupported provider, missing model id, timeout, provider error, response parse error, empty response, and guardrail violation fail smoke verification.
+  - Smoke check must not store `llm_generations` rows and must not output provider secret, raw prompt, raw response, Authorization header, cookie, or CSRF token.
+- Implemented:
+  - Added `LLM_REQUIRED` settings/env template value.
+  - Added `run_required_provider_smoke_check()` in `backend.apps.llm.services`.
+  - Added Django management command `llm_smoke_check`.
+
+## RAG Manual Ingest/Search API Decision And Implementation 2026-06-10
+
+- Decision: 사용자는 추천 기준인 staff-only 수동 RAG ingest/search API를 승인했다.
+- Approved contract: `docs/09_Approved_Contracts/32_RAG_Manual_Ingest_Search_API_계약.md`.
+- Endpoints:
+  - `POST /api/v1/retrieval/ingest`
+  - `POST /api/v1/retrieval/search`
+- Constraints:
+  - Both endpoints require access cookie auth, CSRF, and `accounts.User.is_staff=True`.
+  - Server startup, import, migration, and health check must not run automatic ingest.
+  - Ingest source paths must pass the existing RAG allowlist and stay under the project root.
+  - Search results are only LLM context support or operations evidence; they cannot change rules, win/loss, auth/permission, official clues, true-name fragments, false clues, or apparition action selection.
+  - `RAG_EMBEDDING_PROVIDER` defaults to `disabled`; `deterministic` is allowed only for local/test validation and is rejected in production.
+  - External embedding provider calls remain excluded from this 1st implementation.
+- Implemented:
+  - Official API schema and strict ASCII JSON were extended with retrieval endpoints and RAG error codes.
+  - Added `backend.apps.retrieval` serializers, views, URLs, staff authorization boundary, manual ingest service, deterministic embedding adapter, pgvector search service, and query log writes.
+  - Local env template sets `RAG_EMBEDDING_PROVIDER=deterministic`; production env template sets `RAG_EMBEDDING_PROVIDER=disabled`.
+
+## MVP Extension Phase 1 Scope Decision 2026-06-10
+
+- Decision: 사용자는 추천 확정안 A를 승인했다.
+- Approved contract: `docs/09_Approved_Contracts/30_MVP_확장_1차_범위_계약.md`.
+- Phase 1 includes strict JSON artifact cleanup, password reset contract/implementation after API/schema contract, manual RAG ingest/search API, and optional LLM provider required validation mode.
+- Phase 1 excludes RAG server-start auto ingest, production CI/CD, image registry push, automatic backups, monitoring/alerting, and actual production deployment proof until infrastructure/access and a separate operations contract are approved.
+- Constraints:
+  - Do not implement password reset runtime until request/confirm API schema, token TTL, one-time token policy, user enumeration prevention, rate limiting, raw token storage prohibition, SecurityEvent scope, CSRF, and local/dev email behavior are approved.
+  - Do not run RAG ingest during server startup, import, migration, or health check.
+  - Keep LLM fallback/disabled as default; only fail health/smoke checks when an explicit required mode is enabled.
+  - Do not let RAG or LLM change rule resolution, win/loss, auth/permission, official clues, true-name fragments, false clues, or apparition action selection.
+
+## Password Reset API Schema Decision 2026-06-10
+
+- Decision: 사용자는 B안 이메일 어댑터 기반 password reset을 승인했다.
+- Approved contract: `docs/09_Approved_Contracts/31_Password_Reset_API_Schema_계약.md`.
+- Endpoints: `POST /api/v1/auth/password-reset/request`, `POST /api/v1/auth/password-reset/confirm`.
+- Constraints:
+  - Both endpoints are unauthenticated but CSRF-protected.
+  - Request endpoint must not reveal account existence and returns `{ accepted: true }` on accepted requests.
+  - Reset token TTL is 30 minutes, single-use, URL-safe random, and stored only as HMAC-SHA256 hash.
+  - SecurityEvent metadata stores only `email_hmac` for reset-request email correlation; raw email must not be stored.
+  - Raw reset token, token hash, password, provider credential, cookie, Authorization header, and CSRF token must not be stored in API responses, DB logs, or SecurityEvent metadata.
+  - local/dev uses Django console email backend; production requires SMTP/provider configuration and must not expose reset tokens when delivery is unavailable.
+  - New password follows the existing Auth password policy, and successful reset revokes existing refresh token families.
+
+## Password Reset Backend Implementation 2026-06-10
+
+- Implemented official API schema updates for `auth.password_reset.request` and `auth.password_reset.confirm`, including strict ASCII JSON regeneration.
+- Implemented backend `accounts` runtime for password reset:
+  - `PasswordResetToken` stores only user id, token hash, requested email, request IP, created/expiry/used timestamps.
+  - `PasswordResetThrottle` applies email + observed IP request limiting.
+  - reset token helper uses URL-safe random token and HMAC-SHA256 hash.
+  - SecurityEvent metadata uses `email_hmac` for request correlation and does not store raw email/token/password.
+  - request endpoint returns `{ accepted: true }` without exposing account existence.
+  - delivery unavailable is checked before user lookup to avoid account enumeration.
+  - confirm endpoint enforces invalid/expired/used token errors, changes password, marks token used, and revokes existing refresh token rows for the user.
+  - local/dev email backend defaults to Django console email backend; production env template includes SMTP/provider variables.
+- Added implementation plan: `docs/superpowers/plans/2026-06-10-password-reset-backend.md`.
+- Fresh verification:
+  - `.\.venv\Scripts\python.exe backend\manage.py check` -> no issues.
+  - `.\.venv\Scripts\python.exe backend\manage.py makemigrations accounts --dry-run --check` -> no model changes; local PostgreSQL migration-history warning remains because the local `pilot` DB credentials fail.
+  - `Get-Content -Raw api-spec\pilot-mvp-api.official.json | ConvertFrom-Json` -> ok.
+  - `.\.venv\Scripts\python.exe -m pytest backend\tests -q` -> `238 passed`.
+
+## Design Implementation Audit 2026-06-10
+
+- 기준 문서는 `docs/09_Approved_Contracts/00_승인본_목차.md`와 승인 계약 01-29번이다. `docs/01_MVP/99_MVP_구현_확정_문서.md`는 여전히 `needs-decision`이므로 단독 구현 기준이 아니라 승인본을 우선한다.
+- 현재 구현은 백엔드 핵심 MVP, 프론트 공식 API 연결, Redis/Channels/WebSocket 상태 동기화, AC-2A production 수동 배포 준비까지 반영되어 있다.
+- 신선 검증 결과: `.\.venv\Scripts\python.exe -m pytest backend\tests -q`는 `222 passed`, 프론트 `npm run test:contracts`, `npm run test:api-client`, `npm run test:nameless-flow`, `npm run test:realtime-contract`, `npm run build`는 모두 통과했다.
+- 주요 구현 완료 영역: Auth/CSRF/HttpOnly cookie/JWT refresh rotation, Match/Turn/ActionSubmission/TurnResult 저장, AI story server-side rule resolution, result 조회, LLM 보조 문구 runtime/log, AI Profile event/style metric 저장, RAG model/source-plan 준비, `mirror_guest`와 `nameless_curse` 사건 seed, React route/API client/prototype duel bridge, WebSocket read-only match event channel, local one-command dev start, production Compose/Caddy/Gunicorn ASGI 구성.
+- 부분 구현 영역: RAG는 ingest/search API가 아니라 모델, chunking, source allowlist, source plan, query log 준비 상태다. LLM은 provider key가 없거나 실패하면 fallback/disabled payload로 동작하는 보조 runtime이며 판정 권위는 없다. Production은 수동 배포 준비 상태이고 CI/CD, registry push, backup, monitoring은 제외 범위다.
+- 미구현 또는 제외 영역: PvP, Redis matchmaking, WebSocket action submit, KAG/GraphDB, password reset backend endpoint, production 배포 자동화, RAG 서버 시작 자동 ingest, 운영 backup/monitoring, LLM이 룰/승패/단서/괴이 행동을 결정하는 기능.
+- 문서 품질 리스크: `api-spec/pilot-mvp-api.official.json`은 현재 PowerShell `ConvertFrom-Json` 기준 파싱에 실패했다. 테스트가 schema/endpoint 계약을 보완하고 있지만, strict JSON 산출물은 별도 정리가 필요하다.
+- 워크트리 리스크: 현재 브랜치에는 README, docs, realtime, production, frontend prototype 관련 수정과 runtime screenshot/dev-start 신규 파일이 남아 있다. 감사 결과 보고 시 기존 변경을 되돌리지 않는다.
 
 ## AC-2A Production Deployment Decision 2026-06-08
 

@@ -66,3 +66,41 @@ class LoginFailureThrottle(models.Model):
             models.Index(fields=("email", "ip_address"), name="acct_login_fail_ident_idx"),
             models.Index(fields=("blocked_until",), name="acct_login_fail_block_idx"),
         ]
+
+
+class PasswordResetToken(models.Model):
+    user_id = models.PositiveBigIntegerField()
+    token_hash = models.TextField(unique=True)
+    requested_email = models.EmailField()
+    request_ip = models.GenericIPAddressField()
+    created_at = models.DateTimeField()
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=("token_hash",), name="acct_pwd_reset_hash_idx"),
+            models.Index(fields=("expires_at",), name="acct_pwd_reset_exp_idx"),
+            models.Index(fields=("user_id",), name="acct_pwd_reset_user_idx"),
+        ]
+
+
+class PasswordResetThrottle(models.Model):
+    email = models.EmailField()
+    ip_address = models.GenericIPAddressField()
+    request_count = models.PositiveIntegerField(default=0)
+    first_requested_at = models.DateTimeField()
+    last_requested_at = models.DateTimeField()
+    blocked_until = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("email", "ip_address"),
+                name="accounts_password_reset_email_ip_unique",
+            )
+        ]
+        indexes = [
+            models.Index(fields=("email", "ip_address"), name="acct_pwd_reset_ident_idx"),
+            models.Index(fields=("blocked_until",), name="acct_pwd_reset_block_idx"),
+        ]

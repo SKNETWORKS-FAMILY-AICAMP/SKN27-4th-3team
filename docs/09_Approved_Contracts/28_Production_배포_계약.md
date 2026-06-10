@@ -80,7 +80,7 @@ Caddy는 아래 책임을 가진다.
 - TLS 인증서 자동 발급과 갱신
 - frontend 정적 파일 서빙
 - `/api/*`를 Django API container로 proxy
-- `/ws/*`를 Django API container로 proxy
+- `/api/v1/ws/*`를 Django API container로 proxy
 - `/healthz`를 Django API container로 proxy
 
 domain은 실제 VM 환경변수로 주입한다.
@@ -211,7 +211,7 @@ application log는 stdout/stderr를 기본으로 한다.
 8. `redis`를 기동한다.
 9. `api`와 `web` 서비스를 기동한다.
 10. `/healthz`를 확인한다.
-11. `/api/v1/auth/csrf`, `/ws/matches/{match_id}`, frontend route smoke check를 수행한다.
+11. `/api/v1/auth/csrf`, `/api/v1/ws/matches/{match_id}`, frontend route smoke check를 수행한다.
 
 ## Rollback
 

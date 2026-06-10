@@ -6,6 +6,8 @@ OPS_DIR = ROOT_DIR / "ops"
 COMPOSE_FILE = OPS_DIR / "docker" / "docker-compose.yml"
 BACKEND_DOCKERFILE = OPS_DIR / "docker" / "backend.Dockerfile"
 BACKEND_ENV_EXAMPLE = OPS_DIR / "env" / "backend.env.example"
+DEV_START_CMD = ROOT_DIR / "dev-start.cmd"
+DEV_START_SCRIPT = OPS_DIR / "scripts" / "dev-start.ps1"
 
 FORBIDDEN_RUNTIME_WORDS = (
     "llm-provider",
@@ -74,7 +76,9 @@ def test_backend_env_example_documents_required_local_runtime_values_without_rea
         "REDIS_URL=redis://redis:6379/0",
         "WEBSOCKET_HEARTBEAT_SECONDS=25",
         "WEBSOCKET_CONNECT_TIMEOUT_SECONDS=6",
+        "LLM_REQUIRED=false",
         "RAG_EMBEDDING_MODEL_ID=text-embedding-3-small",
+        "RAG_EMBEDDING_PROVIDER=deterministic",
     )
     for key in required_keys:
         assert key in env_example
@@ -83,3 +87,25 @@ def test_backend_env_example_documents_required_local_runtime_values_without_rea
     assert "real-secret" not in env_example.lower()
     assert "Bearer" not in env_example
     assert "localStorage" not in env_example
+
+
+def test_one_command_local_start_script_runs_backend_frontend_and_dependencies():
+    cmd = _read(DEV_START_CMD)
+    script = _read(DEV_START_SCRIPT)
+
+    assert "ops\\scripts\\dev-start.ps1" in cmd
+    assert "requirements.txt" in script
+    assert "npm ci" in script
+    assert "backend\\manage.py" in script
+    assert "migrate" in script
+    assert "uvicorn" in script
+    assert "backend.config.asgi:application" in script
+    assert "npm.cmd" in script
+    assert "run" in script
+    assert "dev" in script
+    assert "127.0.0.1" in script
+    assert "8000" in script
+    assert "5173" in script
+    assert "skn27_local_postgres" in script
+    assert "skn27_local_redis" in script
+    assert script.isascii()

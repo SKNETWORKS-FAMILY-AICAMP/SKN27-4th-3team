@@ -5098,7 +5098,7 @@ body {
 }
 
 .result-scene.is-active {
-  animation: resultBackdropIn 260ms ease forwards 760ms;
+  animation: resultBackdropIn 180ms ease forwards;
 }
 
 .result-scene[data-outcome="clear"] {
@@ -5120,7 +5120,7 @@ body {
 }
 
 .result-scene[data-outcome="game-over"].is-active {
-  animation: resultBackdropIn 260ms ease forwards 760ms;
+  animation: resultBackdropIn 180ms ease forwards;
 }
 
 .result-scene img {
@@ -5146,6 +5146,10 @@ body {
 
 .result-scene.is-active img {
   animation: resultImageFadeIn 1500ms ease forwards 940ms;
+}
+
+.result-scene[data-outcome="game-over"].is-active img {
+  animation: resultImageFadeIn 420ms ease forwards 80ms;
 }
 
 .result-scene[data-outcome="clear"].is-active img {

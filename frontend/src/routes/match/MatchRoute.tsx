@@ -138,6 +138,8 @@ function toPrototypeTurnResult(turnResult: TurnResult, match: MatchState, llmTex
     publicLog: turnResult.public_log.text,
     stateChanges,
     patternHint: llmText?.text || "",
+    matchOutcome: turnResult.match_outcome,
+    matchStatus: match.status,
     seal: turnResult.player_action.code === "seal"
       ? {
           interference: sealSuccess ? 0 : 2,

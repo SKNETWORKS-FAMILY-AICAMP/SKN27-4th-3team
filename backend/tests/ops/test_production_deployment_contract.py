@@ -56,7 +56,8 @@ def test_caddyfile_proxies_api_and_healthz_to_internal_api():
 
     assert "reverse_proxy api:8000" in source
     assert "handle_path /api/*" in source or "handle /api/*" in source
-    assert "handle /ws/*" in source
+    assert "handle /api/v1/ws/*" in source
+    assert "handle /ws/*" not in source
     assert "handle /healthz" in source
 
 
@@ -94,5 +95,7 @@ def test_production_env_template_has_no_real_secret_values():
     assert "REDIS_PASSWORD=change-me-production-redis-password" in source
     assert "WEBSOCKET_HEARTBEAT_SECONDS=25" in source
     assert "WEBSOCKET_CONNECT_TIMEOUT_SECONDS=6" in source
+    assert "LLM_REQUIRED=false" in source
+    assert "RAG_EMBEDDING_PROVIDER=disabled" in source
     assert "change-me" in source
     assert "actual-secret" not in source

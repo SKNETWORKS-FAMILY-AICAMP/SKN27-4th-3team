@@ -9,4 +9,5 @@ urlpatterns = [
     path("api/v1/story/", include("backend.apps.story.urls")),
     path("api/v1/matches/", include("backend.apps.matches.urls")),
     path("api/v1/profile/", include("backend.apps.profiles.urls")),
+    path("api/v1/retrieval/", include("backend.apps.retrieval.urls")),
 ]

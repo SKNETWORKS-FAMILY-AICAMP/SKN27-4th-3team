@@ -145,6 +145,32 @@ def test_rag_embedding_model_id_is_injected_from_env_without_code_default(monkey
     assert settings.RAG_EMBEDDING_MODEL_ID is None
 
 
+def test_rag_embedding_provider_defaults_to_disabled_and_reads_env(monkeypatch):
+    monkeypatch.delenv("RAG_EMBEDDING_PROVIDER", raising=False)
+    settings = _reload_settings_module()
+    assert settings.RAG_EMBEDDING_PROVIDER == "disabled"
+
+    monkeypatch.setenv("RAG_EMBEDDING_PROVIDER", "deterministic")
+    settings = _reload_settings_module()
+    assert settings.RAG_EMBEDDING_PROVIDER == "deterministic"
+
+    monkeypatch.delenv("RAG_EMBEDDING_PROVIDER", raising=False)
+    _reload_settings_module()
+
+
+def test_llm_required_defaults_to_false_and_reads_env(monkeypatch):
+    monkeypatch.delenv("LLM_REQUIRED", raising=False)
+    settings = _reload_settings_module()
+    assert settings.LLM_REQUIRED is False
+
+    monkeypatch.setenv("LLM_REQUIRED", "true")
+    settings = _reload_settings_module()
+    assert settings.LLM_REQUIRED is True
+
+    monkeypatch.delenv("LLM_REQUIRED", raising=False)
+    _reload_settings_module()
+
+
 def test_settings_install_only_in_scope_mvp_apps():
     settings = _settings_module()
     installed_apps = set(settings.INSTALLED_APPS)
