@@ -8,6 +8,7 @@ BACKEND_DOCKERFILE = OPS_DIR / "docker" / "backend.Dockerfile"
 BACKEND_ENV_EXAMPLE = OPS_DIR / "env" / "backend.env.example"
 LOCAL_GAME_SCRIPT = OPS_DIR / "scripts" / "dev-local-game.ps1"
 README_FILE = ROOT_DIR / "README.md"
+FRONTEND_VITE_CONFIG = ROOT_DIR / "frontend" / "vite.config.ts"
 
 FORBIDDEN_RUNTIME_WORDS = (
     "llm-provider",
@@ -105,9 +106,10 @@ def test_local_game_one_command_script_runs_approved_runtime_steps():
         "backend/manage.py",
         "migrate",
         "--noinput",
-        "VITE_API_BASE_URL=http://localhost:8000",
-        "VITE_WEBSOCKET_BASE_URL=ws://localhost:8000",
+        "VITE_API_BASE_URL=",
+        "VITE_WEBSOCKET_BASE_URL=",
         "VITE_WEBSOCKET_CONNECT_TIMEOUT_SECONDS=6",
+        "[AllowEmptyString()]",
         "npm",
         "ci",
         "run",
@@ -136,5 +138,20 @@ def test_readme_documents_local_game_one_command_script():
     readme = _read(README_FILE)
 
     assert ".\\ops\\scripts\\dev-local-game.ps1" in readme
-    assert "VITE_API_BASE_URL=http://localhost:8000" in readme
+    assert "VITE_API_BASE_URL=" in readme
+    assert "Vite dev server가 `/api`, `/ws`, `/healthz`를 백엔드로 proxy" in readme
     assert "http://127.0.0.1:5173/prototype/game-background.html" in readme
+
+
+def test_vite_dev_server_proxies_backend_paths_for_same_origin_local_runtime():
+    vite_config = _read(FRONTEND_VITE_CONFIG)
+
+    assert "server:" in vite_config
+    assert "proxy:" in vite_config
+    assert '"/api"' in vite_config
+    assert '"/healthz"' in vite_config
+    assert '"/ws"' in vite_config
+    assert 'target: "http://localhost:8000"' in vite_config
+    assert 'target: "ws://localhost:8000"' in vite_config
+    assert "changeOrigin: true" in vite_config
+    assert "ws: true" in vite_config

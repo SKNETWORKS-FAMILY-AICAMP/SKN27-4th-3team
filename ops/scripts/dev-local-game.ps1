@@ -8,8 +8,8 @@ $Utf8NoBom = New-Object System.Text.UTF8Encoding $false
 $RetryCount = 12
 $RetryDelaySeconds = 2
 $FrontendEnvEntries = @(
-    "VITE_API_BASE_URL=http://localhost:8000",
-    "VITE_WEBSOCKET_BASE_URL=ws://localhost:8000",
+    "VITE_API_BASE_URL=",
+    "VITE_WEBSOCKET_BASE_URL=",
     "VITE_WEBSOCKET_CONNECT_TIMEOUT_SECONDS=6"
 )
 
@@ -69,6 +69,7 @@ function Set-FrontendEnvValue {
         [string] $Name,
 
         [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
         [string] $Value
     )
 
