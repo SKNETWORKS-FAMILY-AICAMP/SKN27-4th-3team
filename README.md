@@ -1,5 +1,11 @@
 # SKN27-4th-3team
 
+
+|![title](https://i.namu.wiki/i/GSsSnwho8eF_9rYKJKK9lg0_Een1XiD1Y0p6XD35P3q5mj578BvRRKAZ3wZVVnQMAqS81HgHah0mYt_yc44KwA.webp) |![title](https://downloadwap.com/thumbs2/wallpapers/p2/2019/movies/20/b9bd0e6112957883.jpg)|![title](https://media.bunjang.co.kr/product/377524344_2_1770172993_w360.jpg) | ![title](https://i.pinimg.com/236x/21/4e/5a/214e5a39033a30e1a431498db8d1d90c.jpg) |
+| --- | --- | --- |  --- |
+| **이혜림** | **한재웅** | **이성진** | **김재묵**| 
+
+
 초자연 공포 스릴러 미스터리 기반 1대1 턴제 심리전 웹 게임 MVP 프로젝트입니다. 플레이어는 승인된 사건(`mirror_guest`, `nameless_curse`)에서 괴이와 의식 결투를 진행하며, 서버가 턴 판정과 승패를 최종 결정합니다.
 
 이 README는 `docs/`의 Obsidian 문서와 승인 계약을 기준으로 현재 쓰는 것, 계약만 있는 것, 후순위로 보류한 것을 구분해 정리합니다.
