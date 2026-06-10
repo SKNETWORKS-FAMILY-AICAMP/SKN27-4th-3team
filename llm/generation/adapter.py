@@ -62,6 +62,7 @@ TEXT_LIMITS = {
     "style_summary": {"min_chars": 40, "max_chars": 120, "min_sentences": 1, "max_sentences": 2},
     "match_log_summary": {"min_lines": 3, "max_lines": 5, "max_line_chars": 100},
 }
+GROQ_LOCAL_DEV_USER_AGENT = "SKN27-local-dev/1.0"
 
 
 @dataclass(frozen=True)
@@ -273,6 +274,7 @@ def call_groq_urllib(generation_input: dict[str, Any], options: LlmOptions) -> t
         headers={
             "Authorization": f"Bearer {options.api_key}",
             "Content-Type": "application/json",
+            "User-Agent": GROQ_LOCAL_DEV_USER_AGENT,
         },
         method="POST",
     )

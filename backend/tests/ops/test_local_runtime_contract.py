@@ -44,6 +44,16 @@ def test_local_docker_compose_includes_only_approved_mvp_runtime_services():
         assert forbidden not in lowered
 
 
+def test_local_docker_compose_loads_optional_llm_env_without_committing_secret():
+    compose = _read(COMPOSE_FILE)
+
+    assert "path: ../env/backend.env.example" in compose
+    assert "path: ../env/llm.env" in compose
+    assert "required: false" in compose
+    assert "LLM_API_KEY=" not in compose
+    assert "gsk_" not in compose
+
+
 def test_backend_dockerfile_uses_locked_requirements_and_django_entrypoint():
     dockerfile = _read(BACKEND_DOCKERFILE)
 
@@ -138,6 +148,8 @@ def test_readme_documents_local_game_one_command_script():
     readme = _read(README_FILE)
 
     assert ".\\ops\\scripts\\dev-local-game.ps1" in readme
+    assert "ops/env/llm.env" in readme
+    assert "LLM_API_KEY" in readme
     assert "VITE_API_BASE_URL=" in readme
     assert "Vite dev server가 `/api`, `/ws`, `/healthz`를 백엔드로 proxy" in readme
     assert "http://127.0.0.1:5173/prototype/game-background.html" in readme

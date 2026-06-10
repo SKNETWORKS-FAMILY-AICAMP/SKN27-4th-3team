@@ -1,7 +1,9 @@
 import json
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
+from llm.generation import adapter as llm_adapter
 from llm.generation.adapter import LlmOptions, generate
 from llm.prompts.prompt_templates import build_generation_input
 
@@ -68,6 +70,38 @@ class OfficialFixtureContractTest(unittest.TestCase):
         self.assertIn("recover_piti_true_name", result["metadata"]["user_prompt"])
         self.assertIn("피티", result["metadata"]["user_prompt"])
         self.assertIn("네 이름을 알고 있어", result["metadata"]["user_prompt"])
+
+    def test_groq_urllib_fallback_sends_local_dev_user_agent(self) -> None:
+        generation_input = {
+            "purpose": "turn_flavor_text",
+            "system_prompt": "Return short flavor text.",
+            "user_prompt": "mirror trace appears.",
+        }
+        captured = {}
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, traceback):
+                return False
+
+            def read(self):
+                return b'{"choices":[{"message":{"content":"Mirror trace stays visible."}}]}'
+
+        def fake_urlopen(request, timeout):
+            captured["request"] = request
+            captured["timeout"] = timeout
+            return FakeResponse()
+
+        with patch.object(llm_adapter.urllib.request, "urlopen", fake_urlopen):
+            text, _ = llm_adapter.call_groq_urllib(generation_input, _dry_run_options())
+
+        self.assertEqual("Mirror trace stays visible.", text)
+        self.assertEqual(
+            "SKN27-local-dev/1.0",
+            captured["request"].get_header("User-agent"),
+        )
 
 
 if __name__ == "__main__":

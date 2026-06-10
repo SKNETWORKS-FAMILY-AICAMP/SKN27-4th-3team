@@ -83,7 +83,7 @@ Docker 구성은 local/dev와 production을 분리합니다.
 
 | 구분         | 주요 파일                                                                                                                                                                                               | 기준                                                                                |
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| local/dev  | `ops/docker/docker-compose.yml`, `ops/docker/backend.Dockerfile`, `ops/env/backend.env.example`                                                                                                     | ASGI API `8000`, PostgreSQL `5432`, Redis `6379`를 로컬 개발용으로 사용                     |
+| local/dev  | `ops/docker/docker-compose.yml`, `ops/docker/backend.Dockerfile`, `ops/env/backend.env.example`, optional `ops/env/llm.env`                                                                           | ASGI API `8000`, PostgreSQL `5432`, Redis `6379`를 로컬 개발용으로 사용                     |
 | production | `ops/docker/docker-compose.production.yml`, `ops/docker/backend.production.Dockerfile`, `ops/docker/web.production.Dockerfile`, `ops/docker/Caddyfile.production`, `ops/env/production.env.example` | AC-2A 기준. `web`만 `80/443`을 노출하고, `api`, `postgres`, `redis`는 Docker 내부 네트워크에서만 사용 |
 
 
@@ -109,6 +109,7 @@ gunicorn backend.config.asgi:application --worker-class uvicorn_worker.UvicornWo
 - `api` Docker 이미지 빌드
 - `postgres`, `redis`, `api` 컨테이너 실행
 - Django migration 적용
+- 실제 LLM provider를 쓰려면 repository에 저장하지 않는 `ops/env/llm.env`에 `LLM_API_KEY`를 설정
 - `/healthz`, `/api/v1/auth/csrf` 확인
 - `frontend/node_modules`가 없으면 `npm ci` 실행
 - Vite dev server가 `/api`, `/ws`, `/healthz`를 백엔드로 proxy
